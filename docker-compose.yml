@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: poszee
+      POSTGRES_PASSWORD: poszee
+      POSTGRES_DB: poszee
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poszee"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  # nginx reverse proxy — terminates TLS for hr.poszee.com and *.poszee.com,
+  # proxies /api to the api service and serves the built LIFF/console SPAs.
+  # TLS: issue certs with certbot (wildcard via DNS-01), mount into ./ops/nginx/certs.
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/certs:/etc/nginx/certs:ro
+
+volumes:
+  pgdata:
+  redisdata:

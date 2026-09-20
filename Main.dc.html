@@ -1,0 +1,452 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: none; }
+    .scy::-webkit-scrollbar { display: none; }
+    @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(1.35); opacity: 0; } }
+    .navbtn { background: none; border: none; font-family: inherit; cursor: pointer; padding: 6px 4px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F5F6F8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- ============ HOME ============ -->
+  <sc-if value="{{isHome}}" hint-placeholder-val="{{true}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <!-- header -->
+    <div style="background: linear-gradient(160deg, #06C755 0%, #04A548 100%); padding: 24px 20px 56px; color: #fff;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;">ส</div>
+          <div>
+            <div style="font-size: 13px; opacity: 0.9;">{{greeting}} 👋</div>
+            <div style="font-size: 17px; font-weight: 600;">สมชาย ใจดี</div>
+          </div>
+        </div>
+        <div style="position: relative; width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span style="position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #FF4D4F; border: 2px solid #fff;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- scroll body -->
+    <div class="scy" style="flex: 1; padding: 0 16px 20px; margin-top: -40px;">
+
+      <!-- clock / check-in card -->
+      <div style="background: #FFFFFF; border-radius: 20px; padding: 24px 20px; box-shadow: 0 8px 24px rgba(17,24,39,0.06); text-align: center;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: #F5F6F8; border-radius: 999px; padding: 6px 14px; font-size: 12px; color: #5B6167; font-weight: 500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+          พุธ 9 กันยายน 2569
+        </div>
+
+        <div style="font-size: 52px; font-weight: 700; color: #1B1D1F; letter-spacing: -1px; margin: 14px 0 2px; font-variant-numeric: tabular-nums;">{{now}}</div>
+
+        <!-- status pill -->
+        <sc-if value="{{statusNone}}" hint-placeholder-val="{{true}}">
+          <div style="display: inline-flex; align-items: center; gap: 6px; color: #9AA0A6; font-size: 13px; font-weight: 500; margin-bottom: 22px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #C4C9CE;"></span> ยังไม่ได้เช็คอินวันนี้
+          </div>
+        </sc-if>
+        <sc-if value="{{statusIn}}" hint-placeholder-val="{{false}}">
+          <div style="display: inline-flex; align-items: center; gap: 6px; color: #04933D; font-size: 13px; font-weight: 600; margin-bottom: 22px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #06C755;"></span> เข้างานแล้ว · {{checkInTime}} น.
+          </div>
+        </sc-if>
+        <sc-if value="{{statusOut}}" hint-placeholder-val="{{false}}">
+          <div style="display: inline-flex; align-items: center; gap: 6px; color: #5B6167; font-size: 13px; font-weight: 600; margin-bottom: 22px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> ทำงานครบวันแล้ว
+          </div>
+        </sc-if>
+
+        <!-- big punch button -->
+        <div style="display: flex; justify-content: center; margin-bottom: 4px;">
+          <sc-if value="{{statusNone}}" hint-placeholder-val="{{true}}">
+            <button onClick="{{onPunch}}" style="position: relative; width: 168px; height: 168px; border-radius: 50%; border: none; background: radial-gradient(circle at 50% 35%, #12D866, #06C755); color: #fff; font-family: inherit; cursor: pointer; box-shadow: 0 14px 34px rgba(6,199,85,0.42); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+              <span style="position: absolute; inset: 0; border-radius: 50%; border: 3px solid #06C755; animation: pulseRing 1.8s ease-out infinite;"></span>
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11c0-2.5-1-4-4-4"></path><path d="M4 13c0-4 3-7 8-7s8 3 8 8c0 1.5-.3 3-1 4"></path><path d="M8 21c-1-1-2-3-2-6a2 2 0 0 1 4 0c0 3 1 4 2 5"></path><path d="M12 12v3c0 2 .5 3.5 1.5 4.5"></path><path d="M16 20c1-2 1.5-4 1.5-6"></path></svg>
+              <span style="font-size: 17px; font-weight: 700;">เช็คอินเข้างาน</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{statusIn}}" hint-placeholder-val="{{false}}">
+            <button onClick="{{onPunch}}" style="position: relative; width: 168px; height: 168px; border-radius: 50%; border: none; background: radial-gradient(circle at 50% 35%, #FFB43D, #F59E0B); color: #fff; font-family: inherit; cursor: pointer; box-shadow: 0 14px 34px rgba(245,158,11,0.40); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>
+              <span style="font-size: 17px; font-weight: 700;">เช็คเอาท์ออกงาน</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{statusOut}}" hint-placeholder-val="{{false}}">
+            <div style="width: 168px; height: 168px; border-radius: 50%; background: #EEF0F3; color: #9AA0A6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m9 12 2 2 4-4"></path></svg>
+              <span style="font-size: 15px; font-weight: 700;">เสร็จสิ้นวันนี้</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- location -->
+      <div style="display: flex; align-items: center; gap: 10px; background: #E8F9EF; border: 1px solid #C9F0DA; border-radius: 14px; padding: 12px 14px; margin-top: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 10px; background: #06C755; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">สำนักงานใหญ่ อโศก</div>
+          <div style="font-size: 11px; color: #04933D; font-weight: 500;">✓ อยู่ในพื้นที่ทำงาน (ระยะ 45 ม.)</div>
+        </div>
+      </div>
+
+      <!-- stats -->
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 14px;">
+        <div style="background: #FFFFFF; border-radius: 16px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #5B6167; font-size: 12px; font-weight: 500; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg> ชั่วโมงสัปดาห์นี้
+          </div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">32.5<span style="font-size: 13px; font-weight: 500; color: #9AA0A6;"> / 40 ชม.</span></div>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 16px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #5B6167; font-size: 12px; font-weight: 500; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg> มาสายเดือนนี้
+          </div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">2<span style="font-size: 13px; font-weight: 500; color: #9AA0A6;"> ครั้ง</span></div>
+        </div>
+      </div>
+
+      <!-- today timeline -->
+      <div style="background: #FFFFFF; border-radius: 16px; padding: 18px; margin-top: 14px;">
+        <div style="font-size: 14px; font-weight: 600; color: #1B1D1F; margin-bottom: 14px;">ไทม์ไลน์วันนี้</div>
+        <div style="display: flex; flex-direction: column; gap: 0;">
+          <div style="display: flex; gap: 12px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="width: 12px; height: 12px; border-radius: 50%; background: {{inDot}};"></span>
+              <span style="width: 2px; flex: 1; background: #ECEEF1;"></span>
+            </div>
+            <div style="padding-bottom: 16px;">
+              <div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">เข้างาน</div>
+              <div style="font-size: 12px; color: #9AA0A6;">{{timelineIn}}</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="width: 12px; height: 12px; border-radius: 50%; background: #E5E7EB;"></span>
+              <span style="width: 2px; flex: 1; background: #ECEEF1;"></span>
+            </div>
+            <div style="padding-bottom: 16px;">
+              <div style="font-size: 13px; font-weight: 600; color: #5B6167;">พักกลางวัน</div>
+              <div style="font-size: 12px; color: #9AA0A6;">12:00 – 13:00 น.</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span style="width: 12px; height: 12px; border-radius: 50%; background: {{outDot}};"></span>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">ออกงาน</div>
+              <div style="font-size: 12px; color: #9AA0A6;">{{timelineOut}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ HISTORY ============ -->
+  <sc-if value="{{isHistory}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: #FFFFFF; padding: 22px 20px 16px; border-bottom: 1px solid #ECEEF1;">
+      <div style="font-size: 20px; font-weight: 700; color: #1B1D1F;">ประวัติการเข้างาน</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px;">
+        <button style="width: 32px; height: 32px; border-radius: 10px; border: 1px solid #ECEEF1; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+        <div style="font-size: 15px; font-weight: 600; color: #1B1D1F;">กันยายน 2569</div>
+        <button style="width: 32px; height: 32px; border-radius: 10px; border: 1px solid #ECEEF1; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+      </div>
+    </div>
+
+    <div class="scy" style="flex: 1; padding: 16px;">
+      <!-- summary -->
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 18px;">
+        <div style="background: #E8F9EF; border-radius: 14px; padding: 12px 4px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #04933D;">18</div>
+          <div style="font-size: 11px; color: #04933D; font-weight: 500;">ปกติ</div>
+        </div>
+        <div style="background: #FEF3E2; border-radius: 14px; padding: 12px 4px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #C77700;">2</div>
+          <div style="font-size: 11px; color: #C77700; font-weight: 500;">สาย</div>
+        </div>
+        <div style="background: #FDECEC; border-radius: 14px; padding: 12px 4px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #D93838;">0</div>
+          <div style="font-size: 11px; color: #D93838; font-weight: 500;">ขาด</div>
+        </div>
+        <div style="background: #EAF1FE; border-radius: 14px; padding: 12px 4px; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #1D6FE0;">1</div>
+          <div style="font-size: 11px; color: #1D6FE0; font-weight: 500;">ลา</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{records}}" as="rec" hint-placeholder-count="5">
+          <div style="background: #FFFFFF; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 46px; height: 46px; border-radius: 12px; background: {{rec.dayBg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span style="font-size: 16px; font-weight: 700; color: {{rec.dayColor}}; line-height: 1;">{{rec.day}}</span>
+              <span style="font-size: 10px; color: {{rec.dayColor}};">{{rec.dow}}</span>
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1B1D1F; font-weight: 500;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v7l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg> {{rec.in}}
+                <span style="color: #C4C9CE;">→</span>
+                {{rec.out}}
+              </div>
+              <div style="font-size: 11px; color: #9AA0A6; margin-top: 3px;">{{rec.hours}}</div>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: {{rec.badgeColor}}; background: {{rec.badgeBg}}; padding: 4px 10px; border-radius: 999px;">{{rec.status}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ LEAVE ============ -->
+  <sc-if value="{{isLeave}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: #FFFFFF; padding: 22px 20px 16px; border-bottom: 1px solid #ECEEF1;">
+      <div style="font-size: 20px; font-weight: 700; color: #1B1D1F;">ลางาน</div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 16px;">
+
+      <sc-if value="{{leaveSubmitted}}" hint-placeholder-val="{{false}}">
+        <div style="background: #FFFFFF; border-radius: 20px; padding: 32px 24px; text-align: center; margin-top: 20px;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: #E8F9EF; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          </div>
+          <div style="font-size: 18px; font-weight: 700; color: #1B1D1F; margin-bottom: 6px;">ส่งคำขอลาเรียบร้อย</div>
+          <div style="font-size: 13px; color: #5B6167; line-height: 1.6;">คำขอถูกส่งให้หัวหน้างานอนุมัติแล้ว<br>คุณจะได้รับแจ้งเตือนผ่าน LINE</div>
+          <button onClick="{{onResetLeave}}" style="margin-top: 22px; height: 46px; padding: 0 28px; border: 1px solid #ECEEF1; border-radius: 12px; background: #fff; color: #1B1D1F; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">ส่งคำขอใหม่</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{leaveForm}}" hint-placeholder-val="{{true}}">
+      <div>
+        <!-- balances -->
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 20px;">
+          <div style="background: #FDECEC; border-radius: 16px; padding: 14px 8px; text-align: center;">
+            <div style="font-size: 22px; font-weight: 700; color: #D93838;">28</div>
+            <div style="font-size: 11px; color: #B93030; font-weight: 500;">ลาป่วย</div>
+          </div>
+          <div style="background: #EAF1FE; border-radius: 16px; padding: 14px 8px; text-align: center;">
+            <div style="font-size: 22px; font-weight: 700; color: #1D6FE0;">3</div>
+            <div style="font-size: 11px; color: #1858B8; font-weight: 500;">ลากิจ</div>
+          </div>
+          <div style="background: #E8F9EF; border-radius: 16px; padding: 14px 8px; text-align: center;">
+            <div style="font-size: 22px; font-weight: 700; color: #04933D;">6</div>
+            <div style="font-size: 11px; color: #04933D; font-weight: 500;">พักร้อน</div>
+          </div>
+        </div>
+
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F; margin-bottom: 10px;">ประเภทการลา</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 20px;">
+          <button onClick="{{leaveSick.pick}}" style="border: 1.5px solid {{leaveSick.border}}; background: {{leaveSick.bg}}; border-radius: 14px; padding: 14px 6px; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{leaveSick.iconColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3h2M12 3v3"></path><path d="M8 9a4 4 0 0 1 8 0v1a4 4 0 0 1-8 0Z"></path><path d="M9 17h6l1 4H8Z"></path></svg>
+            <span style="font-size: 12px; font-weight: 600; color: {{leaveSick.textColor}};">ลาป่วย</span>
+          </button>
+          <button onClick="{{leavePersonal.pick}}" style="border: 1.5px solid {{leavePersonal.border}}; background: {{leavePersonal.bg}}; border-radius: 14px; padding: 14px 6px; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{leavePersonal.iconColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span style="font-size: 12px; font-weight: 600; color: {{leavePersonal.textColor}};">ลากิจ</span>
+          </button>
+          <button onClick="{{leaveVacation.pick}}" style="border: 1.5px solid {{leaveVacation.border}}; background: {{leaveVacation.bg}}; border-radius: 14px; padding: 14px 6px; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{leaveVacation.iconColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"></path><path d="M2 22h20"></path></svg>
+            <span style="font-size: 12px; font-weight: 600; color: {{leaveVacation.textColor}};">พักร้อน</span>
+          </button>
+        </div>
+
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F; margin-bottom: 10px;">ช่วงวันที่ลา</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <div style="flex: 1; background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #9AA0A6; margin-bottom: 2px;">ตั้งแต่</div>
+            <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">12 ก.ย. 2569</div>
+          </div>
+          <div style="flex: 1; background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #9AA0A6; margin-bottom: 2px;">ถึง</div>
+            <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">12 ก.ย. 2569</div>
+          </div>
+        </div>
+
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F; margin-bottom: 10px;">เหตุผล</div>
+        <div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #9AA0A6; min-height: 78px; margin-bottom: 24px;">ระบุเหตุผลการลา...</div>
+
+        <button onClick="{{onSubmitLeave}}" style="width: 100%; height: 52px; border: none; border-radius: 14px; background: #06C755; color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(6,199,85,0.30);">ส่งคำขอลา</button>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PROFILE ============ -->
+  <sc-if value="{{isProfile}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: linear-gradient(160deg, #06C755 0%, #04A548 100%); padding: 28px 20px 60px; color: #fff; text-align: center;">
+      <div style="width: 84px; height: 84px; border-radius: 26px; background: rgba(255,255,255,0.22); display: inline-flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; margin-bottom: 12px;">ส</div>
+      <div style="font-size: 20px; font-weight: 700;">สมชาย ใจดี</div>
+      <div style="font-size: 13px; opacity: 0.9; margin-top: 2px;">เจ้าหน้าที่การตลาด · EMP-10245</div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 0 16px 20px; margin-top: -42px;">
+      <div style="background: #fff; border-radius: 18px; padding: 6px 4px; box-shadow: 0 8px 24px rgba(17,24,39,0.06);">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">แผนก</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">การตลาดดิจิทัล</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">อีเมล</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">somchai.j@company.co.th</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.9.36 1.79.7 2.63a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.45-1.27a2 2 0 0 1 2.11-.45c.84.34 1.73.57 2.63.7A2 2 0 0 1 22 16.92Z"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">เบอร์โทร</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">08x-xxx-xx45</div></div>
+        </div>
+      </div>
+
+      <div style="background: #fff; border-radius: 18px; margin-top: 14px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">การแจ้งเตือน</span>
+          <span style="width: 40px; height: 24px; border-radius: 999px; background: #06C755; position: relative;"><span style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff;"></span></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">ภาษา</span>
+          <span style="font-size: 13px; color: #9AA0A6;">ไทย ›</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">ช่วยเหลือ</span>
+          <span style="font-size: 13px; color: #9AA0A6;">›</span>
+        </div>
+      </div>
+
+      <button style="width: 100%; height: 50px; margin-top: 16px; border: 1px solid #FADBDB; border-radius: 14px; background: #fff; color: #D93838; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;">ออกจากระบบ</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <div style="background: #FFFFFF; border-top: 1px solid #ECEEF1; padding: 6px 8px 10px; display: flex;">
+    <button class="navbtn" onClick="{{goHome}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{homeColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{homeColor}};">หน้าหลัก</span>
+    </button>
+    <button class="navbtn" onClick="{{goHistory}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{historyColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l4 2"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{historyColor}};">ประวัติ</span>
+    </button>
+    <button class="navbtn" onClick="{{goLeave}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{leaveColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="m9 16 2 2 4-4"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{leaveColor}};">ลางาน</span>
+    </button>
+    <button class="navbtn" onClick="{{goProfile}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{profileColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{profileColor}};">โปรไฟล์</span>
+    </button>
+  </div>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    this.tick();
+    this._t = setInterval(() => this.tick(), 1000);
+  }
+  componentWillUnmount() { if (this._t) clearInterval(this._t); }
+  tick() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    this.setState({ clock: p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) });
+  }
+  fmtNow() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  punch() {
+    const st = this.state?.punchStatus ?? 'none';
+    if (st === 'none') this.setState({ punchStatus: 'in', inTime: this.fmtNow() });
+    else if (st === 'in') this.setState({ punchStatus: 'out', outTime: this.fmtNow() });
+  }
+  renderVals() {
+    const view = this.state?.view ?? 'home';
+    const st = this.state?.punchStatus ?? 'none';
+    const inTime = this.state?.inTime ?? null;
+    const outTime = this.state?.outTime ?? null;
+    const active = '#06C755', idle = '#9AA0A6';
+    const nav = (v) => (view === v ? active : idle);
+    const set = (v) => () => this.setState({ view: v });
+
+    const leaveSel = this.state?.leaveType ?? 'sick';
+    const leaveStyle = (id, hue, tint) => {
+      const on = id === leaveSel;
+      return {
+        pick: () => this.setState({ leaveType: id }),
+        border: on ? hue : '#ECEEF1',
+        bg: on ? tint : '#FFFFFF',
+        iconColor: on ? hue : '#9AA0A6',
+        textColor: on ? hue : '#5B6167'
+      };
+    };
+    const leaveSick = leaveStyle('sick', '#D93838', '#FDECEC');
+    const leavePersonal = leaveStyle('personal', '#1D6FE0', '#EAF1FE');
+    const leaveVacation = leaveStyle('vacation', '#04933D', '#E8F9EF');
+
+    const recDefs = [
+      { day: '09', dow: 'พ.', in: '08:32', out: '17:45', hours: '8 ชม. 13 นาที', status: 'ปกติ', kind: 'ok' },
+      { day: '08', dow: 'อ.', in: '09:12', out: '18:02', hours: '7 ชม. 50 นาที', status: 'สาย', kind: 'late' },
+      { day: '07', dow: 'จ.', in: '08:05', out: '17:30', hours: '8 ชม. 25 นาที', status: 'ปกติ', kind: 'ok' },
+      { day: '04', dow: 'ศ.', in: '—', out: '—', hours: 'ลาป่วย', status: 'ลา', kind: 'leave' },
+      { day: '03', dow: 'พฤ.', in: '08:28', out: '17:40', hours: '8 ชม. 12 นาที', status: 'ปกติ', kind: 'ok' }
+    ];
+    const styleFor = {
+      ok: { badgeColor: '#04933D', badgeBg: '#E8F9EF', dayBg: '#F5F6F8', dayColor: '#5B6167' },
+      late: { badgeColor: '#C77700', badgeBg: '#FEF3E2', dayBg: '#FEF3E2', dayColor: '#C77700' },
+      leave: { badgeColor: '#1D6FE0', badgeBg: '#EAF1FE', dayBg: '#EAF1FE', dayColor: '#1D6FE0' }
+    };
+    const records = recDefs.map((r) => ({ ...r, ...styleFor[r.kind] }));
+
+    const hr = new Date().getHours();
+    const greeting = hr < 12 ? 'สวัสดีตอนเช้า' : (hr < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น');
+
+    return {
+      now: this.state?.clock ?? '--:--:--',
+      greeting,
+      isHome: view === 'home', isHistory: view === 'history', isLeave: view === 'leave', isProfile: view === 'profile',
+      goHome: set('home'), goHistory: set('history'), goLeave: set('leave'), goProfile: set('profile'),
+      homeColor: nav('home'), historyColor: nav('history'), leaveColor: nav('leave'), profileColor: nav('profile'),
+      statusNone: st === 'none', statusIn: st === 'in', statusOut: st === 'out',
+      onPunch: () => this.punch(),
+      checkInTime: inTime,
+      timelineIn: inTime ? (inTime + ' น.') : 'ยังไม่ได้เช็คอิน',
+      timelineOut: outTime ? (outTime + ' น.') : 'ยังไม่ออกงาน',
+      inDot: inTime ? '#06C755' : '#E5E7EB',
+      outDot: outTime ? '#06C755' : '#E5E7EB',
+      records,
+      leaveSick, leavePersonal, leaveVacation,
+      leaveSubmitted: !!this.state?.leaveDone,
+      leaveForm: !this.state?.leaveDone,
+      onSubmitLeave: () => this.setState({ leaveDone: true }),
+      onResetLeave: () => this.setState({ leaveDone: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

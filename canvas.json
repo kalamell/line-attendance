@@ -1,0 +1,28 @@
+{
+  "pages": [
+    { "id": "page-4", "name": "Super Admin (SaaS)" },
+    { "id": "page-1", "name": "Prototype (พนักงาน)" },
+    { "id": "page-3", "name": "Admin / HR" },
+    { "id": "page-2", "name": "Design System" }
+  ],
+  "artboards": [
+    { "file": "Login.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "page": "page-1", "is_interactive": true },
+    { "file": "Register.dc.html", "x": 510, "y": 0, "w": 390, "h": 844, "page": "page-1", "is_interactive": true },
+    { "file": "Main.dc.html", "x": 1020, "y": 0, "w": 390, "h": 844, "page": "page-1", "is_interactive": true },
+    { "file": "Payslip.dc.html", "x": 1530, "y": 0, "w": 390, "h": 844, "page": "page-1", "is_interactive": true },
+    { "file": "AdminDashboard.dc.html", "x": 0, "y": 0, "w": 1280, "h": 860, "page": "page-3", "is_interactive": true },
+    { "file": "AdminMobile.dc.html", "x": 1400, "y": 0, "w": 390, "h": 844, "page": "page-3", "is_interactive": true },
+    { "file": "LineIntegration.dc.html", "x": 1920, "y": 0, "w": 960, "h": 900, "page": "page-3", "is_interactive": true },
+    { "file": "SuperAdmin.dc.html", "x": 0, "y": 0, "w": 1280, "h": 860, "page": "page-4", "is_interactive": true },
+    { "file": "DesignSystem.dc.html", "x": 0, "y": 0, "w": 960, "h": 1580, "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-flow", "x": 0, "y": -96, "w": 1920, "page": "page-1", "text": "โฟลว์พนักงาน (LIFF มือถือ) · Login → Register (ลงทะเบียน 3 ขั้น: ยินยอม PDPA → กรอกข้อมูล PII → รอฝ่ายบุคคลอนุมัติเริ่มงาน) → Main (แอปหลัก เช็คอิน/เช็คเอาท์ นาฬิกาเดินจริง สลับแท็บได้) → Payslip (สลิปเงินเดือน: กรอกรหัส 6 หลักปลดล็อก → ดูรายรับ-รายการหัก-สุทธิ → ส่ง PDF เข้ารหัสทาง LINE) · แต่ละจอเป็นอาร์ตบอร์ดแยกกัน จึงกดข้ามจอไม่ได้" },
+    { "id": "note-ds", "x": 0, "y": -72, "w": 900, "page": "page-2", "text": "Design System — สี, ตัวอักษร (IBM Plex Sans Thai), ปุ่ม, อินพุต, ป้ายสถานะ, bottom nav และไอคอน ใช้อ้างอิงเวลาต่อยอดหน้าจอใหม่" },
+    { "id": "note-admin", "x": 0, "y": -88, "w": 1280, "page": "page-3", "text": "คอนโซล HR (เดสก์ท็อป) · เมนูซ้ายสลับได้จริง 5 ส่วน — แดชบอร์ด, พนักงาน, อนุมัติเริ่มงาน (ฝ่ายบุคคลอนุมัติพนักงานใหม่ กดได้จริง), อนุมัติการลา (เส้นทาง: หัวหน้างาน กดได้จริง), เงินเดือน (ตารางเงินเดือน/ค่าตอบแทน/หัก + ส่งสลิป PDF เข้ารหัสทาง LINE รายคนหรือทั้งหมด) — badge จำนวนค้างและตัวเลขสรุปอัปเดตทันที" },
+    { "id": "note-admin-mobile", "x": 1400, "y": -88, "w": 390, "page": "page-3", "text": "HR ผ่าน LIFF มือถือ (พาริตี้กับเดสก์ท็อป) · แท็บล่าง 5 แท็บ: แดชบอร์ด / พนักงาน / อนุมัติ / เงินเดือน / ตั้งค่า — แท็บอนุมัติมี segment การลา (หัวหน้างาน) กับ เริ่มงาน (ฝ่ายบุคคล) กดอนุมัติ/ปฏิเสธได้จริง; เงินเดือนส่งสลิป PDF เข้ารหัสรายคนหรือทั้งหมด; ตั้งค่ามีสวิตช์เปิด-ปิดได้จริง" },
+    { "id": "note-super", "x": 0, "y": -96, "w": 1280, "page": "page-4", "text": "Super Admin (SaaS multi-tenant) · เจ้าของแพลตฟอร์มสร้าง 'หน่วยงาน' (tenant) แล้วเชิญแอดมินคนแรกของแต่ละหน่วยงาน — กด 'สร้างหน่วยงาน' เปิดฟอร์มแล้วสร้างได้จริง (เพิ่มแถวใหม่ + toast + ตัวเลขสรุปอัปเดต), ปุ่ม 'เพิ่มแอดมิน' ต่อหน่วยงานกดเพิ่มจำนวนผู้ดูแลได้ · ข้อมูลแต่ละหน่วยงานแยกกัน (tenant isolation), Super Admin ไม่เห็น PII พนักงาน (PDPA) · โดเมน hr.poszee.com" },
+    { "id": "note-line", "x": 1920, "y": -96, "w": 960, "page": "page-3", "text": "การเชื่อมต่อ LINE (ต่อหน่วยงาน) · แอดมินหน่วยงานผูก LINE OA ของตัวเอง — กด 'เชื่อมต่อ LINE OA' เปลี่ยนสถานะเป็นเชื่อมต่อแล้ว (ได้จริง), กรอก Messaging API (Channel ID/Secret/Access Token แบบ mask) + LIFF ID + Webhook URL, สลับฟีเจอร์ Rich Menu / Push / ส่งสลิป และทดสอบการเชื่อมต่อได้ · credential เข้ารหัสแยกต่อ tenant" }
+  ],
+  "launch": { "view": "canvas", "page": "page-4" }
+}

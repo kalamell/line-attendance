@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "target": "ES2022",
+    "outDir": "dist",
+    "declaration": false,
+    "sourceMap": true,
+    "noUnusedLocals": false
+  },
+  "include": ["src"]
+}

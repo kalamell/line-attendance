@@ -1,0 +1,500 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: thin; }
+    .navitem { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; border: none; background: none; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; text-align: left; }
+    .card { background: #FFFFFF; border: 1px solid #ECEEF1; border-radius: 18px; }
+    th { text-align: left; font-size: 12px; font-weight: 600; color: #9AA0A6; padding: 0 0 10px; }
+    td { padding: 12px 0; border-top: 1px solid #F2F3F5; vertical-align: middle; }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 860px; background: #F5F6F8; display: flex; overflow: hidden;">
+
+  <!-- ============ SIDEBAR ============ -->
+  <div style="width: 244px; background: #FFFFFF; border-right: 1px solid #ECEEF1; display: flex; flex-direction: column; padding: 22px 16px; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 11px; padding: 0 8px 24px;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: #06C755; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+      </div>
+      <div>
+        <div style="font-size: 16px; font-weight: 700; color: #1B1D1F; line-height: 1.1;">TimeLine</div>
+        <div style="font-size: 11px; color: #9AA0A6;">HR Console</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <button class="navitem" onClick="{{goDash}}" style="color: {{dashColor}}; background: {{dashBg}};">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{dashColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+        แดชบอร์ด
+      </button>
+      <button class="navitem" onClick="{{goStaff}}" style="color: {{staffColor}}; background: {{staffBg}};">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{staffColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        พนักงาน
+      </button>
+      <button class="navitem" onClick="{{goHire}}" style="color: {{hireColor}}; background: {{hireBg}};">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{hireColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M19 8v6M22 11h-6"></path></svg>
+        <span style="flex: 1;">อนุมัติเริ่มงาน</span>
+        <sc-if value="{{hasHire}}" hint-placeholder-val="{{true}}">
+          <span style="font-size: 11px; font-weight: 700; color: #fff; background: #1D6FE0; border-radius: 999px; padding: 1px 8px;">{{hireCount}}</span>
+        </sc-if>
+      </button>
+      <button class="navitem" onClick="{{goApprove}}" style="color: {{approveColor}}; background: {{approveBg}};">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{approveColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <span style="flex: 1;">อนุมัติการลา</span>
+        <sc-if value="{{hasPending}}" hint-placeholder-val="{{true}}">
+          <span style="font-size: 11px; font-weight: 700; color: #fff; background: #EF4444; border-radius: 999px; padding: 1px 8px;">{{pendingCount}}</span>
+        </sc-if>
+      </button>
+      <button class="navitem" onClick="{{goPayroll}}" style="color: {{payrollColor}}; background: {{payrollBg}};">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{payrollColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 9v.01M18 15v.01"></path></svg>
+        เงินเดือน
+      </button>
+    </div>
+
+    <div style="margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px 8px; border-top: 1px solid #F2F3F5;">
+      <div style="width: 36px; height: 36px; border-radius: 11px; background: #EAF1FE; color: #1D6FE0; font-weight: 700; display: flex; align-items: center; justify-content: center;">ก</div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">กัลยา ผู้จัดการ</div>
+        <div style="font-size: 11px; color: #9AA0A6;">ผู้ดูแลระบบ HR</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+
+    <!-- topbar -->
+    <div style="height: 72px; background: #fff; border-bottom: 1px solid #ECEEF1; display: flex; align-items: center; padding: 0 28px; gap: 18px; flex-shrink: 0;">
+      <div style="flex: 1;">
+        <div style="font-size: 18px; font-weight: 700; color: #1B1D1F;">{{pageTitle}}</div>
+        <div style="font-size: 12px; color: #9AA0A6;">วันศุกร์ที่ 11 กันยายน 2569</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: #F5F6F8; border-radius: 12px; padding: 9px 14px; width: 260px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <span style="font-size: 13px; color: #9AA0A6;">ค้นหาพนักงาน...</span>
+      </div>
+      <div style="position: relative; width: 40px; height: 40px; border-radius: 12px; background: #F5F6F8; display: flex; align-items: center; justify-content: center;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span style="position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #FF4D4F; border: 2px solid #fff;"></span>
+      </div>
+    </div>
+
+    <div class="scy" style="flex: 1; padding: 24px 28px 32px;">
+
+      <!-- ==== DASHBOARD ==== -->
+      <sc-if value="{{isDash}}" hint-placeholder-val="{{true}}">
+      <div>
+        <!-- stat cards -->
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 20px;">
+          <div class="card" style="padding: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"><span style="font-size: 13px; color: #5B6167; font-weight: 500;">พนักงานทั้งหมด</span><span style="width: 34px; height: 34px; border-radius: 10px; background: #EAF1FE; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1D6FE0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></span></div>
+            <div style="font-size: 28px; font-weight: 700; color: #1B1D1F;">48</div>
+            <div style="font-size: 12px; color: #9AA0A6;">คน · 4 แผนก</div>
+          </div>
+          <div class="card" style="padding: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"><span style="font-size: 13px; color: #5B6167; font-weight: 500;">เข้างานแล้ว</span><span style="width: 34px; height: 34px; border-radius: 10px; background: #E8F9EF; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></div>
+            <div style="font-size: 28px; font-weight: 700; color: #1B1D1F;">40</div>
+            <div style="font-size: 12px; color: #04933D; font-weight: 500;">83% ของทั้งหมด</div>
+          </div>
+          <div class="card" style="padding: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"><span style="font-size: 13px; color: #5B6167; font-weight: 500;">มาสายวันนี้</span><span style="width: 34px; height: 34px; border-radius: 10px; background: #FEF3E2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C77700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span></div>
+            <div style="font-size: 28px; font-weight: 700; color: #1B1D1F;">3</div>
+            <div style="font-size: 12px; color: #9AA0A6;">คน</div>
+          </div>
+          <div class="card" style="padding: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"><span style="font-size: 13px; color: #5B6167; font-weight: 500;">ลา / ขาด</span><span style="width: 34px; height: 34px; border-radius: 10px; background: #FDECEC; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D93838" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg></span></div>
+            <div style="font-size: 28px; font-weight: 700; color: #1B1D1F;">5</div>
+            <div style="font-size: 12px; color: #9AA0A6;">ลา 4 · ขาด 1</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px;">
+          <!-- left column -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- chart -->
+            <div class="card" style="padding: 20px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="font-size: 15px; font-weight: 700; color: #1B1D1F;">การเข้างานรายสัปดาห์</div>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5B6167;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #06C755;"></span> เข้างาน (คน)</div>
+              </div>
+              <div style="display: flex; align-items: flex-end; gap: 22px; height: 168px; padding-left: 4px; border-bottom: 1px solid #ECEEF1;">
+                <sc-for list="{{week}}" as="d" hint-placeholder-count="5">
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+                    <div style="font-size: 12px; font-weight: 600; color: #5B6167; margin-bottom: 6px;">{{d.val}}</div>
+                    <div style="width: 100%; max-width: 46px; height: {{d.h}}; background: linear-gradient(180deg, #12D866, #06C755); border-radius: 8px 8px 0 0;"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: 22px; padding-left: 4px; margin-top: 8px;">
+                <sc-for list="{{week}}" as="d" hint-placeholder-count="5">
+                  <div style="flex: 1; text-align: center; font-size: 12px; color: #9AA0A6;">{{d.label}}</div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- recent table -->
+            <div class="card" style="padding: 20px;">
+              <div style="font-size: 15px; font-weight: 700; color: #1B1D1F; margin-bottom: 14px;">เข้างานล่าสุดวันนี้</div>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead><tr><th style="width: 40%;">พนักงาน</th><th>แผนก</th><th>เวลาเข้า</th><th style="text-align: right;">สถานะ</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{recent}}" as="r" hint-placeholder-count="5">
+                    <tr>
+                      <td><div style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: 9px; background: {{r.avBg}}; color: {{r.avColor}}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{r.initial}}</span><span style="font-size: 13px; font-weight: 600; color: #1B1D1F;">{{r.name}}</span></div></td>
+                      <td style="font-size: 13px; color: #5B6167;">{{r.dept}}</td>
+                      <td style="font-size: 13px; color: #1B1D1F; font-weight: 500;">{{r.time}}</td>
+                      <td style="text-align: right;"><span style="font-size: 11px; font-weight: 600; color: {{r.badgeColor}}; background: {{r.badgeBg}}; padding: 4px 10px; border-radius: 999px;">{{r.status}}</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- right column: pending approvals -->
+          <div class="card" style="padding: 20px; align-self: flex-start;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div style="font-size: 15px; font-weight: 700; color: #1B1D1F;">รออนุมัติการลา</div>
+              <span style="font-size: 12px; font-weight: 700; color: #C77700; background: #FEF3E2; padding: 3px 10px; border-radius: 999px;">{{pendingCount}} รายการ</span>
+            </div>
+
+            <sc-if value="{{hasPending}}" hint-placeholder-val="{{true}}">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{pendingPreview}}" as="p" hint-placeholder-count="3">
+                <div style="border: 1px solid #ECEEF1; border-radius: 14px; padding: 14px;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="width: 34px; height: 34px; border-radius: 10px; background: {{p.avBg}}; color: {{p.avColor}}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{p.initial}}</span>
+                    <div style="flex: 1;"><div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">{{p.name}}</div><div style="font-size: 11px; color: #9AA0A6;">{{p.typeLabel}} · {{p.days}}</div></div>
+                  </div>
+                  <div style="font-size: 12px; color: #5B6167; margin-bottom: 12px;">{{p.range}}</div>
+                  <div style="display: flex; gap: 8px;">
+                    <button onClick="{{p.approve}}" style="flex: 1; height: 36px; border: none; border-radius: 10px; background: #06C755; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">อนุมัติ</button>
+                    <button onClick="{{p.reject}}" style="flex: 1; height: 36px; border: 1px solid #FADBDB; border-radius: 10px; background: #fff; color: #D93838; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <button onClick="{{goApprove}}" style="width: 100%; margin-top: 14px; height: 40px; border: 1px solid #ECEEF1; border-radius: 12px; background: #fff; color: #1B1D1F; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ดูทั้งหมด</button>
+            </sc-if>
+            <sc-if value="{{noPending}}" hint-placeholder-val="{{false}}">
+              <div style="text-align: center; padding: 24px 0;">
+                <div style="width: 52px; height: 52px; border-radius: 50%; background: #E8F9EF; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                <div style="font-size: 13px; color: #5B6167;">ไม่มีคำขอค้างอนุมัติ</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ==== STAFF ==== -->
+      <sc-if value="{{isStaff}}" hint-placeholder-val="{{false}}">
+      <div class="card" style="padding: 20px;">
+        <div style="font-size: 15px; font-weight: 700; color: #1B1D1F; margin-bottom: 14px;">ไดเรกทอรีพนักงาน (48 คน)</div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead><tr><th style="width: 32%;">พนักงาน</th><th>แผนก</th><th>ตำแหน่ง</th><th>เข้างานเดือนนี้</th><th style="text-align: right;">สถานะวันนี้</th></tr></thead>
+          <tbody>
+            <sc-for list="{{staff}}" as="s" hint-placeholder-count="6">
+              <tr>
+                <td><div style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: 9px; background: {{s.avBg}}; color: {{s.avColor}}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{s.initial}}</span><div><div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">{{s.name}}</div><div style="font-size: 11px; color: #9AA0A6;">{{s.id}}</div></div></div></td>
+                <td style="font-size: 13px; color: #5B6167;">{{s.dept}}</td>
+                <td style="font-size: 13px; color: #5B6167;">{{s.role}}</td>
+                <td style="font-size: 13px; color: #1B1D1F; font-weight: 500;">{{s.rate}}</td>
+                <td style="text-align: right;"><span style="font-size: 11px; font-weight: 600; color: {{s.badgeColor}}; background: {{s.badgeBg}}; padding: 4px 10px; border-radius: 999px;">{{s.status}}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      </sc-if>
+
+      <!-- ==== APPROVALS ==== -->
+      <sc-if value="{{isApprove}}" hint-placeholder-val="{{false}}">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: #5B6167;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> เส้นทางอนุมัติ: <b style="color:#1B1D1F; font-weight:600;">หัวหน้างาน</b> → ฝ่ายบุคคล (รับทราบ)</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 20px;">
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #FEF3E2; color: #C77700; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{pendingCount}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">รออนุมัติ</span></div>
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #E8F9EF; color: #04933D; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{approvedCount}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">อนุมัติแล้ว</span></div>
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #FDECEC; color: #D93838; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{rejectedCount}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">ปฏิเสธ</span></div>
+        </div>
+
+        <div class="card" style="padding: 8px 20px;">
+          <sc-for list="{{approvals}}" as="a" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 16px 0; border-top: 1px solid #F2F3F5;">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: {{a.avBg}}; color: {{a.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{a.initial}}</span>
+              <div style="width: 190px; flex-shrink: 0;">
+                <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{a.name}}</div>
+                <div style="font-size: 12px; color: #9AA0A6;">{{a.dept}}</div>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+                  <span style="font-size: 11px; font-weight: 600; color: {{a.typeColor}}; background: {{a.typeBg}}; padding: 2px 9px; border-radius: 999px;">{{a.typeLabel}}</span>
+                  <span style="font-size: 13px; color: #1B1D1F; font-weight: 500;">{{a.range}}</span>
+                  <span style="font-size: 12px; color: #9AA0A6;">· {{a.days}}</span>
+                </div>
+                <div style="font-size: 12px; color: #5B6167;">เหตุผล: {{a.reason}}</div>
+              </div>
+              <div style="flex-shrink: 0;">
+                <sc-if value="{{a.isPending}}" hint-placeholder-val="{{true}}">
+                  <div style="display: flex; gap: 8px;">
+                    <button onClick="{{a.approve}}" style="height: 38px; padding: 0 18px; border: none; border-radius: 10px; background: #06C755; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">อนุมัติ</button>
+                    <button onClick="{{a.reject}}" style="height: 38px; padding: 0 18px; border: 1px solid #FADBDB; border-radius: 10px; background: #fff; color: #D93838; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{a.decided}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 13px; font-weight: 600; color: {{a.resultColor}}; background: {{a.resultBg}}; padding: 8px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">{{a.resultLabel}}</span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ==== HIRE APPROVAL ==== -->
+      <sc-if value="{{isHire}}" hint-placeholder-val="{{false}}">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: #5B6167;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> ผู้อนุมัติ: <b style="color:#1B1D1F; font-weight:600;">ฝ่ายบุคคล (HR)</b> · ตรวจสอบเอกสารและ PII ก่อนกำหนดวันเริ่มงาน · ข้อมูลเข้ารหัส</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 20px;">
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #EAF1FE; color: #1D6FE0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{hireCount}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">รออนุมัติ</span></div>
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #E8F9EF; color: #04933D; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{hireApproved}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">อนุมัติเริ่มงาน</span></div>
+          <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 12px;"><span style="width: 40px; height: 40px; border-radius: 11px; background: #FDECEC; color: #D93838; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{hireRejected}}</span><span style="font-size: 13px; color: #5B6167; font-weight: 500;">ปฏิเสธ</span></div>
+        </div>
+        <div class="card" style="padding: 8px 20px;">
+          <sc-for list="{{hireRequests}}" as="h" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 16px 0; border-top: 1px solid #F2F3F5;">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: {{h.avBg}}; color: {{h.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{h.initial}}</span>
+              <div style="width: 220px; flex-shrink: 0;">
+                <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{h.name}}</div>
+                <div style="font-size: 12px; color: #9AA0A6;">{{h.role}} · {{h.dept}}</div>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; color: #5B6167; margin-bottom: 3px;">ยื่นเมื่อ {{h.applied}}</div>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9AA0A6;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path></svg> {{h.docs}}</div>
+              </div>
+              <div style="flex-shrink: 0;">
+                <sc-if value="{{h.isPending}}" hint-placeholder-val="{{true}}">
+                  <div style="display: flex; gap: 8px;">
+                    <button onClick="{{h.approve}}" style="height: 38px; padding: 0 18px; border: none; border-radius: 10px; background: #06C755; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">อนุมัติ</button>
+                    <button onClick="{{h.reject}}" style="height: 38px; padding: 0 18px; border: 1px solid #FADBDB; border-radius: 10px; background: #fff; color: #D93838; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{h.decided}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 13px; font-weight: 600; color: {{h.resultColor}}; background: {{h.resultBg}}; padding: 8px 16px; border-radius: 10px;">{{h.resultLabel}}</span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ==== PAYROLL ==== -->
+      <sc-if value="{{isPayroll}}" hint-placeholder-val="{{false}}">
+      <div>
+        <div class="card" style="padding: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 20px;">
+          <div style="flex: 1;">
+            <div style="font-size: 15px; font-weight: 700; color: #1B1D1F;">งวดประจำเดือน สิงหาคม 2569</div>
+            <div style="font-size: 12px; color: #9AA0A6; margin-top: 2px;">ยอดจ่ายสุทธิรวม ฿183,600 · ส่งสลิปแล้ว {{sentCount}} / 4</div>
+          </div>
+          <sc-if value="{{notAllSent}}" hint-placeholder-val="{{true}}">
+            <button onClick="{{sendAll}}" style="height: 46px; padding: 0 22px; border: none; border-radius: 12px; background: #06C755; color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"></path></svg> ส่งสลิปทั้งหมด (PDF เข้ารหัส) ทาง LINE</button>
+          </sc-if>
+          <sc-if value="{{allSent}}" hint-placeholder-val="{{false}}">
+            <span style="height: 46px; padding: 0 22px; border-radius: 12px; background: #E8F9EF; color: #04933D; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> ส่งสลิปครบทุกคนแล้ว</span>
+          </sc-if>
+        </div>
+
+        <div class="card" style="padding: 8px 20px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead><tr><th style="width: 26%;">พนักงาน</th><th style="text-align:right;">ฐานเงินเดือน</th><th style="text-align:right;">ค่าตอบแทนอื่น</th><th style="text-align:right;">รายการหัก</th><th style="text-align:right;">สุทธิ</th><th style="text-align:right;">สลิป</th></tr></thead>
+            <tbody>
+              <sc-for list="{{payroll}}" as="p" hint-placeholder-count="4">
+                <tr>
+                  <td><div style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: 9px; background: {{p.avBg}}; color: {{p.avColor}}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{p.initial}}</span><div><div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">{{p.name}}</div><div style="font-size: 11px; color: #9AA0A6;">{{p.dept}}</div></div></div></td>
+                  <td style="text-align:right; font-size: 13px; color: #5B6167;">{{p.base}}</td>
+                  <td style="text-align:right; font-size: 13px; color: #04933D;">+{{p.extra}}</td>
+                  <td style="text-align:right; font-size: 13px; color: #D93838;">−{{p.deduct}}</td>
+                  <td style="text-align:right; font-size: 14px; color: #1B1D1F; font-weight: 700;">{{p.net}}</td>
+                  <td style="text-align:right;">
+                    <sc-if value="{{p.notSent}}" hint-placeholder-val="{{true}}">
+                      <button onClick="{{p.send}}" style="height: 32px; padding: 0 12px; border: 1px solid #06C755; border-radius: 9px; background: #fff; color: #04933D; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">ส่งสลิป</button>
+                    </sc-if>
+                    <sc-if value="{{p.sent}}" hint-placeholder-val="{{false}}">
+                      <span style="font-size: 11px; font-weight: 600; color: #04933D; background: #E8F9EF; padding: 5px 10px; border-radius: 999px;">✓ ส่งแล้ว</span>
+                    </sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-left: 4px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span style="font-size: 12px; color: #9AA0A6;">สลิปส่งเป็นไฟล์ PDF ที่เข้ารหัส เปิดด้วยรหัสผ่านส่วนตัวของพนักงาน (ไม่อิงข้อมูล PII — PDPA)</span>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const view = this.state?.view ?? 'dash';
+    const set = (v) => () => this.setState({ view: v });
+    const active = '#04933D', idle = '#5B6167';
+    const navBg = (v) => (view === v ? '#E8F9EF' : 'transparent');
+    const navFg = (v) => (view === v ? active : idle);
+
+    const avatars = {
+      green: { avBg: '#E8F9EF', avColor: '#04933D' },
+      blue: { avBg: '#EAF1FE', avColor: '#1D6FE0' },
+      amber: { avBg: '#FEF3E2', avColor: '#C77700' },
+      pink: { avBg: '#FDECEC', avColor: '#D93838' }
+    };
+    const ok = { badgeColor: '#04933D', badgeBg: '#E8F9EF', status: 'ปกติ' };
+    const late = { badgeColor: '#C77700', badgeBg: '#FEF3E2', status: 'มาสาย' };
+    const leaveB = { badgeColor: '#1D6FE0', badgeBg: '#EAF1FE', status: 'ลางาน' };
+
+    const week = [
+      { label: 'จ.', val: 45, h: '92%' },
+      { label: 'อ.', val: 44, h: '88%' },
+      { label: 'พ.', val: 46, h: '96%' },
+      { label: 'พฤ.', val: 42, h: '82%' },
+      { label: 'ศ.', val: 40, h: '76%' }
+    ];
+
+    const recent = [
+      { initial: 'ส', name: 'สมชาย ใจดี', dept: 'การตลาด', time: '08:32', ...avatars.green, ...ok },
+      { initial: 'ป', name: 'ปิยะ วงศ์ทอง', dept: 'บัญชี', time: '08:41', ...avatars.blue, ...ok },
+      { initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'ไอที', time: '09:12', ...avatars.amber, ...late },
+      { initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ขาย', time: '08:05', ...avatars.pink, ...ok },
+      { initial: 'อ', name: 'อรุณ พาสุข', dept: 'การตลาด', time: '09:07', ...avatars.green, ...late }
+    ];
+
+    const staff = [
+      { initial: 'ส', name: 'สมชาย ใจดี', id: 'EMP-10245', dept: 'การตลาดดิจิทัล', role: 'เจ้าหน้าที่การตลาด', rate: '19 / 21 วัน', ...avatars.green, ...ok },
+      { initial: 'ป', name: 'ปิยะ วงศ์ทอง', id: 'EMP-10188', dept: 'บัญชีและการเงิน', role: 'นักบัญชีอาวุโส', rate: '20 / 21 วัน', ...avatars.blue, ...ok },
+      { initial: 'ณ', name: 'ณัฐ ศรีสุข', id: 'EMP-10302', dept: 'เทคโนโลยีสารสนเทศ', role: 'วิศวกรซอฟต์แวร์', rate: '18 / 21 วัน', ...avatars.amber, ...late },
+      { initial: 'ม', name: 'มาลี ดวงแก้ว', id: 'EMP-10077', dept: 'ฝ่ายขาย', role: 'ผู้จัดการเขต', rate: '21 / 21 วัน', ...avatars.pink, ...ok },
+      { initial: 'อ', name: 'อรุณ พาสุข', id: 'EMP-10411', dept: 'การตลาดดิจิทัล', role: 'ครีเอทีฟ', rate: '17 / 21 วัน', ...avatars.green, ...late },
+      { initial: 'ก', name: 'กมล แสงเดือน', id: 'EMP-10009', dept: 'ทรัพยากรบุคคล', role: 'เจ้าหน้าที่ HR', rate: '16 / 21 วัน', ...avatars.blue, ...ok }
+    ];
+
+    const decisions = this.state?.decisions ?? {};
+    const leaveTypeStyle = {
+      sick: { typeLabel: 'ลาป่วย', typeColor: '#D93838', typeBg: '#FDECEC', ...avatars.pink },
+      personal: { typeLabel: 'ลากิจ', typeColor: '#1D6FE0', typeBg: '#EAF1FE', ...avatars.blue },
+      vacation: { typeLabel: 'พักร้อน', typeColor: '#04933D', typeBg: '#E8F9EF', ...avatars.green }
+    };
+    const reqDefs = [
+      { id: 'r1', initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'เทคโนโลยีสารสนเทศ', type: 'sick', range: '12 ก.ย. 2569', days: '1 วัน', reason: 'พบแพทย์ตามนัด' },
+      { id: 'r2', initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ฝ่ายขาย', type: 'vacation', range: '15–19 ก.ย. 2569', days: '5 วัน', reason: 'เดินทางต่างจังหวัดกับครอบครัว' },
+      { id: 'r3', initial: 'อ', name: 'อรุณ พาสุข', dept: 'การตลาดดิจิทัล', type: 'personal', range: '22 ก.ย. 2569', days: '1 วัน', reason: 'ติดต่อราชการ' },
+      { id: 'r4', initial: 'ก', name: 'กมล แสงเดือน', dept: 'ทรัพยากรบุคคล', type: 'sick', range: '10–11 ก.ย. 2569', days: '2 วัน', reason: 'ไข้หวัด พักฟื้น' }
+    ];
+    const decide = (id, v) => () => this.setState({ decisions: { ...decisions, [id]: v } });
+    const approvals = reqDefs.map((r) => {
+      const status = decisions[r.id] ?? 'pending';
+      const ts = leaveTypeStyle[r.type];
+      const decided = status !== 'pending';
+      return {
+        ...r, ...ts,
+        isPending: status === 'pending',
+        decided,
+        approve: decide(r.id, 'approved'),
+        reject: decide(r.id, 'rejected'),
+        resultLabel: status === 'approved' ? '✓ อนุมัติแล้ว' : '✕ ปฏิเสธ',
+        resultColor: status === 'approved' ? '#04933D' : '#D93838',
+        resultBg: status === 'approved' ? '#E8F9EF' : '#FDECEC'
+      };
+    });
+    const pending = approvals.filter((a) => a.isPending);
+    const pendingCount = pending.length;
+
+    const avPool = [avatars.blue, avatars.green, avatars.amber, avatars.pink];
+
+    // employment-start approval (HR)
+    const hireDecisions = this.state?.hireDecisions ?? {};
+    const hireDefs = [
+      { id: 'h1', initial: 'ส', name: 'สมหญิง รักงาน', role: 'พนักงานขาย', dept: 'ฝ่ายขาย', applied: '10 ก.ย. 2569', docs: 'เอกสารครบ' },
+      { id: 'h2', initial: 'ธ', name: 'ธนา มั่นคง', role: 'โปรแกรมเมอร์', dept: 'ไอที', applied: '11 ก.ย. 2569', docs: 'เอกสารครบ' },
+      { id: 'h3', initial: 'ว', name: 'วิภา สดใส', role: 'นักบัญชี', dept: 'บัญชี', applied: '12 ก.ย. 2569', docs: 'รอสำเนาวุฒิการศึกษา' }
+    ];
+    const hireDecide = (id, v) => () => this.setState({ hireDecisions: { ...hireDecisions, [id]: v } });
+    const hireRequests = hireDefs.map((h, i) => {
+      const st = hireDecisions[h.id] ?? 'pending';
+      const decided = st !== 'pending';
+      return { ...h, ...avPool[i % 4],
+        isPending: st === 'pending', decided,
+        approve: hireDecide(h.id, 'approved'), reject: hireDecide(h.id, 'rejected'),
+        resultLabel: st === 'approved' ? '✓ อนุมัติเริ่มงาน' : '✕ ปฏิเสธ',
+        resultColor: st === 'approved' ? '#04933D' : '#D93838',
+        resultBg: st === 'approved' ? '#E8F9EF' : '#FDECEC' };
+    });
+    const hireCount = hireRequests.filter((h) => h.isPending).length;
+
+    // payroll
+    const sentSlips = this.state?.sentSlips ?? {};
+    const payDefs = [
+      { id: 'ps1', initial: 'ส', name: 'สมชาย ใจดี', dept: 'การตลาด', base: '35,000', extra: '6,400', deduct: '3,700', net: '37,700' },
+      { id: 'ps2', initial: 'ป', name: 'ปิยะ วงศ์ทอง', dept: 'บัญชี', base: '42,000', extra: '3,000', deduct: '4,200', net: '40,800' },
+      { id: 'ps3', initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'ไอที', base: '48,000', extra: '5,500', deduct: '5,100', net: '48,400' },
+      { id: 'ps4', initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ขาย', base: '55,000', extra: '8,000', deduct: '6,300', net: '56,700' }
+    ];
+    const sendSlip = (id) => () => this.setState({ sentSlips: { ...sentSlips, [id]: true } });
+    const payroll = payDefs.map((p, i) => {
+      const s = !!sentSlips[p.id];
+      return { ...p, ...avPool[i % 4], sent: s, notSent: !s, send: sendSlip(p.id) };
+    });
+    const sentCount = payroll.filter((p) => p.sent).length;
+    const sendAll = () => { const all = {}; payDefs.forEach((p) => { all[p.id] = true; }); this.setState({ sentSlips: all }); };
+
+    const titles = { dash: 'ภาพรวมวันนี้', staff: 'พนักงาน', hire: 'อนุมัติเริ่มงาน', approve: 'อนุมัติการลา', payroll: 'เงินเดือน' };
+
+    return {
+      isDash: view === 'dash', isStaff: view === 'staff', isApprove: view === 'approve',
+      isHire: view === 'hire', isPayroll: view === 'payroll',
+      goDash: set('dash'), goStaff: set('staff'), goApprove: set('approve'), goHire: set('hire'), goPayroll: set('payroll'),
+      dashColor: navFg('dash'), dashBg: navBg('dash'),
+      staffColor: navFg('staff'), staffBg: navBg('staff'),
+      approveColor: navFg('approve'), approveBg: navBg('approve'),
+      hireColor: navFg('hire'), hireBg: navBg('hire'),
+      payrollColor: navFg('payroll'), payrollBg: navBg('payroll'),
+      pageTitle: titles[view] ?? 'ภาพรวมวันนี้',
+      week, recent, staff, approvals,
+      pendingPreview: pending.slice(0, 3),
+      pendingCount,
+      hasPending: pendingCount > 0,
+      noPending: pendingCount === 0,
+      approvedCount: approvals.filter((a) => (decisions[a.id] === 'approved')).length,
+      rejectedCount: approvals.filter((a) => (decisions[a.id] === 'rejected')).length,
+      hireRequests, hireCount, hasHire: hireCount > 0,
+      hireApproved: hireRequests.filter((h) => hireDecisions[h.id] === 'approved').length,
+      hireRejected: hireRequests.filter((h) => hireDecisions[h.id] === 'rejected').length,
+      payroll, sentCount, sendAll,
+      allSent: sentCount === payDefs.length,
+      notAllSent: sentCount < payDefs.length
+    };
+  }
+}
+</script>
+</body>
+</html>

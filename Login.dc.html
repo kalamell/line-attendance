@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #06C755; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+
+  <!-- decorative blobs -->
+  <div style="position: absolute; top: -120px; right: -90px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.10);"></div>
+  <div style="position: absolute; top: 60px; left: -110px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.08);"></div>
+  <div style="position: absolute; bottom: 300px; right: -60px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.07);"></div>
+
+  <!-- brand + hero -->
+  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 32px; position: relative; z-index: 1;">
+
+    <div style="width: 96px; height: 96px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 16px 40px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; margin-bottom: 28px;">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7v5l3.5 2"></path>
+      </svg>
+    </div>
+
+    <div style="font-size: 34px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.5px; margin-bottom: 8px;">TimeLine</div>
+    <div style="font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.92); text-align: center; line-height: 1.5;">ระบบลงเวลาเข้างานผ่าน LINE<br>สำหรับพนักงานทุกคน</div>
+
+    <div style="margin-top: 40px; display: flex; gap: 20px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 500;">เช็คอินเร็ว</div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 500;">ตรวจพิกัด</div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 52px; height: 52px; border-radius: 16px; background: rgba(255,255,255,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><rect x="7" y="10" width="3" height="7"></rect><rect x="14" y="6" width="3" height="11"></rect></svg>
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.9); font-weight: 500;">ดูสถิติ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sign-in sheet -->
+  <div style="background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 32px 28px 40px; position: relative; z-index: 1; box-shadow: 0 -8px 30px rgba(0,0,0,0.12);">
+    <div style="font-size: 20px; font-weight: 700; color: #1B1D1F; margin-bottom: 4px;">ยินดีต้อนรับ</div>
+    <div style="font-size: 14px; color: #5B6167; margin-bottom: 24px; line-height: 1.5;">เข้าสู่ระบบด้วยบัญชี LINE ของคุณเพื่อเริ่มลงเวลาทำงาน</div>
+
+    <sc-if value="{{idle}}" hint-placeholder-val="{{true}}">
+      <button onClick="{{onLogin}}" style="width: 100%; height: 54px; border: none; border-radius: 14px; background: #06C755; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 8px 20px rgba(6,199,85,0.32);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.55 7.39 8.35 8.03.32.07.77.21.88.49.1.25.06.64.03.9l-.14.85c-.04.25-.2.99.87.54 1.07-.45 5.76-3.39 7.86-5.81C21.28 13.5 22 11.9 22 10.13 22 5.64 17.52 2 12 2Z"></path></svg>
+        เข้าสู่ระบบด้วย LINE
+      </button>
+    </sc-if>
+    <sc-if value="{{loading}}" hint-placeholder-val="{{false}}">
+      <button disabled style="width: 100%; height: 54px; border: none; border-radius: 14px; background: #E8F9EF; color: #04933D; font-family: inherit; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span style="width: 20px; height: 20px; border: 2.5px solid rgba(4,147,61,0.25); border-top-color: #04933D; border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite;"></span>
+        กำลังเชื่อมต่อ LINE...
+      </button>
+    </sc-if>
+    <sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+      <div style="width: 100%; border-radius: 14px; background: #E8F9EF; border: 1px solid #C9F0DA; padding: 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="width: 36px; height: 36px; border-radius: 50%; background: #06C755; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+        </span>
+        <div>
+          <div style="font-size: 14px; font-weight: 700; color: #04933D;">เข้าสู่ระบบสำเร็จ</div>
+          <div style="font-size: 12px; color: #04933D; opacity: 0.85;">เปิดแอปหลักได้ที่จอถัดไป (Main)</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 20px; justify-content: center;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      <span style="font-size: 12px; color: #9AA0A6;">ข้อมูลของคุณปลอดภัยและเข้ารหัส</span>
+    </div>
+
+    <div style="font-size: 11px; color: #9AA0A6; text-align: center; margin-top: 14px; line-height: 1.6;">การเข้าสู่ระบบถือว่ายอมรับ <a href="#">ข้อกำหนดการใช้งาน</a><br>และ <a href="#">นโยบายความเป็นส่วนตัว</a></div>
+  </div>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const loading = this.state?.loading ?? false;
+    const done = this.state?.done ?? false;
+    return {
+      idle: !loading && !done,
+      loading: loading && !done,
+      done,
+      onLogin: () => {
+        this.setState({ loading: true });
+        setTimeout(() => this.setState({ done: true }), 1400);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

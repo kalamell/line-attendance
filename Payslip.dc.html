@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: none; }
+    .scy::-webkit-scrollbar { display: none; }
+    .key { border: none; background: #F5F6F8; border-radius: 14px; height: 56px; font-family: inherit; font-size: 22px; font-weight: 600; color: #1B1D1F; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .key:active { background: #E8F9EF; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F5F6F8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- ===== LOCK SCREEN ===== -->
+  <sc-if value="{{locked}}" hint-placeholder-val="{{true}}">
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 40px 28px 28px;">
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <div style="width: 72px; height: 72px; border-radius: 22px; background: #E8F9EF; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+      <div style="font-size: 19px; font-weight: 700; color: #1B1D1F; margin-bottom: 6px;">สลิปเงินเดือนถูกป้องกัน</div>
+      <div style="font-size: 13px; color: #5B6167; text-align: center; line-height: 1.5;">กรอกรหัส PIN ส่วนตัว 6 หลักที่คุณตั้งไว้<br>เพื่อเปิดดูสลิปเงินเดือน</div>
+
+      <div style="display: flex; gap: 14px; margin: 30px 0 10px;">
+        <sc-for list="{{dots}}" as="d" hint-placeholder-count="6">
+          <span style="width: 15px; height: 15px; border-radius: 50%; background: {{d.bg}}; border: 2px solid {{d.border}};"></span>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- keypad -->
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px;">
+      <sc-for list="{{keys}}" as="k" hint-placeholder-count="12">
+        <sc-if value="{{k.isDigit}}" hint-placeholder-val="{{true}}">
+          <button class="key" onClick="{{k.tap}}">{{k.label}}</button>
+        </sc-if>
+        <sc-if value="{{k.isBack}}" hint-placeholder-val="{{false}}">
+          <button class="key" onClick="{{k.tap}}" style="background: transparent;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path><path d="m18 9-6 6M12 9l6 6"></path></svg></button>
+        </sc-if>
+        <sc-if value="{{k.isBlank}}" hint-placeholder-val="{{false}}">
+          <span></span>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===== PAYSLIP ===== -->
+  <sc-if value="{{unlocked}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: linear-gradient(160deg, #06C755 0%, #04A548 100%); padding: 22px 20px 46px; color: #fff;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div style="font-size: 17px; font-weight: 700;">สลิปเงินเดือน</div>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 999px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> ปลดล็อกแล้ว</span>
+      </div>
+      <div style="font-size: 13px; opacity: 0.9;">งวดประจำเดือน สิงหาคม 2569</div>
+      <div style="font-size: 13px; opacity: 0.9;">สมชาย ใจดี · EMP-10245</div>
+    </div>
+
+    <div class="scy" style="flex: 1; padding: 0 16px 20px; margin-top: -32px;">
+      <div style="background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 8px 24px rgba(17,24,39,0.06);">
+        <!-- earnings -->
+        <div style="font-size: 13px; font-weight: 700; color: #04933D; margin-bottom: 12px;">รายได้</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">เงินเดือน</span><span style="color: #1B1D1F; font-weight: 500;">35,000.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">ค่าล่วงเวลา (OT)</span><span style="color: #1B1D1F; font-weight: 500;">2,400.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">ค่าตำแหน่ง</span><span style="color: #1B1D1F; font-weight: 500;">3,000.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">เบี้ยขยัน</span><span style="color: #1B1D1F; font-weight: 500;">1,000.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px; padding-top: 10px; border-top: 1px dashed #ECEEF1;"><span style="color: #1B1D1F; font-weight: 600;">รวมรายได้</span><span style="color: #04933D; font-weight: 700;">41,400.00</span></div>
+        </div>
+
+        <!-- deductions -->
+        <div style="font-size: 13px; font-weight: 700; color: #D93838; margin-bottom: 12px;">รายการหัก</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">ประกันสังคม</span><span style="color: #1B1D1F; font-weight: 500;">750.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">ภาษีหัก ณ ที่จ่าย</span><span style="color: #1B1D1F; font-weight: 500;">1,200.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="color: #5B6167;">กองทุนสำรองเลี้ยงชีพ</span><span style="color: #1B1D1F; font-weight: 500;">1,750.00</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 14px; padding-top: 10px; border-top: 1px dashed #ECEEF1;"><span style="color: #1B1D1F; font-weight: 600;">รวมรายการหัก</span><span style="color: #D93838; font-weight: 700;">3,700.00</span></div>
+        </div>
+
+        <!-- net -->
+        <div style="background: #E8F9EF; border-radius: 14px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 14px; font-weight: 600; color: #04933D;">เงินได้สุทธิ</span>
+          <span style="font-size: 24px; font-weight: 700; color: #04933D;">฿37,700.00</span>
+        </div>
+        <div style="font-size: 12px; color: #9AA0A6; margin-top: 12px; text-align: center;">โอนเข้าบัญชี ธ.กสิกรไทย xxx-x-x1245-x · 30 ส.ค. 2569</div>
+      </div>
+
+      <!-- send actions -->
+      <sc-if value="{{notSent}}" hint-placeholder-val="{{true}}">
+      <div style="margin-top: 16px;">
+        <button onClick="{{send}}" style="width: 100%; height: 52px; border: none; border-radius: 14px; background: #06C755; color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(6,199,85,0.30);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"></path></svg>
+          ส่งเป็น PDF (เข้ารหัส) ทาง LINE
+        </button>
+        <div style="display: flex; align-items: center; gap: 6px; justify-content: center; margin-top: 12px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span style="font-size: 11px; color: #9AA0A6;">ไฟล์ PDF จะถูกล็อกด้วยรหัสผ่านส่วนตัวของคุณ</span>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{sent}}" hint-placeholder-val="{{false}}">
+      <div style="margin-top: 16px; background: #E8F9EF; border: 1px solid #C9F0DA; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: #06C755; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+        <div><div style="font-size: 14px; font-weight: 700; color: #04933D;">ส่งสลิปทาง LINE แล้ว</div><div style="font-size: 12px; color: #04933D; opacity: 0.9;">ไฟล์ PDF เข้ารหัส · เปิดด้วยรหัสส่วนตัว</div></div>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pin = this.state?.pin ?? '';
+    const unlocked = this.state?.unlocked ?? false;
+    const sent = this.state?.sent ?? false;
+
+    const dots = [0, 1, 2, 3, 4, 5].map((i) => {
+      const filled = i < pin.length;
+      return { bg: filled ? '#06C755' : 'transparent', border: filled ? '#06C755' : '#C4C9CE' };
+    });
+
+    const tapDigit = (dgt) => () => {
+      const cur = this.state?.pin ?? '';
+      if (cur.length >= 6) return;
+      const np = cur + dgt;
+      if (np.length >= 6) this.setState({ pin: np, unlocked: true });
+      else this.setState({ pin: np });
+    };
+    const back = () => {
+      const cur = this.state?.pin ?? '';
+      this.setState({ pin: cur.slice(0, -1) });
+    };
+    const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const keys = digits.map((d) => ({ label: d, isDigit: true, isBack: false, isBlank: false, tap: tapDigit(d) }));
+    keys.push({ label: '', isDigit: false, isBack: false, isBlank: true, tap: () => {} });
+    keys.push({ label: '0', isDigit: true, isBack: false, isBlank: false, tap: tapDigit('0') });
+    keys.push({ label: '', isDigit: false, isBack: true, isBlank: false, tap: back });
+
+    return {
+      locked: !unlocked,
+      unlocked,
+      dots,
+      keys,
+      send: () => this.setState({ sent: true }),
+      sent,
+      notSent: !sent
+    };
+  }
+}
+</script>
+</body>
+</html>

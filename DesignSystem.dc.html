@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .sec-title { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #9AA0A6; margin: 0 0 16px; }
+    .card { background: #FFFFFF; border: 1px solid #ECEEF1; border-radius: 18px; padding: 24px; }
+    .swatch { border-radius: 14px; height: 76px; display: flex; align-items: flex-end; padding: 10px; }
+    .swname { font-size: 12px; font-weight: 600; }
+    .swhex { font-size: 11px; opacity: 0.85; }
+  </style>
+</helmet>
+
+<div style="width: 960px; background: #F5F6F8; padding: 40px 44px 48px;">
+
+  <!-- header -->
+  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 36px;">
+    <div style="width: 60px; height: 60px; border-radius: 18px; background: #06C755; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(6,199,85,0.30);">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+    </div>
+    <div>
+      <div style="font-size: 28px; font-weight: 700; color: #1B1D1F; letter-spacing: -0.5px;">TimeLine — Design System</div>
+      <div style="font-size: 14px; color: #5B6167;">ระบบลงเวลาเข้างานผ่าน LINE LIFF · ระบบดีไซน์สำหรับมือถือ</div>
+    </div>
+  </div>
+
+  <!-- COLORS -->
+  <div class="card" style="margin-bottom: 24px;">
+    <p class="sec-title">สี · Color</p>
+
+    <div style="font-size: 13px; font-weight: 600; color: #5B6167; margin-bottom: 12px;">Brand</div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 26px;">
+      <div class="swatch" style="background: #06C755;"><div><div class="swname" style="color:#fff;">LINE Green</div><div class="swhex" style="color:#fff;">#06C755</div></div></div>
+      <div class="swatch" style="background: #04933D;"><div><div class="swname" style="color:#fff;">Green 700</div><div class="swhex" style="color:#fff;">#04933D</div></div></div>
+      <div class="swatch" style="background: #E8F9EF; border: 1px solid #C9F0DA;"><div><div class="swname" style="color:#04933D;">Green Tint</div><div class="swhex" style="color:#04933D;">#E8F9EF</div></div></div>
+      <div class="swatch" style="background: #12D866;"><div><div class="swname" style="color:#fff;">Green Light</div><div class="swhex" style="color:#fff;">#12D866</div></div></div>
+    </div>
+
+    <div style="font-size: 13px; font-weight: 600; color: #5B6167; margin-bottom: 12px;">Neutral</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; margin-bottom: 26px;">
+      <div class="swatch" style="background: #1B1D1F;"><div><div class="swname" style="color:#fff;">Ink</div><div class="swhex" style="color:#fff;">#1B1D1F</div></div></div>
+      <div class="swatch" style="background: #5B6167;"><div><div class="swname" style="color:#fff;">Ink 2</div><div class="swhex" style="color:#fff;">#5B6167</div></div></div>
+      <div class="swatch" style="background: #9AA0A6;"><div><div class="swname" style="color:#fff;">Ink 3</div><div class="swhex" style="color:#fff;">#9AA0A6</div></div></div>
+      <div class="swatch" style="background: #ECEEF1;"><div><div class="swname" style="color:#5B6167;">Line</div><div class="swhex" style="color:#5B6167;">#ECEEF1</div></div></div>
+      <div class="swatch" style="background: #F5F6F8; border: 1px solid #ECEEF1;"><div><div class="swname" style="color:#5B6167;">Background</div><div class="swhex" style="color:#5B6167;">#F5F6F8</div></div></div>
+      <div class="swatch" style="background: #FFFFFF; border: 1px solid #ECEEF1;"><div><div class="swname" style="color:#5B6167;">Surface</div><div class="swhex" style="color:#5B6167;">#FFFFFF</div></div></div>
+    </div>
+
+    <div style="font-size: 13px; font-weight: 600; color: #5B6167; margin-bottom: 12px;">Semantic</div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px;">
+      <div class="swatch" style="background: #06C755;"><div><div class="swname" style="color:#fff;">Success / ปกติ</div><div class="swhex" style="color:#fff;">#06C755</div></div></div>
+      <div class="swatch" style="background: #F59E0B;"><div><div class="swname" style="color:#fff;">Warning / สาย</div><div class="swhex" style="color:#fff;">#F59E0B</div></div></div>
+      <div class="swatch" style="background: #D93838;"><div><div class="swname" style="color:#fff;">Danger / ขาด</div><div class="swhex" style="color:#fff;">#D93838</div></div></div>
+      <div class="swatch" style="background: #1D6FE0;"><div><div class="swname" style="color:#fff;">Info / ลา</div><div class="swhex" style="color:#fff;">#1D6FE0</div></div></div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY + others row -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div class="card">
+      <p class="sec-title">ตัวอักษร · Typography</p>
+      <div style="font-size: 13px; color: #9AA0A6; margin-bottom: 18px;">IBM Plex Sans Thai · fallback: Noto Sans Thai</div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="width: 96px; font-size: 11px; color:#9AA0A6;">Display · 32/700</span><span style="font-size: 32px; font-weight: 700; color:#1B1D1F;">เข้างานตรงเวลา</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="width: 96px; font-size: 11px; color:#9AA0A6;">Title · 20/700</span><span style="font-size: 20px; font-weight: 700; color:#1B1D1F;">ประวัติการเข้างาน</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="width: 96px; font-size: 11px; color:#9AA0A6;">Body · 14/400</span><span style="font-size: 14px; font-weight: 400; color:#1B1D1F;">รายละเอียดการลงเวลาของพนักงาน</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="width: 96px; font-size: 11px; color:#9AA0A6;">Caption · 12/500</span><span style="font-size: 12px; font-weight: 500; color:#5B6167;">อยู่ในพื้นที่ทำงาน</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="width: 96px; font-size: 11px; color:#9AA0A6;">Mono · 40/700</span><span style="font-size: 40px; font-weight: 700; color:#1B1D1F; font-variant-numeric: tabular-nums;">08:32</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="sec-title">ป้ายสถานะ · Status Badge</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px;">
+        <span style="font-size: 12px; font-weight: 600; color: #04933D; background: #E8F9EF; padding: 6px 14px; border-radius: 999px;">● ปกติ</span>
+        <span style="font-size: 12px; font-weight: 600; color: #C77700; background: #FEF3E2; padding: 6px 14px; border-radius: 999px;">● มาสาย</span>
+        <span style="font-size: 12px; font-weight: 600; color: #D93838; background: #FDECEC; padding: 6px 14px; border-radius: 999px;">● ขาดงาน</span>
+        <span style="font-size: 12px; font-weight: 600; color: #1D6FE0; background: #EAF1FE; padding: 6px 14px; border-radius: 999px;">● ลางาน</span>
+      </div>
+      <p class="sec-title">มุมโค้ง & เงา · Radius / Shadow</p>
+      <div style="display: flex; gap: 14px; align-items: flex-end;">
+        <div style="text-align:center;"><div style="width: 64px; height: 64px; background:#fff; border:1px solid #ECEEF1; border-radius: 12px;"></div><div style="font-size:11px; color:#9AA0A6; margin-top:6px;">12px</div></div>
+        <div style="text-align:center;"><div style="width: 64px; height: 64px; background:#fff; border:1px solid #ECEEF1; border-radius: 18px;"></div><div style="font-size:11px; color:#9AA0A6; margin-top:6px;">18px card</div></div>
+        <div style="text-align:center;"><div style="width: 64px; height: 64px; background:#fff; border-radius: 20px; box-shadow: 0 8px 24px rgba(17,24,39,0.10);"></div><div style="font-size:11px; color:#9AA0A6; margin-top:6px;">elevated</div></div>
+        <div style="text-align:center;"><div style="width: 64px; height: 64px; background:#06C755; border-radius: 50%; box-shadow: 0 10px 24px rgba(6,199,85,0.40);"></div><div style="font-size:11px; color:#9AA0A6; margin-top:6px;">FAB</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPONENTS -->
+  <div class="card" style="margin-bottom: 24px;">
+    <p class="sec-title">ปุ่ม · Buttons</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 22px;">
+      <button style="height: 48px; padding: 0 26px; border: none; border-radius: 12px; background: #06C755; color:#fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor:pointer; box-shadow: 0 8px 18px rgba(6,199,85,0.28);">Primary</button>
+      <button style="height: 48px; padding: 0 26px; border: none; border-radius: 12px; background: #E8F9EF; color:#04933D; font-family: inherit; font-size: 15px; font-weight: 600; cursor:pointer;">Secondary</button>
+      <button style="height: 48px; padding: 0 26px; border: 1.5px solid #ECEEF1; border-radius: 12px; background: #fff; color:#1B1D1F; font-family: inherit; font-size: 15px; font-weight: 600; cursor:pointer;">Outline</button>
+      <button style="height: 48px; padding: 0 26px; border: none; border-radius: 12px; background: #EEF0F3; color:#9AA0A6; font-family: inherit; font-size: 15px; font-weight: 600;">Disabled</button>
+      <button style="height: 48px; padding: 0 26px; border: 1px solid #FADBDB; border-radius: 12px; background: #fff; color:#D93838; font-family: inherit; font-size: 15px; font-weight: 600; cursor:pointer;">Danger</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color:#5B6167; margin-bottom: 10px;">Input</div>
+        <div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 12px 14px;">
+          <div style="font-size: 11px; color:#9AA0A6;">อีเมล</div>
+          <div style="font-size: 14px; font-weight: 500; color:#1B1D1F;">somchai.j@company.co.th</div>
+        </div>
+        <div style="background: #fff; border: 1.5px solid #06C755; border-radius: 12px; padding: 12px 14px; margin-top: 10px; box-shadow: 0 0 0 3px rgba(6,199,85,0.12);">
+          <div style="font-size: 11px; color:#04933D;">เหตุผล (focus)</div>
+          <div style="font-size: 14px; font-weight: 500; color:#1B1D1F;">พบแพทย์ตามนัด</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color:#5B6167; margin-bottom: 10px;">Toggle / Chip</div>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom: 14px;">
+          <span style="width: 44px; height: 26px; border-radius: 999px; background: #06C755; position: relative; display:inline-block;"><span style="position:absolute; top:2px; right:2px; width:22px; height:22px; border-radius:50%; background:#fff;"></span></span>
+          <span style="width: 44px; height: 26px; border-radius: 999px; background: #D7DBDF; position: relative; display:inline-block;"><span style="position:absolute; top:2px; left:2px; width:22px; height:22px; border-radius:50%; background:#fff;"></span></span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:13px; font-weight:600; color:#04933D; background:#E8F9EF; border:1.5px solid #06C755; padding:8px 14px; border-radius:12px;">เลือกอยู่</span>
+          <span style="font-size:13px; font-weight:600; color:#5B6167; background:#fff; border:1.5px solid #ECEEF1; padding:8px 14px; border-radius:12px;">ปกติ</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color:#5B6167; margin-bottom: 10px;">Bottom Nav</div>
+        <div style="background:#fff; border:1px solid #ECEEF1; border-radius:14px; padding:8px 6px; display:flex;">
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg><span style="font-size:10px; font-weight:600; color:#06C755;">หน้าหลัก</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l4 2"></path></svg><span style="font-size:10px; font-weight:600; color:#9AA0A6;">ประวัติ</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path></svg><span style="font-size:10px; font-weight:600; color:#9AA0A6;">โปรไฟล์</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ICONS -->
+  <div class="card">
+    <p class="sec-title">ไอคอน · Iconography (stroke 2px · 24px grid)</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 26px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><rect x="7" y="10" width="3" height="7"></rect><rect x="14" y="6" width="3" height="11"></rect></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>

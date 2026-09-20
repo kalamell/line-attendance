@@ -1,0 +1,543 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: none; }
+    .scy::-webkit-scrollbar { display: none; }
+    .navbtn { background: none; border: none; font-family: inherit; cursor: pointer; padding: 6px 4px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; position: relative; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F5F6F8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- ==== DASHBOARD ==== -->
+  <sc-if value="{{isDash}}" hint-placeholder-val="{{true}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: linear-gradient(160deg, #06C755 0%, #04A548 100%); padding: 24px 20px 52px; color: #fff;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; border-radius: 14px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;">ก</div>
+          <div>
+            <div style="font-size: 13px; opacity: 0.9;">คอนโซล HR · {{greeting}}</div>
+            <div style="font-size: 17px; font-weight: 600;">กัลยา ผู้จัดการ</div>
+          </div>
+        </div>
+        <div style="position: relative; width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span style="position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #FF4D4F; border: 2px solid #fff;"></span>
+        </div>
+      </div>
+      <div style="font-size: 12px; opacity: 0.9; margin-top: 14px;">ภาพรวมวันศุกร์ที่ 11 กันยายน 2569</div>
+    </div>
+
+    <div class="scy" style="flex: 1; padding: 0 16px 20px; margin-top: -36px;">
+      <!-- stat grid -->
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px;">
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(17,24,39,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #EAF1FE; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1D6FE0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></span><span style="font-size: 12px; color: #5B6167;">พนักงานทั้งหมด</span></div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">48<span style="font-size: 12px; font-weight: 500; color: #9AA0A6;"> คน</span></div>
+        </div>
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(17,24,39,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #E8F9EF; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="font-size: 12px; color: #5B6167;">เข้างานแล้ว</span></div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">40<span style="font-size: 12px; font-weight: 500; color: #04933D;"> · 83%</span></div>
+        </div>
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(17,24,39,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #FEF3E2; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C77700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span style="font-size: 12px; color: #5B6167;">มาสายวันนี้</span></div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">3<span style="font-size: 12px; font-weight: 500; color: #9AA0A6;"> คน</span></div>
+        </div>
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(17,24,39,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #FDECEC; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D93838" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect></svg></span><span style="font-size: 12px; color: #5B6167;">ลา / ขาด</span></div>
+          <div style="font-size: 24px; font-weight: 700; color: #1B1D1F;">5<span style="font-size: 12px; font-weight: 500; color: #9AA0A6;"> คน</span></div>
+        </div>
+      </div>
+
+      <!-- mini chart -->
+      <div style="background: #fff; border-radius: 16px; padding: 18px; margin-top: 14px;">
+        <div style="font-size: 14px; font-weight: 700; color: #1B1D1F; margin-bottom: 16px;">การเข้างานรายสัปดาห์</div>
+        <div style="display: flex; align-items: flex-end; gap: 12px; height: 110px; border-bottom: 1px solid #ECEEF1;">
+          <sc-for list="{{week}}" as="d" hint-placeholder-count="5">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+              <div style="font-size: 11px; font-weight: 600; color: #5B6167; margin-bottom: 5px;">{{d.val}}</div>
+              <div style="width: 100%; max-width: 34px; height: {{d.h}}; background: linear-gradient(180deg, #12D866, #06C755); border-radius: 7px 7px 0 0;"></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 8px;">
+          <sc-for list="{{week}}" as="d" hint-placeholder-count="5">
+            <div style="flex: 1; text-align: center; font-size: 11px; color: #9AA0A6;">{{d.label}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- pending approvals -->
+      <div style="background: #fff; border-radius: 16px; padding: 18px; margin-top: 14px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <div style="font-size: 14px; font-weight: 700; color: #1B1D1F;">รออนุมัติการลา</div>
+          <span style="font-size: 11px; font-weight: 700; color: #C77700; background: #FEF3E2; padding: 3px 10px; border-radius: 999px;">{{pendingCount}} รายการ</span>
+        </div>
+        <sc-if value="{{hasPending}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{pendingPreview}}" as="p" hint-placeholder-count="2">
+            <div style="border: 1px solid #ECEEF1; border-radius: 14px; padding: 13px;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="width: 34px; height: 34px; border-radius: 10px; background: {{p.avBg}}; color: {{p.avColor}}; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{p.initial}}</span>
+                <div style="flex: 1;"><div style="font-size: 13px; font-weight: 600; color: #1B1D1F;">{{p.name}}</div><div style="font-size: 11px; color: #9AA0A6;">{{p.typeLabel}} · {{p.range}} · {{p.days}}</div></div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button onClick="{{p.approve}}" style="flex: 1; height: 38px; border: none; border-radius: 10px; background: #06C755; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">อนุมัติ</button>
+                <button onClick="{{p.reject}}" style="flex: 1; height: 38px; border: 1px solid #FADBDB; border-radius: 10px; background: #fff; color: #D93838; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <button onClick="{{goApprove}}" style="width: 100%; margin-top: 12px; height: 40px; border: 1px solid #ECEEF1; border-radius: 12px; background: #fff; color: #1B1D1F; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">ดูทั้งหมด</button>
+        </sc-if>
+        <sc-if value="{{noPending}}" hint-placeholder-val="{{false}}">
+          <div style="text-align: center; padding: 16px 0;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #E8F9EF; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>
+            <div style="font-size: 13px; color: #5B6167;">ไม่มีคำขอค้างอนุมัติ</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ==== STAFF ==== -->
+  <sc-if value="{{isStaff}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: #fff; padding: 20px 20px 14px; border-bottom: 1px solid #ECEEF1;">
+      <div style="font-size: 20px; font-weight: 700; color: #1B1D1F; margin-bottom: 14px;">พนักงาน (48 คน)</div>
+      <div style="display: flex; align-items: center; gap: 8px; background: #F5F6F8; border-radius: 12px; padding: 11px 14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <span style="font-size: 13px; color: #9AA0A6;">ค้นหาชื่อหรือแผนก...</span>
+      </div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{staff}}" as="s" hint-placeholder-count="6">
+          <div style="background: #fff; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <span style="width: 42px; height: 42px; border-radius: 12px; background: {{s.avBg}}; color: {{s.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{s.initial}}</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{s.name}}</div>
+              <div style="font-size: 12px; color: #9AA0A6;">{{s.role}} · {{s.dept}}</div>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: {{s.badgeColor}}; background: {{s.badgeBg}}; padding: 4px 10px; border-radius: 999px; flex-shrink: 0;">{{s.status}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ==== APPROVALS (การลา + เริ่มงาน) ==== -->
+  <sc-if value="{{isApprove}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: #fff; padding: 20px 20px 14px; border-bottom: 1px solid #ECEEF1;">
+      <div style="font-size: 20px; font-weight: 700; color: #1B1D1F; margin-bottom: 14px;">อนุมัติ</div>
+      <div style="display: flex; background: #F5F6F8; border-radius: 12px; padding: 4px; margin-bottom: 12px;">
+        <button onClick="{{setLeaveTab}}" style="flex: 1; height: 38px; border: none; border-radius: 9px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: {{leaveTabBg}}; color: {{leaveTabColor}}; box-shadow: {{leaveTabShadow}};">การลา ({{pendingCount}})</button>
+        <button onClick="{{setHireTab}}" style="flex: 1; height: 38px; border: none; border-radius: 9px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: {{hireTabBg}}; color: {{hireTabColor}}; box-shadow: {{hireTabShadow}};">เริ่มงาน ({{hireCount}})</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9AA0A6;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        {{approveRole}}
+      </div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 16px;">
+      <sc-if value="{{isLeaveTab}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{approvals}}" as="a" hint-placeholder-count="4">
+          <div style="background: #fff; border-radius: 16px; padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: {{a.avBg}}; color: {{a.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{a.initial}}</span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{a.name}}</div>
+                <div style="font-size: 12px; color: #9AA0A6;">{{a.dept}}</div>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: {{a.typeColor}}; background: {{a.typeBg}}; padding: 3px 10px; border-radius: 999px; flex-shrink: 0;">{{a.typeLabel}}</span>
+            </div>
+            <div style="background: #F7F8FA; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1B1D1F; font-weight: 500; margin-bottom: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+                {{a.range}} <span style="color: #9AA0A6; font-weight: 400;">· {{a.days}}</span>
+              </div>
+              <div style="font-size: 12px; color: #5B6167;">เหตุผล: {{a.reason}}</div>
+            </div>
+            <sc-if value="{{a.isPending}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; gap: 10px;">
+                <button onClick="{{a.approve}}" style="flex: 1; height: 44px; border: none; border-radius: 12px; background: #06C755; color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">อนุมัติ</button>
+                <button onClick="{{a.reject}}" style="flex: 1; height: 44px; border: 1px solid #FADBDB; border-radius: 12px; background: #fff; color: #D93838; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{a.decided}}" hint-placeholder-val="{{false}}">
+              <div style="height: 44px; border-radius: 12px; background: {{a.resultBg}}; color: {{a.resultColor}}; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">{{a.resultLabel}}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{isHireTab}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{hireRequests}}" as="h" hint-placeholder-count="3">
+          <div style="background: #fff; border-radius: 16px; padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: {{h.avBg}}; color: {{h.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{h.initial}}</span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{h.name}}</div>
+                <div style="font-size: 12px; color: #9AA0A6;">{{h.role}} · {{h.dept}}</div>
+              </div>
+            </div>
+            <div style="background: #F7F8FA; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+              <div style="font-size: 13px; color: #1B1D1F; font-weight: 500; margin-bottom: 4px;">ยื่นเมื่อ {{h.applied}}</div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5B6167;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path></svg> {{h.docs}}</div>
+            </div>
+            <sc-if value="{{h.isPending}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; gap: 10px;">
+                <button onClick="{{h.approve}}" style="flex: 1; height: 44px; border: none; border-radius: 12px; background: #06C755; color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">อนุมัติเริ่มงาน</button>
+                <button onClick="{{h.reject}}" style="flex: 1; height: 44px; border: 1px solid #FADBDB; border-radius: 12px; background: #fff; color: #D93838; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">ปฏิเสธ</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{h.decided}}" hint-placeholder-val="{{false}}">
+              <div style="height: 44px; border-radius: 12px; background: {{h.resultBg}}; color: {{h.resultColor}}; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{h.resultLabel}}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ==== PAYROLL ==== -->
+  <sc-if value="{{isPayroll}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: #fff; padding: 20px 20px 16px; border-bottom: 1px solid #ECEEF1;">
+      <div style="font-size: 20px; font-weight: 700; color: #1B1D1F;">เงินเดือน</div>
+      <div style="font-size: 12px; color: #9AA0A6; margin-top: 2px;">งวด สิงหาคม 2569 · สุทธิรวม ฿183,600</div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px;">
+        <span style="flex: 1; font-size: 13px; color: #5B6167;">ส่งสลิปแล้ว {{sentCount}} / 4</span>
+        <sc-if value="{{notAllSent}}" hint-placeholder-val="{{true}}">
+          <button onClick="{{sendAll}}" style="height: 40px; padding: 0 16px; border: none; border-radius: 11px; background: #06C755; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"></path></svg> ส่งทั้งหมด</button>
+        </sc-if>
+        <sc-if value="{{allSent}}" hint-placeholder-val="{{false}}">
+          <span style="font-size: 12px; font-weight: 600; color: #04933D; background: #E8F9EF; padding: 8px 14px; border-radius: 999px;">✓ ส่งครบแล้ว</span>
+        </sc-if>
+      </div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{payroll}}" as="p" hint-placeholder-count="4">
+          <div style="background: #fff; border-radius: 16px; padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="width: 42px; height: 42px; border-radius: 12px; background: {{p.avBg}}; color: {{p.avColor}}; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{p.initial}}</span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 14px; font-weight: 600; color: #1B1D1F;">{{p.name}}</div>
+                <div style="font-size: 12px; color: #9AA0A6;">{{p.dept}}</div>
+              </div>
+              <div style="text-align: right;"><div style="font-size: 11px; color: #9AA0A6;">สุทธิ</div><div style="font-size: 16px; font-weight: 700; color: #1B1D1F;">{{p.net}}</div></div>
+            </div>
+            <div style="display: flex; gap: 8px; background: #F7F8FA; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px;">
+              <span style="flex: 1; color: #5B6167;">ฐาน {{p.base}}</span>
+              <span style="color: #04933D;">+{{p.extra}}</span>
+              <span style="color: #D93838;">−{{p.deduct}}</span>
+            </div>
+            <sc-if value="{{p.notSent}}" hint-placeholder-val="{{true}}">
+              <button onClick="{{p.send}}" style="width: 100%; height: 44px; border: 1px solid #06C755; border-radius: 12px; background: #fff; color: #04933D; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"></path></svg> ส่งสลิป (PDF เข้ารหัส) ทาง LINE</button>
+            </sc-if>
+            <sc-if value="{{p.sent}}" hint-placeholder-val="{{false}}">
+              <div style="height: 44px; border-radius: 12px; background: #E8F9EF; color: #04933D; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> ส่งสลิปทาง LINE แล้ว</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-left: 4px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span style="font-size: 11px; color: #9AA0A6;">PDF เข้ารหัส เปิดด้วยรหัสผ่านส่วนตัวของพนักงาน (PDPA)</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ==== PROFILE / SETTINGS ==== -->
+  <sc-if value="{{isProfile}}" hint-placeholder-val="{{false}}">
+  <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+    <div style="background: linear-gradient(160deg, #06C755 0%, #04A548 100%); padding: 26px 20px 56px; color: #fff; text-align: center;">
+      <div style="width: 80px; height: 80px; border-radius: 24px; background: rgba(255,255,255,0.22); display: inline-flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; margin-bottom: 12px;">ก</div>
+      <div style="font-size: 20px; font-weight: 700;">กัลยา ผู้จัดการ</div>
+      <div style="font-size: 13px; opacity: 0.9; margin-top: 2px;">ผู้ดูแลระบบ HR · EMP-10001</div>
+    </div>
+    <div class="scy" style="flex: 1; padding: 0 16px 20px; margin-top: -40px;">
+
+      <!-- contact info -->
+      <div style="background: #fff; border-radius: 18px; box-shadow: 0 8px 24px rgba(17,24,39,0.06); overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">แผนก</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">ทรัพยากรบุคคล</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">อีเมล</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">kanlaya.hr@company.co.th</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.9.36 1.79.7 2.63a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.45-1.27a2 2 0 0 1 2.11-.45c.84.34 1.73.57 2.63.7A2 2 0 0 1 22 16.92Z"></path></svg>
+          <div style="flex: 1;"><div style="font-size: 11px; color: #9AA0A6;">เบอร์โทร</div><div style="font-size: 14px; font-weight: 500; color: #1B1D1F;">08x-xxx-xx01</div></div>
+        </div>
+      </div>
+
+      <!-- notification / approval settings (toggles) -->
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #9AA0A6; margin: 20px 4px 10px;">การแจ้งเตือนและการอนุมัติ</div>
+      <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+        <button onClick="{{notifyLeave.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5; cursor: pointer; text-align: left;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">แจ้งเตือนเมื่อมีคำขอลาใหม่</span>
+          <span style="width: 44px; height: 26px; border-radius: 999px; background: {{notifyLeave.trackBg}}; position: relative; display: inline-block; flex-shrink: 0;"><span style="position: absolute; top: 2px; left: {{notifyLeave.knobLeft}}; right: {{notifyLeave.knobRight}}; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+        </button>
+        <button onClick="{{autoApprove.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5; cursor: pointer; text-align: left;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          <span style="flex: 1;"><span style="font-size: 14px; color: #1B1D1F; display: block;">อนุมัติลาป่วยอัตโนมัติ</span><span style="font-size: 11px; color: #9AA0A6;">สำหรับลาป่วยไม่เกิน 1 วัน</span></span>
+          <span style="width: 44px; height: 26px; border-radius: 999px; background: {{autoApprove.trackBg}}; position: relative; display: inline-block; flex-shrink: 0;"><span style="position: absolute; top: 2px; left: {{autoApprove.knobLeft}}; right: {{autoApprove.knobRight}}; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+        </button>
+        <button onClick="{{notifyLate.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 12px; padding: 15px 16px; cursor: pointer; text-align: left;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">แจ้งเตือนพนักงานมาสาย</span>
+          <span style="width: 44px; height: 26px; border-radius: 999px; background: {{notifyLate.trackBg}}; position: relative; display: inline-block; flex-shrink: 0;"><span style="position: absolute; top: 2px; left: {{notifyLate.knobLeft}}; right: {{notifyLate.knobRight}}; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+        </button>
+      </div>
+
+      <!-- org settings (navigable rows) -->
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #9AA0A6; margin: 20px 4px 10px;">ตั้งค่าองค์กร</div>
+      <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">เวลาทำงาน / กะงาน</span>
+          <span style="font-size: 13px; color: #9AA0A6;">08:30–17:30 ›</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">พิกัดสำนักงาน</span>
+          <span style="font-size: 13px; color: #9AA0A6;">2 แห่ง ›</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">วันหยุดบริษัท</span>
+          <span style="font-size: 13px; color: #9AA0A6;">ปี 2569 ›</span>
+        </div>
+      </div>
+
+      <!-- general -->
+      <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #9AA0A6; margin: 20px 4px 10px;">ทั่วไป</div>
+      <div style="background: #fff; border-radius: 18px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-bottom: 1px solid #F2F3F5;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">ภาษา</span>
+          <span style="font-size: 13px; color: #9AA0A6;">ไทย ›</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 15px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+          <span style="flex: 1; font-size: 14px; color: #1B1D1F;">ช่วยเหลือ</span>
+          <span style="font-size: 13px; color: #9AA0A6;">›</span>
+        </div>
+      </div>
+
+      <button style="width: 100%; height: 50px; margin-top: 16px; border: 1px solid #FADBDB; border-radius: 14px; background: #fff; color: #D93838; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;">ออกจากระบบ</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ==== BOTTOM NAV ==== -->
+  <div style="background: #fff; border-top: 1px solid #ECEEF1; padding: 6px 8px 10px; display: flex;">
+    <button class="navbtn" onClick="{{goDash}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{dashColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{dashColor}};">แดชบอร์ด</span>
+    </button>
+    <button class="navbtn" onClick="{{goStaff}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{staffColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{staffColor}};">พนักงาน</span>
+    </button>
+    <button class="navbtn" onClick="{{goApprove}}">
+      <sc-if value="{{hasApprovals}}" hint-placeholder-val="{{true}}">
+        <span style="position: absolute; top: 2px; left: 50%; margin-left: 6px; font-size: 9px; font-weight: 700; color: #fff; background: #EF4444; border-radius: 999px; padding: 0 5px; line-height: 15px; min-width: 15px; text-align: center;">{{totalPending}}</span>
+      </sc-if>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{approveColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{approveColor}};">อนุมัติ</span>
+    </button>
+    <button class="navbtn" onClick="{{goPayroll}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{payrollColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 9v.01M18 15v.01"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{payrollColor}};">เงินเดือน</span>
+    </button>
+    <button class="navbtn" onClick="{{goProfile}}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{profileColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path></svg>
+      <span style="font-size: 10px; font-weight: 600; color: {{profileColor}};">ตั้งค่า</span>
+    </button>
+  </div>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const view = this.state?.view ?? 'dash';
+    const set = (v) => () => this.setState({ view: v });
+    const active = '#06C755', idle = '#9AA0A6';
+    const navFg = (v) => (view === v ? active : idle);
+    const hr = new Date().getHours();
+    const greeting = hr < 12 ? 'สวัสดีตอนเช้า' : (hr < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น');
+
+    const avatars = {
+      green: { avBg: '#E8F9EF', avColor: '#04933D' },
+      blue: { avBg: '#EAF1FE', avColor: '#1D6FE0' },
+      amber: { avBg: '#FEF3E2', avColor: '#C77700' },
+      pink: { avBg: '#FDECEC', avColor: '#D93838' }
+    };
+    const ok = { badgeColor: '#04933D', badgeBg: '#E8F9EF', status: 'ปกติ' };
+    const late = { badgeColor: '#C77700', badgeBg: '#FEF3E2', status: 'มาสาย' };
+    const leaveB = { badgeColor: '#1D6FE0', badgeBg: '#EAF1FE', status: 'ลางาน' };
+
+    const week = [
+      { label: 'จ.', val: 45, h: '92%' },
+      { label: 'อ.', val: 44, h: '88%' },
+      { label: 'พ.', val: 46, h: '96%' },
+      { label: 'พฤ.', val: 42, h: '82%' },
+      { label: 'ศ.', val: 40, h: '76%' }
+    ];
+
+    const staff = [
+      { initial: 'ส', name: 'สมชาย ใจดี', dept: 'การตลาดดิจิทัล', role: 'เจ้าหน้าที่การตลาด', ...avatars.green, ...ok },
+      { initial: 'ป', name: 'ปิยะ วงศ์ทอง', dept: 'บัญชีและการเงิน', role: 'นักบัญชีอาวุโส', ...avatars.blue, ...ok },
+      { initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'ไอที', role: 'วิศวกรซอฟต์แวร์', ...avatars.amber, ...late },
+      { initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ฝ่ายขาย', role: 'ผู้จัดการเขต', ...avatars.pink, ...ok },
+      { initial: 'อ', name: 'อรุณ พาสุข', dept: 'การตลาดดิจิทัล', role: 'ครีเอทีฟ', ...avatars.green, ...late },
+      { initial: 'ก', name: 'กมล แสงเดือน', dept: 'ทรัพยากรบุคคล', role: 'เจ้าหน้าที่ HR', ...avatars.blue, ...ok }
+    ];
+
+    const decisions = this.state?.decisions ?? {};
+    const leaveTypeStyle = {
+      sick: { typeLabel: 'ลาป่วย', typeColor: '#D93838', typeBg: '#FDECEC', ...avatars.pink },
+      personal: { typeLabel: 'ลากิจ', typeColor: '#1D6FE0', typeBg: '#EAF1FE', ...avatars.blue },
+      vacation: { typeLabel: 'พักร้อน', typeColor: '#04933D', typeBg: '#E8F9EF', ...avatars.green }
+    };
+    const reqDefs = [
+      { id: 'r1', initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'ไอที', type: 'sick', range: '12 ก.ย. 2569', days: '1 วัน', reason: 'พบแพทย์ตามนัด' },
+      { id: 'r2', initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ฝ่ายขาย', type: 'vacation', range: '15–19 ก.ย. 2569', days: '5 วัน', reason: 'เดินทางต่างจังหวัดกับครอบครัว' },
+      { id: 'r3', initial: 'อ', name: 'อรุณ พาสุข', dept: 'การตลาดดิจิทัล', type: 'personal', range: '22 ก.ย. 2569', days: '1 วัน', reason: 'ติดต่อราชการ' },
+      { id: 'r4', initial: 'ก', name: 'กมล แสงเดือน', dept: 'ทรัพยากรบุคคล', type: 'sick', range: '10–11 ก.ย. 2569', days: '2 วัน', reason: 'ไข้หวัด พักฟื้น' }
+    ];
+    const decide = (id, v) => () => this.setState({ decisions: { ...decisions, [id]: v } });
+    const approvals = reqDefs.map((r) => {
+      const status = decisions[r.id] ?? 'pending';
+      const decided = status !== 'pending';
+      return {
+        ...r, ...leaveTypeStyle[r.type],
+        isPending: status === 'pending',
+        decided,
+        approve: decide(r.id, 'approved'),
+        reject: decide(r.id, 'rejected'),
+        resultLabel: status === 'approved' ? '✓ อนุมัติแล้ว' : '✕ ปฏิเสธ',
+        resultColor: status === 'approved' ? '#04933D' : '#D93838',
+        resultBg: status === 'approved' ? '#E8F9EF' : '#FDECEC'
+      };
+    });
+    const pending = approvals.filter((a) => a.isPending);
+    const pendingCount = pending.length;
+
+    const avPool = [avatars.blue, avatars.green, avatars.amber, avatars.pink];
+
+    // employment-start approval (HR)
+    const hireDecisions = this.state?.hireDecisions ?? {};
+    const hireDefs = [
+      { id: 'h1', initial: 'ส', name: 'สมหญิง รักงาน', role: 'พนักงานขาย', dept: 'ฝ่ายขาย', applied: '10 ก.ย. 2569', docs: 'เอกสารครบ' },
+      { id: 'h2', initial: 'ธ', name: 'ธนา มั่นคง', role: 'โปรแกรมเมอร์', dept: 'ไอที', applied: '11 ก.ย. 2569', docs: 'เอกสารครบ' },
+      { id: 'h3', initial: 'ว', name: 'วิภา สดใส', role: 'นักบัญชี', dept: 'บัญชี', applied: '12 ก.ย. 2569', docs: 'รอสำเนาวุฒิการศึกษา' }
+    ];
+    const hireDecide = (id, v) => () => this.setState({ hireDecisions: { ...hireDecisions, [id]: v } });
+    const hireRequests = hireDefs.map((h, i) => {
+      const st = hireDecisions[h.id] ?? 'pending';
+      const decided = st !== 'pending';
+      return { ...h, ...avPool[i % 4],
+        isPending: st === 'pending', decided,
+        approve: hireDecide(h.id, 'approved'), reject: hireDecide(h.id, 'rejected'),
+        resultLabel: st === 'approved' ? '✓ อนุมัติเริ่มงาน' : '✕ ปฏิเสธ',
+        resultColor: st === 'approved' ? '#04933D' : '#D93838',
+        resultBg: st === 'approved' ? '#E8F9EF' : '#FDECEC' };
+    });
+    const hireCount = hireRequests.filter((h) => h.isPending).length;
+
+    // approvals sub-tab (leave | hire)
+    const approveTab = this.state?.approveTab ?? 'leave';
+    const isLeaveTab = approveTab === 'leave';
+    const segOn = { bg: '#fff', color: '#04933D', shadow: '0 1px 3px rgba(0,0,0,0.12)' };
+    const segOff = { bg: 'transparent', color: '#5B6167', shadow: 'none' };
+    const segL = isLeaveTab ? segOn : segOff;
+    const segH = isLeaveTab ? segOff : segOn;
+
+    // payroll
+    const sentSlips = this.state?.sentSlips ?? {};
+    const payDefs = [
+      { id: 'ps1', initial: 'ส', name: 'สมชาย ใจดี', dept: 'การตลาด', base: '35,000', extra: '6,400', deduct: '3,700', net: '37,700' },
+      { id: 'ps2', initial: 'ป', name: 'ปิยะ วงศ์ทอง', dept: 'บัญชี', base: '42,000', extra: '3,000', deduct: '4,200', net: '40,800' },
+      { id: 'ps3', initial: 'ณ', name: 'ณัฐ ศรีสุข', dept: 'ไอที', base: '48,000', extra: '5,500', deduct: '5,100', net: '48,400' },
+      { id: 'ps4', initial: 'ม', name: 'มาลี ดวงแก้ว', dept: 'ขาย', base: '55,000', extra: '8,000', deduct: '6,300', net: '56,700' }
+    ];
+    const sendSlip = (id) => () => this.setState({ sentSlips: { ...sentSlips, [id]: true } });
+    const payroll = payDefs.map((p, i) => {
+      const s = !!sentSlips[p.id];
+      return { ...p, ...avPool[i % 4], sent: s, notSent: !s, send: sendSlip(p.id) };
+    });
+    const sentCount = payroll.filter((p) => p.sent).length;
+    const sendAll = () => { const all = {}; payDefs.forEach((p) => { all[p.id] = true; }); this.setState({ sentSlips: all }); };
+
+    const settings = this.state?.settings ?? { notifyLeave: true, autoApprove: false, notifyLate: true };
+    const toggle = (key) => {
+      const on = settings[key];
+      return {
+        toggle: () => this.setState({ settings: { ...settings, [key]: !on } }),
+        trackBg: on ? '#06C755' : '#D7DBDF',
+        knobLeft: on ? 'auto' : '2px',
+        knobRight: on ? '2px' : 'auto'
+      };
+    };
+
+    return {
+      greeting,
+      isDash: view === 'dash', isStaff: view === 'staff', isApprove: view === 'approve', isPayroll: view === 'payroll', isProfile: view === 'profile',
+      goDash: set('dash'), goStaff: set('staff'), goApprove: set('approve'), goPayroll: set('payroll'), goProfile: set('profile'),
+      dashColor: navFg('dash'), staffColor: navFg('staff'), approveColor: navFg('approve'), payrollColor: navFg('payroll'), profileColor: navFg('profile'),
+      notifyLeave: toggle('notifyLeave'), autoApprove: toggle('autoApprove'), notifyLate: toggle('notifyLate'),
+      week, staff, approvals,
+      pendingPreview: pending.slice(0, 2),
+      pendingCount,
+      hasPending: pendingCount > 0,
+      noPending: pendingCount === 0,
+      approvedCount: approvals.filter((a) => decisions[a.id] === 'approved').length,
+      rejectedCount: approvals.filter((a) => decisions[a.id] === 'rejected').length,
+      hireRequests, hireCount,
+      isLeaveTab, isHireTab: !isLeaveTab,
+      setLeaveTab: () => this.setState({ approveTab: 'leave' }),
+      setHireTab: () => this.setState({ approveTab: 'hire' }),
+      leaveTabBg: segL.bg, leaveTabColor: segL.color, leaveTabShadow: segL.shadow,
+      hireTabBg: segH.bg, hireTabColor: segH.color, hireTabShadow: segH.shadow,
+      approveRole: isLeaveTab ? 'เส้นทางอนุมัติ: หัวหน้างาน' : 'ผู้อนุมัติ: ฝ่ายบุคคล · ตรวจเอกสารและ PII',
+      totalPending: pendingCount + hireCount,
+      hasApprovals: (pendingCount + hireCount) > 0,
+      payroll, sentCount, sendAll,
+      allSent: sentCount === payDefs.length,
+      notAllSent: sentCount < payDefs.length
+    };
+  }
+}
+</script>
+</body>
+</html>

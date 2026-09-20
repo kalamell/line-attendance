@@ -1,0 +1,30 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# drizzle
+packages/db/drizzle/meta/_journal.json.bak
+
+# stale design bundle (large seeded output from the old canvas tooling)
+line-attendance-liff.html

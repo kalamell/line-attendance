@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: none; }
+    .scy::-webkit-scrollbar { display: none; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #fff; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- header + stepper -->
+  <div style="padding: 20px 20px 16px; border-bottom: 1px solid #ECEEF1;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+      <sc-if value="{{canBack}}" hint-placeholder-val="{{false}}">
+        <button onClick="{{back}}" style="width: 36px; height: 36px; border-radius: 10px; border: 1px solid #ECEEF1; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      </sc-if>
+      <div style="font-size: 18px; font-weight: 700; color: #1B1D1F;">ลงทะเบียนพนักงานใหม่</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="flex: 1; height: 5px; border-radius: 999px; background: {{bar1}};"></div>
+      <div style="flex: 1; height: 5px; border-radius: 999px; background: {{bar2}};"></div>
+      <div style="flex: 1; height: 5px; border-radius: 999px; background: {{bar3}};"></div>
+    </div>
+    <div style="font-size: 12px; color: #9AA0A6; margin-top: 8px;">{{stepLabel}}</div>
+  </div>
+
+  <div class="scy" style="flex: 1; padding: 20px;">
+
+    <!-- STEP 1: PDPA consent -->
+    <sc-if value="{{isStep1}}" hint-placeholder-val="{{true}}">
+    <div>
+      <div style="width: 56px; height: 56px; border-radius: 16px; background: #E8F9EF; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+      <div style="font-size: 18px; font-weight: 700; color: #1B1D1F; margin-bottom: 6px;">ความยินยอมข้อมูลส่วนบุคคล</div>
+      <div style="font-size: 13px; color: #5B6167; line-height: 1.6; margin-bottom: 18px;">ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) บริษัทขอความยินยอมในการเก็บและใช้ข้อมูลของท่าน</div>
+
+      <div style="background: #F7F8FA; border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F; margin-bottom: 10px;">ข้อมูลที่จัดเก็บ (PII)</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #5B6167;">
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> ชื่อ-นามสกุล, เลขบัตรประชาชน, ที่อยู่</div>
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> ข้อมูลติดต่อ และบัญชีธนาคาร (สำหรับจ่ายเงินเดือน)</div>
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> ข้อมูลการเข้างานและพิกัด (เฉพาะเวลาทำงาน)</div>
+        </div>
+      </div>
+
+      <div style="background: #F7F8FA; border-radius: 14px; padding: 16px; margin-bottom: 20px;">
+        <div style="font-size: 13px; font-weight: 600; color: #1B1D1F; margin-bottom: 10px;">วัตถุประสงค์ & สิทธิของท่าน</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #5B6167; line-height: 1.5;">
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> ใช้เพื่อการจ้างงาน จ่ายเงินเดือน และสวัสดิการเท่านั้น</div>
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> เข้าถึงได้เฉพาะฝ่ายบุคคล จัดเก็บแบบเข้ารหัส</div>
+          <div style="display: flex; gap: 8px;"><span style="color: #06C755;">•</span> ท่านมีสิทธิขอเข้าถึง แก้ไข หรือลบข้อมูลได้ทุกเมื่อ</div>
+        </div>
+      </div>
+
+      <a href="#" style="font-size: 13px; font-weight: 500;">อ่านนโยบายความเป็นส่วนตัวฉบับเต็ม ›</a>
+
+      <button onClick="{{toggleConsent}}" style="width: 100%; margin-top: 18px; border: 1.5px solid {{consentBorder}}; background: {{consentBg}}; border-radius: 14px; padding: 14px; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left;">
+        <span style="width: 24px; height: 24px; border-radius: 7px; border: 2px solid {{checkBorder}}; background: {{checkBg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <sc-if value="{{consent}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+        </span>
+        <span style="font-size: 13px; color: #1B1D1F; line-height: 1.5;">ข้าพเจ้าได้อ่านและ<b>ยินยอม</b>ให้บริษัทเก็บและใช้ข้อมูลส่วนบุคคลตามวัตถุประสงค์ข้างต้น</span>
+      </button>
+    </div>
+    </sc-if>
+
+    <!-- STEP 2: form -->
+    <sc-if value="{{isStep2}}" hint-placeholder-val="{{false}}">
+    <div>
+      <div style="font-size: 17px; font-weight: 700; color: #1B1D1F; margin-bottom: 4px;">กรอกข้อมูลลงทะเบียน</div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #04933D; margin-bottom: 18px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> ข้อมูล PII เข้ารหัส เข้าถึงเฉพาะฝ่ายบุคคล</div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div><div style="font-size: 12px; color: #5B6167; margin-bottom: 6px;">ชื่อ-นามสกุล</div><div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 13px 14px; font-size: 14px; font-weight: 500; color: #1B1D1F;">สมหญิง รักงาน</div></div>
+        <div><div style="font-size: 12px; color: #5B6167; margin-bottom: 6px;">เลขบัตรประชาชน</div><div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 13px 14px; font-size: 14px; font-weight: 500; color: #1B1D1F; display: flex; align-items: center; justify-content: space-between;">1-2345-xxxxx-xx-3 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle><path d="m3 3 18 18"></path></svg></div></div>
+        <div><div style="font-size: 12px; color: #5B6167; margin-bottom: 6px;">เบอร์โทร</div><div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 13px 14px; font-size: 14px; font-weight: 500; color: #1B1D1F;">08x-xxx-xx78</div></div>
+        <div><div style="font-size: 12px; color: #5B6167; margin-bottom: 6px;">แผนกที่สมัคร</div><div style="background: #fff; border: 1px solid #ECEEF1; border-radius: 12px; padding: 13px 14px; font-size: 14px; font-weight: 500; color: #1B1D1F; display: flex; align-items: center; justify-content: space-between;">ฝ่ายขาย <span style="color: #9AA0A6;">›</span></div></div>
+        <div>
+          <div style="font-size: 12px; color: #5B6167; margin-bottom: 6px;">เอกสารประกอบ</div>
+          <div style="border: 1.5px dashed #D7DBDF; border-radius: 12px; padding: 18px; text-align: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5M12 3v12"></path></svg>
+            <div style="font-size: 13px; color: #5B6167;">แนบสำเนาบัตรประชาชน · วุฒิการศึกษา</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- STEP 3: pending -->
+    <sc-if value="{{isStep3}}" hint-placeholder-val="{{false}}">
+    <div style="text-align: center; padding-top: 30px;">
+      <div style="width: 84px; height: 84px; border-radius: 50%; background: #E8F9EF; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px;">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#06C755" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+      </div>
+      <div style="font-size: 19px; font-weight: 700; color: #1B1D1F; margin-bottom: 8px;">ส่งข้อมูลเรียบร้อย</div>
+      <div style="font-size: 14px; color: #5B6167; line-height: 1.6; margin-bottom: 24px;">คำขอลงทะเบียนถูกส่งให้<b>ฝ่ายบุคคล</b>พิจารณาอนุมัติการเริ่มงาน<br>ท่านจะได้รับแจ้งผลผ่าน LINE</div>
+      <div style="background: #F7F8FA; border-radius: 14px; padding: 16px; text-align: left;">
+        <div style="font-size: 12px; font-weight: 600; color: #9AA0A6; margin-bottom: 12px;">ขั้นตอนถัดไป</div>
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #E8F9EF; color: #04933D; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">1</span><div style="font-size: 13px; color: #1B1D1F;">ฝ่ายบุคคลตรวจสอบเอกสารและ PII</div></div>
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #F0F2F4; color: #9AA0A6; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">2</span><div style="font-size: 13px; color: #5B6167;">อนุมัติการเริ่มงาน + กำหนดวันเริ่ม</div></div>
+        <div style="display: flex; gap: 12px;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #F0F2F4; color: #9AA0A6; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">3</span><div style="font-size: 13px; color: #5B6167;">เปิดใช้งานแอปลงเวลาเข้างาน</div></div>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <!-- footer action -->
+  <sc-if value="{{showFooter}}" hint-placeholder-val="{{true}}">
+  <div style="padding: 14px 20px 22px; border-top: 1px solid #ECEEF1;">
+    <sc-if value="{{step1Ready}}" hint-placeholder-val="{{true}}">
+      <button onClick="{{next}}" style="width: 100%; height: 52px; border: none; border-radius: 14px; background: #06C755; color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(6,199,85,0.30);">ยอมรับและดำเนินการต่อ</button>
+    </sc-if>
+    <sc-if value="{{step1Blocked}}" hint-placeholder-val="{{false}}">
+      <button disabled style="width: 100%; height: 52px; border: none; border-radius: 14px; background: #EEF0F3; color: #9AA0A6; font-family: inherit; font-size: 16px; font-weight: 600;">กรุณายอมรับความยินยอมก่อน</button>
+    </sc-if>
+    <sc-if value="{{isStep2}}" hint-placeholder-val="{{false}}">
+      <button onClick="{{next}}" style="width: 100%; height: 52px; border: none; border-radius: 14px; background: #06C755; color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(6,199,85,0.30);">ส่งลงทะเบียน</button>
+    </sc-if>
+  </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const step = this.state?.step ?? 1;
+    const consent = this.state?.consent ?? false;
+    const on = '#06C755', off = '#ECEEF1';
+    return {
+      isStep1: step === 1, isStep2: step === 2, isStep3: step === 3,
+      canBack: step === 2,
+      back: () => this.setState({ step: Math.max(1, step - 1) }),
+      next: () => {
+        if (step === 1 && !consent) return;
+        this.setState({ step: Math.min(3, step + 1) });
+      },
+      bar1: on,
+      bar2: step >= 2 ? on : off,
+      bar3: step >= 3 ? on : off,
+      stepLabel: step === 1 ? 'ขั้นที่ 1 จาก 3 · ความยินยอม PDPA' : (step === 2 ? 'ขั้นที่ 2 จาก 3 · ข้อมูลส่วนตัว' : 'ขั้นที่ 3 จาก 3 · เสร็จสิ้น'),
+      consent,
+      toggleConsent: () => this.setState({ consent: !consent }),
+      consentBorder: consent ? '#06C755' : '#ECEEF1',
+      consentBg: consent ? '#E8F9EF' : '#fff',
+      checkBorder: consent ? '#06C755' : '#C4C9CE',
+      checkBg: consent ? '#06C755' : '#fff',
+      showFooter: step !== 3,
+      step1Ready: step === 1 && consent,
+      step1Blocked: step === 1 && !consent
+    };
+  }
+}
+</script>
+</body>
+</html>

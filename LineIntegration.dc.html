@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #06C755; } a:hover { color: #04933D; }
+    * { box-sizing: border-box; }
+    .scy { overflow-y: auto; scrollbar-width: none; }
+    .scy::-webkit-scrollbar { display: none; }
+    .field { border: 1px solid #ECEEF1; border-radius: 10px; padding: 11px 13px; font-size: 13px; color: #1B1D1F; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; }
+    .lbl { font-size: 12px; color: #5B6167; margin-bottom: 6px; }
+  </style>
+</helmet>
+
+<div style="width: 960px; height: 900px; background: #F5F6F8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- topbar -->
+  <div style="background: #fff; border-bottom: 1px solid #ECEEF1; padding: 22px 28px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 42px; height: 42px; border-radius: 12px; background: #06C755; display: flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.55 7.39 8.35 8.03.32.07.77.21.88.49.1.25.06.64.03.9l-.14.85c-.04.25-.2.99.87.54 1.07-.45 5.76-3.39 7.86-5.81C21.28 13.5 22 11.9 22 10.13 22 5.64 17.52 2 12 2Z"></path></svg></div>
+      <div style="flex: 1;">
+        <div style="font-size: 19px; font-weight: 700; color: #1B1D1F;">การเชื่อมต่อ LINE</div>
+        <div style="font-size: 12px; color: #9AA0A6;">หน่วยงาน: บริษัท อาหารเด่น จำกัด · ahaanden.poszee.com</div>
+      </div>
+      <sc-if value="{{connected}}" hint-placeholder-val="{{false}}">
+        <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #04933D; background: #E8F9EF; padding: 8px 14px; border-radius: 999px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06C755;"></span> เชื่อมต่อแล้ว</span>
+      </sc-if>
+      <sc-if value="{{disconnected}}" hint-placeholder-val="{{true}}">
+        <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #9AA0A6; background: #F0F2F4; padding: 8px 14px; border-radius: 999px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C4C9CE;"></span> ยังไม่เชื่อมต่อ</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div class="scy" style="flex: 1; padding: 24px 28px;">
+
+    <!-- toast -->
+    <sc-if value="{{toast}}" hint-placeholder-val="{{false}}">
+      <div style="background: #E8F9EF; border: 1px solid #C9F0DA; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#04933D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+        <span style="font-size: 13px; font-weight: 600; color: #04933D;">{{toastText}}</span>
+      </div>
+    </sc-if>
+
+    <!-- connect CTA when disconnected -->
+    <sc-if value="{{disconnected}}" hint-placeholder-val="{{true}}">
+      <div style="background: #fff; border: 1.5px dashed #06C755; border-radius: 18px; padding: 32px; text-align: center; margin-bottom: 22px;">
+        <div style="font-size: 16px; font-weight: 700; color: #1B1D1F; margin-bottom: 6px;">เชื่อมต่อ LINE Official Account ของหน่วยงาน</div>
+        <div style="font-size: 13px; color: #5B6167; line-height: 1.6; margin-bottom: 20px;">กรอก credential จาก LINE Developers Console (Messaging API + LIFF)<br>เพื่อเปิดใช้การเข้างานผ่าน LINE, แจ้งเตือน และส่งสลิป</div>
+        <button onClick="{{connect}}" style="height: 48px; padding: 0 28px; border: none; border-radius: 12px; background: #06C755; color: #fff; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 18px rgba(6,199,85,0.28);">เชื่อมต่อ LINE OA</button>
+      </div>
+    </sc-if>
+
+    <!-- credentials -->
+    <div style="background: #fff; border-radius: 18px; padding: 22px; margin-bottom: 18px;">
+      <div style="font-size: 15px; font-weight: 700; color: #1B1D1F; margin-bottom: 16px;">Messaging API Channel</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div><div class="lbl">Channel ID</div><div class="field">2007xxxxxx</div></div>
+        <div><div class="lbl">Channel Secret</div><div class="field">•••••••••••••••• <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle><path d="m3 3 18 18"></path></svg></div></div>
+      </div>
+      <div style="margin-bottom: 14px;"><div class="lbl">Channel Access Token (long-lived)</div><div class="field">••••••••••••••••••••••••••••••••••••••••  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle><path d="m3 3 18 18"></path></svg></div></div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9AA0A6;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> credential ถูกเข้ารหัสก่อนจัดเก็บ แยกต่อหน่วยงาน (tenant) ไม่ปะปนกัน</div>
+    </div>
+
+    <!-- LIFF + webhook -->
+    <div style="background: #fff; border-radius: 18px; padding: 22px; margin-bottom: 18px;">
+      <div style="font-size: 15px; font-weight: 700; color: #1B1D1F; margin-bottom: 16px;">LIFF & Webhook</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div><div class="lbl">LIFF ID</div><div class="field">2007xxxxxx-aBcdXyZ0</div></div>
+        <div><div class="lbl">LIFF Endpoint</div><div class="field">https://ahaanden.poszee.com/liff</div></div>
+      </div>
+      <div><div class="lbl">Webhook URL (ตั้งค่าใน LINE Developers)</div><div class="field" style="color: #1B1D1F; font-weight: 500;">https://ahaanden.poszee.com/api/line/webhook <button style="border: none; background: #E8F9EF; color: #04933D; font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 8px; cursor: pointer;">คัดลอก</button></div></div>
+    </div>
+
+    <!-- feature toggles -->
+    <div style="background: #fff; border-radius: 18px; padding: 8px 22px;">
+      <div style="font-size: 15px; font-weight: 700; color: #1B1D1F; padding: 16px 0 6px;">ฟีเจอร์ LINE</div>
+      <button onClick="{{richMenu.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid #F2F3F5; cursor: pointer; text-align: left;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18M9 21V9"></path></svg>
+        <span style="flex: 1;"><span style="font-size: 14px; color: #1B1D1F; display: block;">Rich Menu</span><span style="font-size: 12px; color: #9AA0A6;">เมนูลัดในแชท: เช็กอิน / ลางาน / สลิป</span></span>
+        <span style="width: 46px; height: 27px; border-radius: 999px; background: {{richMenu.trackBg}}; position: relative; display: inline-block;"><span style="position: absolute; top: 2px; left: {{richMenu.knobLeft}}; right: {{richMenu.knobRight}}; width: 23px; height: 23px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+      </button>
+      <button onClick="{{notifyPush.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid #F2F3F5; cursor: pointer; text-align: left;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span style="flex: 1;"><span style="font-size: 14px; color: #1B1D1F; display: block;">แจ้งเตือนผ่าน LINE (Push)</span><span style="font-size: 12px; color: #9AA0A6;">เตือนเช็กอิน, ผลอนุมัติลา/เริ่มงาน</span></span>
+        <span style="width: 46px; height: 27px; border-radius: 999px; background: {{notifyPush.trackBg}}; position: relative; display: inline-block;"><span style="position: absolute; top: 2px; left: {{notifyPush.knobLeft}}; right: {{notifyPush.knobRight}}; width: 23px; height: 23px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+      </button>
+      <button onClick="{{sendSlip.toggle}}" style="width: 100%; border: none; background: none; font-family: inherit; display: flex; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid #F2F3F5; cursor: pointer; text-align: left;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6167" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6M9 15h6"></path></svg>
+        <span style="flex: 1;"><span style="font-size: 14px; color: #1B1D1F; display: block;">ส่งสลิปเงินเดือนทาง LINE</span><span style="font-size: 12px; color: #9AA0A6;">ไฟล์ PDF เข้ารหัสด้วยรหัสส่วนตัวพนักงาน</span></span>
+        <span style="width: 46px; height: 27px; border-radius: 999px; background: {{sendSlip.trackBg}}; position: relative; display: inline-block;"><span style="position: absolute; top: 2px; left: {{sendSlip.knobLeft}}; right: {{sendSlip.knobRight}}; width: 23px; height: 23px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"></span></span>
+      </button>
+
+      <div style="display: flex; gap: 10px; padding: 18px 0;">
+        <sc-if value="{{connected}}" hint-placeholder-val="{{false}}">
+          <button onClick="{{test}}" style="height: 44px; padding: 0 20px; border: 1px solid #06C755; border-radius: 11px; background: #fff; color: #04933D; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">ทดสอบการเชื่อมต่อ</button>
+          <button onClick="{{disconnect}}" style="height: 44px; padding: 0 20px; border: 1px solid #FADBDB; border-radius: 11px; background: #fff; color: #D93838; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">ยกเลิกการเชื่อมต่อ</button>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":960,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const connected = this.state?.connected ?? false;
+    const settings = this.state?.settings ?? { richMenu: true, notifyPush: true, sendSlip: true };
+    const toggle = (key) => {
+      const on = settings[key];
+      return {
+        toggle: () => this.setState({ settings: { ...settings, [key]: !on } }),
+        trackBg: on ? '#06C755' : '#D7DBDF',
+        knobLeft: on ? 'auto' : '2px',
+        knobRight: on ? '2px' : 'auto'
+      };
+    };
+    const showToast = (text) => {
+      this.setState({ toast: true, toastText: text });
+      setTimeout(() => this.setState({ toast: false }), 2800);
+    };
+    return {
+      connected,
+      disconnected: !connected,
+      connect: () => { this.setState({ connected: true }); showToast('เชื่อมต่อ LINE OA สำเร็จ · Webhook ตรวจสอบผ่าน'); },
+      disconnect: () => this.setState({ connected: false }),
+      test: () => showToast('ส่งข้อความทดสอบไปยัง LINE OA สำเร็จ'),
+      richMenu: toggle('richMenu'),
+      notifyPush: toggle('notifyPush'),
+      sendSlip: toggle('sendSlip'),
+      toast: this.state?.toast ?? false,
+      toastText: this.state?.toastText ?? ''
+    };
+  }
+}
+</script>
+</body>
+</html>
