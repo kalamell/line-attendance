@@ -4,7 +4,7 @@ import { api, setToken } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
 type Attendance = { status: string; checkInAt: string | null; checkOutAt: string | null } | null;
-type View = 'home' | 'history' | 'leave' | 'profile' | 'payslip' | 'register';
+type View = 'home' | 'history' | 'leave' | 'profile' | 'payslip' | 'register' | 'editprofile';
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
@@ -155,6 +155,51 @@ function RegisterScreen({ back }: { back: () => void }) {
   );
 }
 
+/* ================= Edit profile ================= */
+function EditProfileScreen({ back }: { back: () => void }) {
+  const [f, setF] = useState<{ name: string; phone: string; department: string; position: string } | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    api<{ name: string; phone: string; department: string; position: string }>('/me/profile')
+      .then((p) => setF({ name: p.name ?? '', phone: p.phone ?? '', department: p.department ?? '', position: p.position ?? '' }))
+      .catch(() => setNote('เปิดผ่านแอป LINE เพื่อแก้ไขโปรไฟล์'));
+  }, []);
+  async function save() {
+    if (!f) return;
+    try { await api('/me/profile', { method: 'PATCH', body: JSON.stringify({ name: f.name, phone: f.phone }) }); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    catch { setNote('บันทึกไม่สำเร็จ'); }
+  }
+  const field: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 12, padding: '13px 14px', fontSize: 14, width: '100%' };
+  const ro: React.CSSProperties = { ...field, background: 'var(--bg)', color: 'var(--ink-3)' };
+  const lbl: React.CSSProperties = { fontSize: 12, color: 'var(--ink-2)', margin: '0 0 6px' };
+  return (
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
+        <button onClick={back} style={{ border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12 }}>‹ กลับ</button>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>แก้ไขข้อมูลส่วนตัว</div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+        {note && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>{note}</div>}
+        {f && (
+          <>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>ชื่อ-นามสกุล</div><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>เบอร์โทร</div><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="08x-xxx-xxxx" style={field} /></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>แผนก (ดูแลโดยฝ่ายบุคคล)</div><div style={ro}>{f.department || '—'}</div></div>
+            <div style={{ marginBottom: 20 }}><div style={lbl}>ตำแหน่ง (ดูแลโดยฝ่ายบุคคล)</div><div style={ro}>{f.position || '—'}</div></div>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)', marginBottom: 16, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              เบอร์โทรถูกเก็บแบบเข้ารหัส · แก้ไขได้เฉพาะข้อมูลของคุณเอง (PDPA)
+            </div>
+            {saved && <div style={{ background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 12, padding: 12, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, marginBottom: 14 }}>บันทึกข้อมูลแล้ว</div>}
+            <button onClick={save} style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>บันทึก</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ================= App ================= */
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -188,6 +233,7 @@ export function App() {
 
   if (view === 'payslip') return <div style={{ maxWidth: 420, margin: '0 auto', background: 'var(--bg)' }}><PayslipScreen back={() => setView('profile')} /></div>;
   if (view === 'register') return <div style={{ maxWidth: 420, margin: '0 auto' }}><RegisterScreen back={() => setView('profile')} /></div>;
+  if (view === 'editprofile') return <div style={{ maxWidth: 420, margin: '0 auto' }}><EditProfileScreen back={() => setView('profile')} /></div>;
 
   const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
   const done = !!today?.checkOutAt;
@@ -257,6 +303,8 @@ export function App() {
             </div>
             <div style={{ padding: '0 16px', marginTop: -42 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
+                <button onClick={() => setView('editprofile')} style={rowBtn}><span>👤 แก้ไขข้อมูลส่วนตัว</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <div style={{ height: 1, background: 'var(--line)' }} />
                 <button onClick={() => setView('payslip')} style={rowBtn}><span>💰 สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
                 <button onClick={() => setView('register')} style={rowBtn}><span>📝 ลงทะเบียน / ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
