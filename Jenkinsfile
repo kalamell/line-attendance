@@ -1,44 +1,56 @@
+// Runs on the droplet's own Jenkins (agent = the host). On push to main it syncs
+// the checkout into /opt/poszee-attendance (keeping .env + docker volumes), then
+// rebuilds and redeploys the app containers. Does NOT touch the shared nginx.
 pipeline {
   agent any
 
   environment {
-    DEPLOY_HOST = 'root@167.99.66.6'
-    APP_DIR     = '/opt/poszee-attendance'
+    APP_DIR  = '/opt/poszee-attendance'
+    COMPOSE  = 'docker-compose -f docker-compose.prod.yml'
+  }
+
+  options {
+    disableConcurrentBuilds()
+    timeout(time: 20, unit: 'MINUTES')
   }
 
   stages {
-    stage('Install') {
+    stage('Sync to app dir') {
       steps {
-        sh 'corepack enable'
-        sh 'pnpm install --no-frozen-lockfile'
+        // keep the server's .env and docker state; replace source only
+        sh 'rsync -a --delete --exclude .env --exclude node_modules --exclude .git --exclude "packages/*/dist" ./ "$APP_DIR"/'
       }
     }
-    stage('Typecheck') {
+
+    stage('Build') {
       steps {
-        sh 'pnpm -r typecheck'
+        dir(env.APP_DIR) { sh '$COMPOSE build poszee-api poszee-web' }
       }
     }
-    stage('Build web') {
+
+    stage('Migrate') {
       steps {
-        sh 'pnpm --filter @poszee/liff build'
-        sh 'pnpm --filter @poszee/console build'
+        dir(env.APP_DIR) { sh '$COMPOSE run --rm poszee-api pnpm db:migrate' }
       }
     }
+
     stage('Deploy') {
-      // deploys on push to main
-      when { branch 'main' }
       steps {
-        // sync repo + built SPAs to the droplet, then bring up the stack + run migrations
-        sh '''
-          rsync -az --delete --exclude node_modules ./ ${DEPLOY_HOST}:${APP_DIR}/
-          ssh ${DEPLOY_HOST} "cd ${APP_DIR} && docker compose up -d --build && docker compose run --rm api pnpm db:migrate"
-        '''
+        dir(env.APP_DIR) { sh '$COMPOSE up -d poszee-api poszee-web' }
+      }
+    }
+
+    stage('Smoke test') {
+      steps {
+        dir(env.APP_DIR) {
+          sh 'sleep 5 && $COMPOSE exec -T poszee-api node -e "fetch(\'http://localhost:3000/api/health\').then(r=>r.text()).then(t=>{console.log(t)}).catch(e=>{console.error(e);process.exit(1)})"'
+        }
       }
     }
   }
 
   post {
-    success { echo 'Deployed to hr.poszee.com' }
-    failure { echo 'Build failed' }
+    success { echo '✓ Deployed to https://hr.poszee.com' }
+    failure { echo '✗ Deploy failed' }
   }
 }
