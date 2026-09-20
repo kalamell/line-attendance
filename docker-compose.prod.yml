@@ -1,0 +1,55 @@
+# Production compose for the SHARED droplet (167.99.66.6).
+# Joins the existing `data_default` network so the shared nginx proxies to
+# `poszee-api:3000`. Publishes NO host ports (80/443/3000/5432 are taken by
+# other projects) — everything is reached over the docker network.
+#
+#   docker-compose -f docker-compose.prod.yml up -d poszee-postgres poszee-redis
+#   docker-compose -f docker-compose.prod.yml run --rm poszee-api pnpm db:migrate
+#   docker-compose -f docker-compose.prod.yml up -d --build poszee-api
+version: "3.8"
+
+services:
+  poszee-postgres:
+    image: postgres:16-alpine
+    container_name: poszee-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: poszee
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poszee}
+      POSTGRES_DB: poszee
+    volumes:
+      - poszee_pgdata:/var/lib/postgresql/data
+    networks: [data_default]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poszee"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  poszee-redis:
+    image: redis:7-alpine
+    container_name: poszee-redis
+    restart: unless-stopped
+    networks: [data_default]
+
+  poszee-api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: poszee-api
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      poszee-postgres:
+        condition: service_healthy
+      poszee-redis:
+        condition: service_started
+    networks: [data_default]
+    # no host ports — shared nginx (data_default) proxies to poszee-api:3000
+
+networks:
+  data_default:
+    external: true
+
+volumes:
+  poszee_pgdata:
