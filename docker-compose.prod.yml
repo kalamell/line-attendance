@@ -39,13 +39,21 @@ services:
     container_name: poszee-api
     restart: unless-stopped
     env_file: .env
-    depends_on:
-      poszee-postgres:
-        condition: service_healthy
-      poszee-redis:
-        condition: service_started
+    depends_on: [poszee-postgres, poszee-redis]
     networks: [data_default]
     # no host ports — shared nginx (data_default) proxies to poszee-api:3000
+
+  poszee-web:
+    build:
+      context: .
+      dockerfile: ops/web/Dockerfile
+      args:
+        VITE_TENANT: ahaanden
+        VITE_LIFF_ID: ""
+    container_name: poszee-web
+    restart: unless-stopped
+    networks: [data_default]
+    # serves console (/) + LIFF (/liff/); shared nginx proxies non-/api here
 
 networks:
   data_default:
