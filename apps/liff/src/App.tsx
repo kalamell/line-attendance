@@ -4,34 +4,175 @@ import { api, setToken } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
 type Attendance = { status: string; checkInAt: string | null; checkOutAt: string | null } | null;
+type View = 'home' | 'history' | 'leave' | 'profile' | 'payslip' | 'register';
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
+/* ================= Payslip ================= */
+function PayslipScreen({ back }: { back: () => void }) {
+  const [pin, setPin] = useState('');
+  const [unlocked, setUnlocked] = useState(false);
+  const [slip, setSlip] = useState<{ period: string; gross: string; deductions: string; net: string; items: { kind: string; label: string; amount: string }[] } | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  async function unlock(next: string) {
+    setUnlocked(true);
+    try { setSlip(await api('/me/payslip')); } catch { setNote('เปิดผ่านแอป LINE เพื่อดูสลิปจริง'); }
+  }
+  function tap(d: string) {
+    if (pin.length >= 6) return;
+    const np = pin + d;
+    setPin(np);
+    if (np.length >= 6) unlock(np);
+  }
+  const earnings = slip?.items.filter((i) => i.kind === 'earning') ?? [];
+  const deductions = slip?.items.filter((i) => i.kind === 'deduction') ?? [];
+
+  if (!unlocked) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', padding: '16px 28px 28px' }}>
+        <button onClick={back} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer' }}>‹ กลับ</button>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 72, height: 72, borderRadius: 22, background: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>สลิปเงินเดือนถูกป้องกัน</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center' }}>กรอกรหัส PIN ส่วนตัว 6 หลักที่คุณตั้งไว้</div>
+          <div style={{ display: 'flex', gap: 14, margin: '30px 0 10px' }}>
+            {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: i < pin.length ? 'var(--brand)' : 'transparent', border: `2px solid ${i < pin.length ? 'var(--brand)' : '#C4C9CE'}` }} />)}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'].map((k, i) => k === '' ? <span key={i} /> : (
+            <button key={i} onClick={() => (k === 'back' ? setPin(pin.slice(0, -1)) : tap(k))}
+              style={{ height: 56, borderRadius: 14, border: 'none', background: k === 'back' ? 'transparent' : 'var(--bg)', fontSize: 22, fontWeight: 600, cursor: 'pointer' }}>
+              {k === 'back' ? '⌫' : k}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '18px 20px 40px' }}>
+        <button onClick={back} style={{ border: 'none', background: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 8 }}>‹ กลับ</button>
+        <div style={{ fontSize: 17, fontWeight: 700 }}>สลิปเงินเดือน</div>
+        <div style={{ fontSize: 13, opacity: 0.9 }}>งวดประจำเดือน {slip?.period ?? '—'}</div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 20px', marginTop: -28 }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 18, padding: 20, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
+          {note && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>{note}</div>}
+          {slip && (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)', marginBottom: 10 }}>รายได้</div>
+              {earnings.map((e, i) => <Row key={i} l={e.label} v={e.amount} />)}
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', margin: '14px 0 10px' }}>รายการหัก</div>
+              {deductions.map((e, i) => <Row key={i} l={e.label} v={`-${e.amount}`} />)}
+              <div style={{ background: 'var(--brand-tint)', borderRadius: 14, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-700)' }}>เงินได้สุทธิ</span>
+                <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--brand-700)' }}>฿{slip.net}</span>
+              </div>
+            </>
+          )}
+        </div>
+        {slip && (sent ? (
+          <div style={{ marginTop: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: 16, textAlign: 'center', color: 'var(--brand-700)', fontWeight: 700, fontSize: 14 }}>ส่งสลิป PDF เข้ารหัสทาง LINE แล้ว</div>
+        ) : (
+          <button onClick={() => setSent(true)} style={{ width: '100%', height: 52, marginTop: 16, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>ส่งเป็น PDF (เข้ารหัส) ทาง LINE</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+function Row({ l, v }: { l: string; v: string }) {
+  return <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '5px 0' }}><span style={{ color: 'var(--ink-2)' }}>{l}</span><span style={{ fontWeight: 500 }}>{v}</span></div>;
+}
+
+/* ================= Register (PDPA) ================= */
+function RegisterScreen({ back }: { back: () => void }) {
+  const [step, setStep] = useState(1);
+  const [consent, setConsent] = useState(false);
+  async function next() {
+    if (step === 1 && !consent) return;
+    if (step === 2) { try { await api('/me/consent', { method: 'POST' }); } catch { /* preview */ } }
+    setStep(step + 1);
+  }
+  return (
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
+      <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--line)' }}>
+        <button onClick={back} style={{ border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12 }}>‹ กลับ</button>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>ลงทะเบียนพนักงานใหม่</div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          {[1, 2, 3].map((s) => <div key={s} style={{ flex: 1, height: 5, borderRadius: 999, background: step >= s ? 'var(--brand)' : 'var(--line)' }} />)}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>ขั้นที่ {step} จาก 3 · {step === 1 ? 'ความยินยอม PDPA' : step === 2 ? 'ข้อมูลส่วนตัว' : 'เสร็จสิ้น'}</div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+        {step === 1 && (
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>ความยินยอมข้อมูลส่วนบุคคล</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, marginBottom: 16 }}>ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) บริษัทขอความยินยอมในการเก็บและใช้ข้อมูลของท่าน</div>
+            {[['ข้อมูลที่จัดเก็บ (PII)', 'ชื่อ-นามสกุล, เลขบัตรประชาชน, ที่อยู่, บัญชีธนาคาร, ข้อมูลการเข้างาน'], ['วัตถุประสงค์ & สิทธิ', 'ใช้เพื่อการจ้างงาน/จ่ายเงินเดือน · เข้าถึงเฉพาะฝ่ายบุคคล เก็บแบบเข้ารหัส · ขอเข้าถึง/แก้ไข/ลบได้ทุกเมื่อ']].map((b, i) => (
+              <div key={i} style={{ background: 'var(--bg)', borderRadius: 14, padding: 16, marginBottom: 12 }}><div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{b[0]}</div><div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>{b[1]}</div></div>
+            ))}
+            <button onClick={() => setConsent(!consent)} style={{ width: '100%', marginTop: 6, border: `1.5px solid ${consent ? 'var(--brand)' : 'var(--line)'}`, background: consent ? 'var(--brand-tint)' : '#fff', borderRadius: 14, padding: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}>
+              <span style={{ width: 24, height: 24, borderRadius: 7, border: `2px solid ${consent ? 'var(--brand)' : '#C4C9CE'}`, background: consent ? 'var(--brand)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{consent && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>}</span>
+              <span style={{ fontSize: 13, lineHeight: 1.5 }}>ข้าพเจ้าได้อ่านและ<b>ยินยอม</b>ให้เก็บและใช้ข้อมูลส่วนบุคคลตามวัตถุประสงค์ข้างต้น</span>
+            </button>
+          </div>
+        )}
+        {step === 2 && (
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>กรอกข้อมูลลงทะเบียน</div>
+            <div style={{ fontSize: 12, color: 'var(--brand-700)', marginBottom: 18 }}>🔒 ข้อมูล PII เข้ารหัส เข้าถึงเฉพาะฝ่ายบุคคล</div>
+            {[['ชื่อ-นามสกุล', 'สมหญิง รักงาน'], ['เลขบัตรประชาชน', '1-2345-xxxxx-xx-3'], ['เบอร์โทร', '08x-xxx-xx78'], ['แผนกที่สมัคร', 'ฝ่ายขาย']].map((r, i) => (
+              <div key={i} style={{ marginBottom: 14 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 6 }}>{r[0]}</div><div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '13px 14px', fontSize: 14, fontWeight: 500 }}>{r[1]}</div></div>
+            ))}
+          </div>
+        )}
+        {step === 3 && (
+          <div style={{ textAlign: 'center', paddingTop: 30 }}>
+            <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'var(--brand-tint)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6v6l4 2" /><circle cx="12" cy="12" r="9" /></svg>
+            </div>
+            <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 8 }}>ส่งข้อมูลเรียบร้อย</div>
+            <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>คำขอลงทะเบียนถูกส่งให้<b>ฝ่ายบุคคล</b>พิจารณาอนุมัติการเริ่มงาน<br />ท่านจะได้รับแจ้งผลผ่าน LINE</div>
+          </div>
+        )}
+      </div>
+      {step !== 3 && (
+        <div style={{ padding: '14px 20px 22px', borderTop: '1px solid var(--line)' }}>
+          <button onClick={next} disabled={step === 1 && !consent}
+            style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: step === 1 && !consent ? '#EEF0F3' : 'var(--brand)', color: step === 1 && !consent ? 'var(--ink-3)' : '#fff', fontSize: 16, fontWeight: 600, cursor: step === 1 && !consent ? 'default' : 'pointer' }}>
+            {step === 1 ? 'ยอมรับและดำเนินการต่อ' : 'ส่งลงทะเบียน'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================= App ================= */
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
   const [today, setToday] = useState<Attendance>(null);
   const [clock, setClock] = useState('--:--:--');
-  const [view, setView] = useState<'home' | 'history' | 'leave' | 'profile'>('home');
+  const [view, setView] = useState<View>('home');
   const [note, setNote] = useState<string | null>(null);
 
-  useEffect(() => {
-    const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000);
-    return () => clearInterval(t);
-  }, []);
-
+  useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
     (async () => {
       await initLiff();
       const idToken = getIdToken();
-      if (!idToken) return; // not opened in LINE — UI still renders for preview
+      if (!idToken) return;
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
-        setToken(r.token);
-        setMe(r.user);
-        setToday(await api<Attendance>('/attendance/today'));
-      } catch (e) {
-        setNote(String(e));
-      }
+        setToken(r.token); setMe(r.user); setToday(await api<Attendance>('/attendance/today'));
+      } catch (e) { setNote(String(e)); }
     })();
   }, []);
 
@@ -41,12 +182,12 @@ export function App() {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true }));
       const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
       const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
-      const rec = await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) });
-      setToday(rec);
-    } catch (e) {
-      setNote(String(e));
-    }
+      setToday(await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) }));
+    } catch (e) { setNote(String(e)); }
   }
+
+  if (view === 'payslip') return <div style={{ maxWidth: 420, margin: '0 auto', background: 'var(--bg)' }}><PayslipScreen back={() => setView('profile')} /></div>;
+  if (view === 'register') return <div style={{ maxWidth: 420, margin: '0 auto' }}><RegisterScreen back={() => setView('profile')} /></div>;
 
   const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
   const done = !!today?.checkOutAt;
@@ -67,26 +208,17 @@ export function App() {
             <div style={{ padding: '0 16px 20px', marginTop: -36 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 20, padding: '24px 20px', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', textAlign: 'center' }}>
                 <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{clock}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, color: done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>
-                  {done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, color: done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>{done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}</div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <button onClick={punch} disabled={done}
-                    style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done ? 'default' : 'pointer',
-                      background: done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)',
-                      color: done ? 'var(--ink-3)' : '#fff', boxShadow: done ? 'none' : '0 14px 34px rgba(6,199,85,0.42)' }}>
-                    {done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}
-                  </button>
+                  <button onClick={punch} disabled={done} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done ? 'default' : 'pointer', background: done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done ? 'none' : '0 14px 34px rgba(6,199,85,0.42)' }}>{done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: '12px 14px', marginTop: 14 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-                </div>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg></div>
                 <div><div style={{ fontSize: 13, fontWeight: 600 }}>สำนักงานใหญ่ อโศก</div><div style={{ fontSize: 11, color: 'var(--brand-700)', fontWeight: 500 }}>✓ อยู่ในพื้นที่ทำงาน</div></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
-                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>ชั่วโมงสัปดาห์นี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>32.5<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> / 40 ชม.</span></div></div>
+                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>ชั่วโมงสัปดาห์นี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>32.5<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> / 40</span></div></div>
                 <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>มาสายเดือนนี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>2<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ครั้ง</span></div></div>
               </div>
             </div>
@@ -96,16 +228,10 @@ export function App() {
         {view === 'history' && (
           <div style={{ padding: 16 }}>
             <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ประวัติการเข้างาน</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 18 }}>
-              {[['18', 'ปกติ', 'var(--brand-700)', 'var(--brand-tint)'], ['2', 'สาย', 'var(--warn)', 'var(--warn-tint)'], ['0', 'ขาด', 'var(--danger)', '#FDECEC'], ['1', 'ลา', 'var(--info)', '#EAF1FE']].map((c, i) => (
-                <div key={i} style={{ background: c[3], borderRadius: 14, padding: '12px 4px', textAlign: 'center' }}><div style={{ fontSize: 20, fontWeight: 700, color: c[2] }}>{c[0]}</div><div style={{ fontSize: 11, color: c[2], fontWeight: 500 }}>{c[1]}</div></div>
-              ))}
-            </div>
             {[['09', 'พ.', '08:32 → 17:45', 'ปกติ'], ['08', 'อ.', '09:12 → 18:02', 'สาย'], ['07', 'จ.', '08:05 → 17:30', 'ปกติ']].map((r, i) => (
               <div key={i} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                 <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 16, fontWeight: 700 }}>{r[0]}</span><span style={{ fontSize: 10, color: 'var(--ink-3)' }}>{r[1]}</span></div>
-                <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{r[2]}</div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-2)' }}>{r[3]}</span>
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{r[2]}</div><span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-2)' }}>{r[3]}</span>
               </div>
             ))}
           </div>
@@ -114,12 +240,11 @@ export function App() {
         {view === 'leave' && (
           <div style={{ padding: 16 }}>
             <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ลางาน</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
               {[['28', 'ลาป่วย', 'var(--danger)', '#FDECEC'], ['3', 'ลากิจ', 'var(--info)', '#EAF1FE'], ['6', 'พักร้อน', 'var(--brand-700)', 'var(--brand-tint)']].map((c, i) => (
                 <div key={i} style={{ background: c[3], borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: c[2] }}>{c[0]}</div><div style={{ fontSize: 11, color: c[2], fontWeight: 500 }}>{c[1]}</div></div>
               ))}
             </div>
-            <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 18, color: 'var(--ink-2)', fontSize: 13 }}>ยื่นคำขอลาได้จากที่นี่ (แบบฟอร์มเชื่อมกับระบบอนุมัติของหัวหน้างาน)</div>
           </div>
         )}
 
@@ -131,11 +256,12 @@ export function App() {
               <div style={{ fontSize: 13, opacity: 0.9 }}>{me?.role ?? 'employee'}</div>
             </div>
             <div style={{ padding: '0 16px', marginTop: -42 }}>
-              <div style={{ background: 'var(--surface)', borderRadius: 18, padding: 16, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-                <div style={{ fontSize: 13, color: 'var(--ink-2)' }}>เปิดผ่านแอป LINE เพื่อเข้าสู่ระบบและใช้งานเต็มรูปแบบ</div>
+              <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
+                <button onClick={() => setView('payslip')} style={rowBtn}><span>💰 สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <div style={{ height: 1, background: 'var(--line)' }} />
+                <button onClick={() => setView('register')} style={rowBtn}><span>📝 ลงทะเบียน / ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
               </div>
-              <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }}
-                style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ออกจากระบบ</button>
+              <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }} style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ออกจากระบบ</button>
             </div>
           </div>
         )}
@@ -144,13 +270,8 @@ export function App() {
       {note && <div style={{ position: 'fixed', bottom: 76, left: 0, right: 0, textAlign: 'center', fontSize: 12, color: 'var(--danger)' }}>{note}</div>}
 
       <nav style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)', padding: '6px 8px 10px', display: 'flex' }}>
-        {([
-          ['home', 'หน้าหลัก', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
-          ['history', 'ประวัติ', 'M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8'],
-          ['leave', 'ลางาน', 'M8 2v4M16 2v4M3 10h18'],
-          ['profile', 'โปรไฟล์', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'],
-        ] as const).map(([k, label, d]) => (
-          <button key={k} onClick={() => setView(k)} style={{ flex: 1, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 4px' }}>
+        {([['home', 'หน้าหลัก', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['history', 'ประวัติ', 'M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8'], ['leave', 'ลางาน', 'M8 2v4M16 2v4M3 10h18'], ['profile', 'โปรไฟล์', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']] as const).map(([k, label, d]) => (
+          <button key={k} onClick={() => setView(k as View)} style={{ flex: 1, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 4px' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={view === k ? 'var(--brand)' : 'var(--ink-3)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
             <span style={{ fontSize: 10, fontWeight: 600, color: view === k ? 'var(--brand)' : 'var(--ink-3)' }}>{label}</span>
           </button>
@@ -159,3 +280,4 @@ export function App() {
     </div>
   );
 }
+const rowBtn: React.CSSProperties = { width: '100%', border: 'none', background: 'none', padding: '16px', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit', color: 'var(--ink)' };

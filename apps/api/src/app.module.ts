@@ -13,6 +13,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { LeaveModule } from './modules/leave/leave.module';
 import { HireModule } from './modules/hire/hire.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
+import { MeModule } from './modules/me/me.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     LeaveModule,
     HireModule,
     PayrollModule,
+    MeModule,
   ],
 })
 export class AppModule implements NestModule {
