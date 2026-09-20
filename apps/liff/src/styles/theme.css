@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+
+:root {
+  --brand: #06C755;
+  --brand-700: #04933D;
+  --brand-tint: #E8F9EF;
+  --ink: #1B1D1F;
+  --ink-2: #5B6167;
+  --ink-3: #9AA0A6;
+  --line: #ECEEF1;
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --warn: #C77700;
+  --warn-tint: #FEF3E2;
+  --danger: #D93838;
+  --info: #1D6FE0;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+@keyframes spin { to { transform: rotate(360deg); } }
