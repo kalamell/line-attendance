@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { isAuthed, currentUser, logout, login } from './lib/api';
+import { Outlet } from 'react-router-dom';
+import { isAuthed, login } from './lib/api';
 
 function LoginScreen({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState('owner@poszee.com');
@@ -22,20 +22,31 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
     }
   }
 
+  const field: React.CSSProperties = {
+    width: '100%', height: 44, border: '1px solid var(--line)', borderRadius: 12,
+    padding: '0 14px', margin: '6px 0 16px', fontSize: 14,
+  };
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'IBM Plex Sans Thai, system-ui, sans-serif' }}>
-      <form onSubmit={submit} style={{ width: 340, padding: 28, border: '1px solid #ECEEF1', borderRadius: 16, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Poszee Console</div>
-        <div style={{ fontSize: 13, color: '#5B6167', marginBottom: 20 }}>เข้าสู่ระบบสำหรับผู้ดูแล</div>
-        <label style={{ fontSize: 12, color: '#5B6167' }}>อีเมล</label>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required
-          style={{ width: '100%', height: 42, border: '1px solid #ECEEF1', borderRadius: 10, padding: '0 12px', margin: '6px 0 14px', fontSize: 14 }} />
-        <label style={{ fontSize: 12, color: '#5B6167' }}>รหัสผ่าน</label>
-        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required
-          style={{ width: '100%', height: 42, border: '1px solid #ECEEF1', borderRadius: 10, padding: '0 12px', margin: '6px 0 14px', fontSize: 14 }} />
-        {err && <div style={{ color: '#D93838', fontSize: 12, marginBottom: 12 }}>{err}</div>}
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <form onSubmit={submit} style={{ width: 360, background: 'var(--surface)', padding: 32, borderRadius: 20, boxShadow: '0 12px 40px rgba(17,24,39,0.10)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>TimeLine</div>
+            <div style={{ fontSize: 11, color: 'var(--brand-700)', fontWeight: 600 }}>SaaS Console</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 20 }}>เข้าสู่ระบบสำหรับผู้ดูแล</div>
+        <label style={{ fontSize: 12, color: 'var(--ink-2)' }}>อีเมล</label>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required style={field} />
+        <label style={{ fontSize: 12, color: 'var(--ink-2)' }}>รหัสผ่าน</label>
+        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required style={field} />
+        {err && <div style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 12 }}>{err}</div>}
         <button type="submit" disabled={busy}
-          style={{ width: '100%', height: 46, border: 'none', borderRadius: 12, background: '#06C755', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+          style={{ width: '100%', height: 48, border: 'none', borderRadius: 12, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>
           {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
         </button>
       </form>
@@ -45,29 +56,6 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
 
 export function App() {
   const [authed, setAuthed] = useState(isAuthed());
-  const { pathname } = useLocation();
-
   if (!authed) return <LoginScreen onDone={() => setAuthed(true)} />;
-
-  const me = currentUser();
-  const tab = (to: string, label: string) => (
-    <Link to={to} style={{ padding: '8px 14px', borderRadius: 10, textDecoration: 'none', fontWeight: 600, color: pathname.startsWith(to) ? '#04933D' : '#5B6167', background: pathname.startsWith(to) ? '#E8F9EF' : 'transparent' }}>
-      {label}
-    </Link>
-  );
-
-  return (
-    <div style={{ fontFamily: 'IBM Plex Sans Thai, system-ui, sans-serif', maxWidth: 1100, margin: '0 auto', padding: 24 }}>
-      <header style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
-        <strong style={{ fontSize: 18 }}>Poszee Console</strong>
-        <nav style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
-          {tab('/super', 'Super Admin')}
-          {tab('/hr', 'HR')}
-          <span style={{ fontSize: 12, color: '#9AA0A6', marginLeft: 8 }}>{me?.name} ({me?.role})</span>
-          <button onClick={logout} style={{ border: '1px solid #ECEEF1', background: '#fff', borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>ออก</button>
-        </nav>
-      </header>
-      <Outlet />
-    </div>
-  );
+  return <Outlet />;
 }
