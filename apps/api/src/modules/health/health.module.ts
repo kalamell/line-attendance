@@ -4,7 +4,7 @@ import { Controller, Get, Module } from '@nestjs/common';
 class HealthController {
   @Get()
   check() {
-    return { status: 'ok', build: 'cron-auto-3', ts: new Date().toISOString() };
+    return { status: 'ok', ts: new Date().toISOString() };
   }
 }
 
