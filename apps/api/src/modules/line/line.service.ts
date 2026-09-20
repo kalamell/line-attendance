@@ -37,6 +37,63 @@ export class LineService {
     return { liffId: ch?.liffId ?? null, connected: ch?.connected ?? false };
   }
 
+  /** Admin view of the tenant's LINE settings — never returns decrypted secrets. */
+  async getSettings(tenantId: string) {
+    const ch = await this.getChannel(tenantId);
+    return {
+      loginChannelId: ch?.loginChannelId ?? null,
+      channelId: ch?.channelId ?? null,
+      liffId: ch?.liffId ?? null,
+      connected: ch?.connected ?? false,
+      features: ch?.features ?? { richMenu: true, notifyPush: true, sendSlip: true },
+      hasChannelSecret: !!ch?.channelSecretEnc,
+      hasAccessToken: !!ch?.accessTokenEnc,
+    };
+  }
+
+  /** Upsert the tenant's LINE channel. Secret/token encrypted; blanks don't wipe. */
+  async saveSettings(
+    tenantId: string,
+    dto: {
+      loginChannelId?: string;
+      channelId?: string;
+      channelSecret?: string;
+      accessToken?: string;
+      liffId?: string;
+      features?: { richMenu: boolean; notifyPush: boolean; sendSlip: boolean };
+    },
+  ) {
+    const existing = await this.getChannel(tenantId);
+    const patch: Record<string, unknown> = {};
+    if (dto.loginChannelId !== undefined) patch.loginChannelId = dto.loginChannelId;
+    if (dto.channelId !== undefined) patch.channelId = dto.channelId;
+    if (dto.liffId !== undefined) patch.liffId = dto.liffId;
+    if (dto.channelSecret) patch.channelSecretEnc = this.crypto.encrypt(dto.channelSecret);
+    if (dto.accessToken) patch.accessTokenEnc = this.crypto.encrypt(dto.accessToken);
+    if (dto.features) patch.features = dto.features;
+    patch.connected = !!(patch.accessTokenEnc ?? existing?.accessTokenEnc);
+
+    if (existing) {
+      await db.update(tenantLineChannels).set(patch).where(eq(tenantLineChannels.tenantId, tenantId));
+    } else {
+      await db.insert(tenantLineChannels).values({ tenantId, ...patch });
+    }
+    return this.getSettings(tenantId);
+  }
+
+  /** Verify the stored access token by calling LINE's bot info endpoint. */
+  async testConnection(tenantId: string) {
+    const ch = await this.getChannel(tenantId);
+    if (!ch?.accessTokenEnc) return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token' };
+    const token = this.crypto.decrypt(ch.accessTokenEnc);
+    const res = await fetch('https://api.line.me/v2/bot/info', {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return { ok: false, reason: `LINE ตอบกลับ ${res.status}` };
+    const info = (await res.json()) as { displayName?: string; basicId?: string };
+    return { ok: true, botName: info.displayName, basicId: info.basicId };
+  }
+
   async getChannel(tenantId: string) {
     const [ch] = await db
       .select()
