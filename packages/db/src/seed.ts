@@ -58,7 +58,7 @@ export async function seed(): Promise<void> {
     .insert(users)
     .values([
       { tenantId: tenant.id, role: 'supervisor', name: 'ปิยะ วงศ์ทอง', department: 'บัญชีและการเงิน', position: 'นักบัญชีอาวุโส', employeeCode: 'EMP-10007', baseSalary: '42000' },
-      { tenantId: tenant.id, role: 'employee', name: 'สมชาย ใจดี', department: 'การตลาดดิจิทัล', position: 'เจ้าหน้าที่การตลาด', employeeCode: 'EMP-10245', baseSalary: '35000' },
+      { tenantId: tenant.id, role: 'employee', name: 'สมชาย ใจดี', department: 'การตลาดดิจิทัล', position: 'เจ้าหน้าที่การตลาด', employeeCode: 'EMP-10245', baseSalary: '35000', email: 'somchai@ahaanden.co.th', passwordHash: hashPassword('emp1234') },
       { tenantId: tenant.id, role: 'employee', name: 'ณัฐ ศรีสุข', department: 'ไอที', position: 'วิศวกรซอฟต์แวร์', employeeCode: 'EMP-10102', baseSalary: '48000' },
       { tenantId: tenant.id, role: 'employee', name: 'มาลี ดวงแก้ว', department: 'ฝ่ายขาย', position: 'ผู้จัดการเขต', employeeCode: 'EMP-10130', baseSalary: '55000' },
     ])

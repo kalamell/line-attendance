@@ -18,3 +18,15 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return (await res.json()) as T;
 }
+
+export type SessionUser = { id: string; name: string; role: string; active?: boolean };
+
+/** Employee login without LINE (email + password) — used when not opened in LINE. */
+export async function loginPassword(email: string, password: string): Promise<SessionUser> {
+  const r = await api<{ token: string; user: SessionUser }>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  setToken(r.token);
+  return r.user;
+}

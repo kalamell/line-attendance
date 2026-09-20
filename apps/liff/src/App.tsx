@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { initLiff, getIdToken, liff } from './lib/liff';
-import { api, setToken } from './lib/api';
+import { api, setToken, loginPassword } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
 type Attendance = { status: string; checkInAt: string | null; checkOutAt: string | null } | null;
@@ -200,9 +200,43 @@ function EditProfileScreen({ back }: { back: () => void }) {
   );
 }
 
+/* ================= Employee login (no LINE) ================= */
+function EmployeeLogin({ onDone }: { onDone: (u: Me) => void }) {
+  const [email, setEmail] = useState('somchai@ahaanden.co.th');
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setBusy(true); setErr(null);
+    try { const u = await loginPassword(email, password); onDone(u as Me); }
+    catch { setErr('อีเมลหรือรหัสผ่านไม่ถูกต้อง'); } finally { setBusy(false); }
+  }
+  const field: React.CSSProperties = { width: '100%', height: 46, border: '1px solid var(--line)', borderRadius: 12, padding: '0 14px', margin: '6px 0 16px', fontSize: 15 };
+  return (
+    <div style={{ maxWidth: 420, margin: '0 auto', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <form onSubmit={submit} style={{ width: '100%', background: 'var(--surface)', padding: 28, borderRadius: 20, boxShadow: '0 12px 40px rgba(17,24,39,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
+          </div>
+          <div><div style={{ fontSize: 18, fontWeight: 700 }}>TimeLine</div><div style={{ fontSize: 12, color: 'var(--brand-700)', fontWeight: 600 }}>ลงเวลาเข้างาน</div></div>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 18 }}>เข้าสู่ระบบพนักงาน (หรือเปิดผ่านแอป LINE)</div>
+        <label style={{ fontSize: 12, color: 'var(--ink-2)' }}>อีเมล</label>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required style={field} />
+        <label style={{ fontSize: 12, color: 'var(--ink-2)' }}>รหัสผ่าน</label>
+        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required style={field} />
+        {err && <div style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 12 }}>{err}</div>}
+        <button type="submit" disabled={busy} style={{ width: '100%', height: 48, border: 'none', borderRadius: 12, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>{busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}</button>
+      </form>
+    </div>
+  );
+}
+
 /* ================= App ================= */
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
+  const [authed, setAuthed] = useState(false);
   const [today, setToday] = useState<Attendance>(null);
   const [clock, setClock] = useState('--:--:--');
   const [view, setView] = useState<View>('home');
@@ -213,13 +247,15 @@ export function App() {
     (async () => {
       await initLiff();
       const idToken = getIdToken();
-      if (!idToken) return;
+      if (!idToken) return; // not in LINE — fall back to employee login form
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
-        setToken(r.token); setMe(r.user); setToday(await api<Attendance>('/attendance/today'));
+        setToken(r.token); setMe(r.user); setAuthed(true); setToday(await api<Attendance>('/attendance/today'));
       } catch (e) { setNote(String(e)); }
     })();
   }, []);
+
+  if (!authed) return <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />;
 
   async function punch() {
     if (!getIdToken()) { setNote('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
