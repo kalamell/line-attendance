@@ -9,6 +9,7 @@ import { LineModule } from './modules/line/line.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import { LeaveModule } from './modules/leave/leave.module';
 import { HireModule } from './modules/hire/hire.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
@@ -30,6 +31,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
     AuthModule,
     TenantsModule,
     AttendanceModule,
+    EmployeesModule,
     LeaveModule,
     HireModule,
     PayrollModule,

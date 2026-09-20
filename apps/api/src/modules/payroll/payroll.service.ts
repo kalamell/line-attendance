@@ -1,11 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
-import { db, payslips, users } from '@poszee/db';
+import { and, desc, eq } from 'drizzle-orm';
+import { db, payrollRuns, payslips, users } from '@poszee/db';
 import { LineService } from '../line/line.service';
 
 @Injectable()
 export class PayrollService {
   constructor(private readonly line: LineService) {}
+
+  listRuns(tenantId: string) {
+    return db
+      .select()
+      .from(payrollRuns)
+      .where(eq(payrollRuns.tenantId, tenantId))
+      .orderBy(desc(payrollRuns.period));
+  }
 
   listPayslips(tenantId: string, runId: string) {
     return db

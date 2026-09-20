@@ -12,6 +12,11 @@ import { PayrollService } from './payroll.service';
 class PayrollController {
   constructor(private readonly payroll: PayrollService) {}
 
+  @Get('runs')
+  runs(@TenantId() tenantId: string) {
+    return this.payroll.listRuns(tenantId);
+  }
+
   @Get('runs/:runId/payslips')
   payslips(@TenantId() tenantId: string, @Param('runId') runId: string) {
     return this.payroll.listPayslips(tenantId, runId);
