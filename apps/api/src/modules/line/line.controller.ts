@@ -1,9 +1,17 @@
-import { Controller, Post, Req, Headers, HttpCode } from '@nestjs/common';
+import { Controller, Post, Get, Req, Headers, HttpCode } from '@nestjs/common';
 import type { Request } from 'express';
 import { TenantId } from '../../common/tenant/tenant.decorator';
+import { LineService } from './line.service';
 
 @Controller('line')
 export class LineController {
+  constructor(private readonly line: LineService) {}
+
+  /** Frontend LIFF fetches this (by tenant subdomain/header) before liff.init(). */
+  @Get('config')
+  config(@TenantId() tenantId: string) {
+    return this.line.publicConfig(tenantId);
+  }
   /**
    * Per-tenant webhook: LINE Developers points <sub>.poszee.com/api/line/webhook here.
    * TODO: verify `x-line-signature` (HMAC-SHA256 of the raw body with the tenant's

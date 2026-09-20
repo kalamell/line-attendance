@@ -8,6 +8,13 @@
       "when": 1789889164286,
       "tag": "0000_tan_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789890704765,
+      "tag": "0001_famous_meggan",
+      "breakpoints": true
     }
   ]
 }

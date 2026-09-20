@@ -15,17 +15,26 @@ export class LineService {
 
   constructor(private readonly crypto: CryptoService) {}
 
-  /** Verify a LIFF/LINE-Login id_token against the platform login channel. */
-  async verifyIdToken(idToken: string): Promise<LineProfile> {
-    const clientId = process.env.LINE_LOGIN_CHANNEL_ID ?? '';
+  /**
+   * Verify a LIFF/LINE-Login id_token. In Model B the client_id is the TENANT's
+   * LINE Login channel id; falls back to the platform env for single-channel setups.
+   */
+  async verifyIdToken(idToken: string, clientId?: string): Promise<LineProfile> {
+    const cid = clientId || process.env.LINE_LOGIN_CHANNEL_ID || '';
     const res = await fetch('https://api.line.me/oauth2/v2.1/verify', {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ id_token: idToken, client_id: clientId }),
+      body: new URLSearchParams({ id_token: idToken, client_id: cid }),
     });
     if (!res.ok) throw new Error(`LINE verify failed: ${res.status}`);
     const data = (await res.json()) as { sub: string; name?: string; email?: string };
     return { lineUserId: data.sub, name: data.name, email: data.email };
+  }
+
+  /** Public per-tenant LIFF config the frontend needs before liff.init(). */
+  async publicConfig(tenantId: string): Promise<{ liffId: string | null; connected: boolean }> {
+    const ch = await this.getChannel(tenantId);
+    return { liffId: ch?.liffId ?? null, connected: ch?.connected ?? false };
   }
 
   async getChannel(tenantId: string) {

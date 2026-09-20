@@ -1,4 +1,11 @@
+import { scryptSync, randomBytes } from 'node:crypto';
 import { db, pool } from './client';
+
+// same format as api CryptoService.hashPassword: "<saltHex>.<hashHex>"
+function hashPassword(password: string): string {
+  const salt = randomBytes(16);
+  return `${salt.toString('hex')}.${scryptSync(password, salt, 32).toString('hex')}`;
+}
 import {
   tenants,
   tenantLineChannels,
@@ -12,11 +19,12 @@ import {
 } from './schema';
 
 export async function seed(): Promise<void> {
-  // platform owner
+  // platform owner (console login: owner@poszee.com / poszee-admin)
   await db.insert(users).values({
     role: 'super_admin',
     name: 'Super Admin',
     email: 'owner@poszee.com',
+    passwordHash: hashPassword('poszee-admin'),
   });
 
   // demo tenant
@@ -42,6 +50,7 @@ export async function seed(): Promise<void> {
       department: 'ทรัพยากรบุคคล',
       position: 'ผู้ดูแลระบบ HR',
       employeeCode: 'EMP-10001',
+      passwordHash: hashPassword('hr-admin'),
     })
     .returning();
 

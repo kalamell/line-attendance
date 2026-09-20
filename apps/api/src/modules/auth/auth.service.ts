@@ -4,17 +4,42 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { db, users } from '@poszee/db';
 import type { AuthPrincipal } from '@poszee/shared';
 import { LineService } from '../line/line.service';
+import { CryptoService } from '../../common/crypto/crypto.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly line: LineService,
     private readonly jwt: JwtService,
+    private readonly crypto: CryptoService,
   ) {}
 
-  /** Employee/HR login from LIFF: verify id_token, resolve (or provision) the user, issue JWT. */
+  private sign(user: typeof users.$inferSelect) {
+    const principal: AuthPrincipal = {
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      lineUserId: user.lineUserId ?? undefined,
+    };
+    return {
+      token: this.jwt.sign(principal),
+      user: { id: user.id, name: user.name, role: user.role, tenantId: user.tenantId },
+    };
+  }
+
+  /** Console login (super_admin / org_admin / supervisor) by email + password. */
+  async loginWithPassword(email: string, password: string) {
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!user?.passwordHash || !this.crypto.verifyPassword(password, user.passwordHash)) {
+      throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    }
+    return this.sign(user);
+  }
+
+  /** Employee login from LIFF (Model B: verify against the tenant's LINE Login channel). */
   async loginWithLine(tenantId: string | null, idToken: string) {
-    const profile = await this.line.verifyIdToken(idToken);
+    const channel = tenantId ? await this.line.getChannel(tenantId) : null;
+    const profile = await this.line.verifyIdToken(idToken, channel?.loginChannelId ?? undefined);
 
     const where = tenantId
       ? and(eq(users.tenantId, tenantId), eq(users.lineUserId, profile.lineUserId))
@@ -23,7 +48,6 @@ export class AuthService {
 
     if (!user) {
       if (!tenantId) throw new UnauthorizedException('no platform account for this LINE user');
-      // auto-provision as an employee pending HR onboarding
       [user] = await db
         .insert(users)
         .values({
@@ -36,16 +60,6 @@ export class AuthService {
         })
         .returning();
     }
-
-    const principal: AuthPrincipal = {
-      userId: user.id,
-      tenantId: user.tenantId,
-      role: user.role,
-      lineUserId: user.lineUserId ?? undefined,
-    };
-    return {
-      token: this.jwt.sign(principal),
-      user: { id: user.id, name: user.name, role: user.role, active: user.active },
-    };
+    return this.sign(user);
   }
 }

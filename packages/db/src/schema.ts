@@ -49,6 +49,7 @@ export const tenants = pgTable(
 export const tenantLineChannels = pgTable('tenant_line_channels', {
   id: pk(),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+  loginChannelId: text('login_channel_id'),
   channelId: text('channel_id'),
   channelSecretEnc: text('channel_secret_enc'),
   accessTokenEnc: text('access_token_enc'),
@@ -73,6 +74,8 @@ export const users = pgTable(
     department: text('department'),
     position: text('position'),
     employeeCode: varchar('employee_code', { length: 32 }),
+    // console login (super_admin / org_admin / supervisor) — scrypt hash; employees use LINE
+    passwordHash: text('password_hash'),
     // PII — encrypted at rest (AES-256-GCM ciphertext)
     nationalIdEnc: text('national_id_enc'),
     phoneEnc: text('phone_enc'),
