@@ -60,7 +60,7 @@ function DashboardView() {
 }
 
 /* ---------- staff ---------- */
-type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null };
+type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null; hasConsent?: boolean };
 type EmpForm = { name: string; employeeCode: string; department: string; position: string; email: string; phone: string; baseSalary: string; role: string };
 const EMP_FIELDS: { key: keyof EmpForm; label: string; req?: boolean }[] = [
   { key: 'name', label: 'ชื่อ-นามสกุล', req: true },
@@ -252,7 +252,7 @@ function StaffView() {
       <div style={{ ...card, padding: '8px 20px 12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>PDPA</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
@@ -260,6 +260,7 @@ function StaffView() {
                 <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
                 <td style={{ padding: 12, fontSize: 13 }}>{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
                 <td style={{ padding: 12 }}>{r.lineUserId ? <Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อม" c="var(--ink-3)" bg="#F0F2F4" />}</td>
+                <td style={{ padding: 12 }}>{r.hasConsent ? <Badge text="ยินยอมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="รอยินยอม" c="var(--warn)" bg="var(--warn-tint)" />}</td>
                 <td style={{ padding: 12 }}>{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ปิดใช้งาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
                 <td style={{ padding: 12, textAlign: 'right' }}>
                   <div style={{ display: 'inline-flex', gap: 6 }}>
@@ -269,7 +270,7 @@ function StaffView() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
           </tbody>
         </table>
       </div>
