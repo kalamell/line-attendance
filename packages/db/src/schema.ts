@@ -57,6 +57,8 @@ export const tenantLineChannels = pgTable('tenant_line_channels', {
   channelSecretEnc: text('channel_secret_enc'),
   accessTokenEnc: text('access_token_enc'),
   liffId: text('liff_id'),
+  // { default: <onboarding menu id>, member: <full menu id> } for per-user switching
+  richMenuIds: jsonb('rich_menu_ids').$type<{ default?: string; member?: string }>(),
   connected: boolean('connected').notNull().default(false),
   features: jsonb('features').$type<{ richMenu: boolean; notifyPush: boolean; sendSlip: boolean }>()
     .notNull()

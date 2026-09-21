@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_line_channels" ADD COLUMN "rich_menu_ids" jsonb;

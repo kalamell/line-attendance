@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db, tenantLineChannels } from '@poszee/db';
 import { CryptoService } from '../../common/crypto/crypto.service';
-import { RICH_MENU_PNG_BASE64 } from './richmenu-image';
+import { RICH_MENU_PNG_BASE64, RICH_MENU_ONBOARD_PNG_BASE64 } from './richmenu-image';
 
 export interface LineProfile {
   lineUserId: string;
@@ -173,8 +173,9 @@ export class LineService {
   }
 
   /**
-   * Create (or replace) the OA rich menu and set it as default for all users.
-   * Three areas open the LIFF; new employees who tap it get an onboarding row.
+   * Create two rich menus and set the onboarding one as default:
+   *  - "เริ่มใช้งาน" (default, for new/unlinked users) — one area -> LIFF checkin
+   *  - "สมาชิก" (เช็คอิน/สลิป/ลางาน) — assigned per-user after HR links them
    * Uses the Messaging API access token (works without the LIFF app-type).
    */
   async provisionRichMenu(tenantId: string) {
@@ -183,44 +184,62 @@ export class LineService {
     const token = this.crypto.decrypt(ch.accessTokenEnc);
     const auth = { authorization: `Bearer ${token}` };
     const W = 2500, H = 843, third = Math.round(W / 3);
-    const area = (x: number, w: number, uri: string) => ({
-      bounds: { x, y: 0, width: w, height: H },
-      action: { type: 'uri', uri },
-    });
+    const area = (x: number, w: number, uri: string) => ({ bounds: { x, y: 0, width: w, height: H }, action: { type: 'uri', uri } });
 
-    // 1) create the rich menu definition
-    const cr = await fetch('https://api.line.me/v2/bot/richmenu', {
+    const createMenu = async (name: string, chatBarText: string, areas: unknown[], pngB64: string): Promise<string> => {
+      const cr = await fetch('https://api.line.me/v2/bot/richmenu', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...auth },
+        body: JSON.stringify({ size: { width: W, height: H }, selected: true, name, chatBarText, areas }),
+      });
+      if (!cr.ok) throw new Error(`สร้าง rich menu "${name}" ไม่สำเร็จ (${cr.status}): ${await cr.text()}`);
+      const id = ((await cr.json()) as { richMenuId: string }).richMenuId;
+      const up = await fetch(`https://api-data.line.me/v2/bot/richmenu/${id}/content`, {
+        method: 'POST',
+        headers: { 'content-type': 'image/png', ...auth },
+        body: Buffer.from(pngB64, 'base64'),
+      });
+      if (!up.ok) throw new Error(`อัปโหลดรูป "${name}" ไม่สำเร็จ (${up.status}): ${await up.text()}`);
+      return id;
+    };
+
+    try {
+      // remove old menus so re-provisioning doesn't pile up
+      const list = await fetch('https://api.line.me/v2/bot/richmenu/list', { headers: auth });
+      if (list.ok) {
+        const olds = ((await list.json()) as { richmenus?: { richMenuId: string }[] }).richmenus ?? [];
+        await Promise.all(olds.map((m) => fetch(`https://api.line.me/v2/bot/richmenu/${m.richMenuId}`, { method: 'DELETE', headers: auth })));
+      }
+
+      const onboardId = await createMenu('TimeLine เริ่มใช้งาน', 'เริ่มใช้งาน', [area(0, W, `${LINE_LIFF_URL}?onboard=start`)], RICH_MENU_ONBOARD_PNG_BASE64);
+      const memberId = await createMenu('TimeLine เมนูสมาชิก', 'เมนู', [
+        area(0, third, `${LINE_LIFF_URL}?tab=home`),
+        area(third, third, `${LINE_LIFF_URL}?tab=payslip`),
+        area(third * 2, W - third * 2, `${LINE_LIFF_URL}?tab=leave`),
+      ], RICH_MENU_PNG_BASE64);
+
+      // onboarding menu is the default everyone sees first
+      const sr = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${onboardId}`, { method: 'POST', headers: auth });
+      if (!sr.ok) return { ok: false, reason: `ตั้ง default rich menu ไม่สำเร็จ (${sr.status}): ${await sr.text()}` };
+
+      await db.update(tenantLineChannels).set({ richMenuIds: { default: onboardId, member: memberId } }).where(eq(tenantLineChannels.tenantId, tenantId));
+      return { ok: true, defaultRichMenuId: onboardId, memberRichMenuId: memberId };
+    } catch (e) {
+      return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  /** Assign a specific user the member rich menu (called after HR links them). */
+  async assignMemberRichMenu(tenantId: string, lineUserId: string): Promise<void> {
+    const ch = await this.getChannel(tenantId);
+    const memberId = ch?.richMenuIds?.member;
+    if (!ch?.accessTokenEnc || !memberId) return;
+    const token = this.crypto.decrypt(ch.accessTokenEnc);
+    const res = await fetch(`https://api.line.me/v2/bot/user/${lineUserId}/richmenu/${memberId}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({
-        size: { width: W, height: H },
-        selected: true,
-        name: 'TimeLine เมนูหลัก',
-        chatBarText: 'เมนู',
-        areas: [
-          area(0, third, `${LINE_LIFF_URL}?tab=home`),
-          area(third, third, `${LINE_LIFF_URL}?tab=payslip`),
-          area(third * 2, W - third * 2, `${LINE_LIFF_URL}?tab=leave`),
-        ],
-      }),
+      headers: { authorization: `Bearer ${token}` },
     });
-    if (!cr.ok) return { ok: false, reason: `สร้าง rich menu ไม่สำเร็จ (${cr.status}): ${await cr.text()}` };
-    const richMenuId = ((await cr.json()) as { richMenuId: string }).richMenuId;
-
-    // 2) upload the image
-    const png = Buffer.from(RICH_MENU_PNG_BASE64, 'base64');
-    const ur = await fetch(`https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`, {
-      method: 'POST',
-      headers: { 'content-type': 'image/png', ...auth },
-      body: png,
-    });
-    if (!ur.ok) return { ok: false, reason: `อัปโหลดรูป rich menu ไม่สำเร็จ (${ur.status}): ${await ur.text()}` };
-
-    // 3) set as default for all users
-    const sr = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`, { method: 'POST', headers: auth });
-    if (!sr.ok) return { ok: false, reason: `ตั้ง default rich menu ไม่สำเร็จ (${sr.status}): ${await sr.text()}` };
-
-    return { ok: true, richMenuId };
+    if (!res.ok) this.log.warn(`assign member rich menu failed ${res.status}: ${await res.text()}`);
   }
 
   async getChannel(tenantId: string) {

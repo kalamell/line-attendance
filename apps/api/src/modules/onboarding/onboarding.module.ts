@@ -168,6 +168,8 @@ export class OnboardingService {
 
     await db.update(users).set({ lineUserId: r.lineUserId }).where(eq(users.id, userId));
     await db.update(lineOnboarding).set({ status: 'linked', linkedUserId: userId, updatedAt: new Date() }).where(eq(lineOnboarding.id, r.id));
+    // switch this user from the "เริ่มใช้งาน" menu to the member menu
+    await this.line.assignMemberRichMenu(tenantId, r.lineUserId).catch(() => {});
     return { ok: true };
   }
 
