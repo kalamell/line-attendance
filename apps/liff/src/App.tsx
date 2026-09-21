@@ -47,7 +47,7 @@ function PayslipScreen({ back }: { back: () => void }) {
       if (setStep === 'new') { setFirstPin(code); setPin(''); setSetStep('confirm'); setErr(null); }
       else {
         if (code !== firstPin) { setErr('PIN ไม่ตรงกัน เริ่มตั้งใหม่'); setPin(''); setFirstPin(''); setSetStep('new'); return; }
-        try { await api('/me/pin', { method: 'POST', body: JSON.stringify({ pin: code }) }); await openSlip(); }
+        try { await api('/me/pin', { method: 'PATCH', body: JSON.stringify({ pin: code }) }); await openSlip(); }
         catch { setErr('ตั้ง PIN ไม่สำเร็จ'); setPin(''); }
       }
     }
