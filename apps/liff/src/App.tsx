@@ -20,51 +20,72 @@ function Icon({ n, size = 20, color, style }: { n: string; size?: number; color?
 
 /* ================= Payslip ================= */
 function PayslipScreen({ back }: { back: () => void }) {
+  const [mode, setMode] = useState<'loading' | 'setpin' | 'enterpin' | 'unlocked'>('loading');
+  const [setStep, setSetStep] = useState<'new' | 'confirm'>('new');
+  const [firstPin, setFirstPin] = useState('');
   const [pin, setPin] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const [slip, setSlip] = useState<{ period: string; gross: string; deductions: string; net: string; items: { kind: string; label: string; amount: string }[] } | null>(null);
-  const [note, setNote] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
-  async function unlock(next: string) {
-    try {
-      const v = await api<{ ok: boolean }>('/me/verify-pin', { method: 'POST', body: JSON.stringify({ pin: next }) });
-      if (!v.ok) { setNote('PIN ไม่ถูกต้อง'); setPin(''); return; }
-      setUnlocked(true);
-      setSlip(await api('/me/payslip'));
-    } catch { setNote('เปิดผ่านแอป LINE เพื่อดูสลิปจริง'); }
+  // decide upfront: no PIN yet -> ask to SET one; otherwise ask to enter it
+  useEffect(() => {
+    api<{ hasPin: boolean }>('/me/profile').then((p) => setMode(p.hasPin ? 'enterpin' : 'setpin')).catch(() => setMode('enterpin'));
+  }, []);
+
+  async function openSlip() { setSlip(await api('/me/payslip').catch(() => null)); setMode('unlocked'); }
+
+  async function complete(code: string) {
+    if (mode === 'enterpin') {
+      try {
+        const v = await api<{ ok: boolean }>('/me/verify-pin', { method: 'POST', body: JSON.stringify({ pin: code }) });
+        if (!v.ok) { setErr('PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง'); setPin(''); return; }
+        await openSlip();
+      } catch { setErr('เปิดผ่านแอป LINE เพื่อดูสลิป'); setPin(''); }
+    } else if (mode === 'setpin') {
+      if (setStep === 'new') { setFirstPin(code); setPin(''); setSetStep('confirm'); setErr(null); }
+      else {
+        if (code !== firstPin) { setErr('PIN ไม่ตรงกัน เริ่มตั้งใหม่'); setPin(''); setFirstPin(''); setSetStep('new'); return; }
+        try { await api('/me/pin', { method: 'POST', body: JSON.stringify({ pin: code }) }); await openSlip(); }
+        catch { setErr('ตั้ง PIN ไม่สำเร็จ'); setPin(''); }
+      }
+    }
   }
-  function tap(d: string) {
-    if (pin.length >= 6) return;
-    const np = pin + d;
-    setPin(np);
-    if (np.length >= 6) unlock(np);
-  }
+  function tap(d: string) { if (pin.length >= 6) return; const np = pin + d; setErr(null); setPin(np); if (np.length >= 6) complete(np); }
   const earnings = slip?.items.filter((i) => i.kind === 'earning') ?? [];
   const deductions = slip?.items.filter((i) => i.kind === 'deduction') ?? [];
 
-  if (!unlocked) {
+  if (mode !== 'unlocked') {
+    const title = mode === 'loading' ? 'กำลังโหลด…' : mode === 'setpin' ? (setStep === 'new' ? 'ตั้งรหัส PIN สำหรับสลิป' : 'ยืนยันรหัส PIN') : 'สลิปเงินเดือนถูกป้องกัน';
+    const sub = mode === 'setpin'
+      ? (setStep === 'new' ? 'ยังไม่มีรหัส — ตั้ง PIN 6 หลักเพื่อป้องกันสลิปของคุณ' : 'กรอกรหัสอีกครั้งเพื่อยืนยัน')
+      : mode === 'enterpin' ? 'กรอกรหัส PIN 6 หลักที่คุณตั้งไว้' : '';
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', padding: '16px 28px 28px' }}>
         <button onClick={back} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer' }}>‹ กลับ</button>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: 22, background: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+            <Icon n={mode === 'setpin' ? 'lock_reset' : 'lock'} size={34} color="var(--brand)" />
           </div>
-          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>สลิปเงินเดือนถูกป้องกัน</div>
-          <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center' }}>กรอกรหัส PIN ส่วนตัว 6 หลักที่คุณตั้งไว้</div>
-          <div style={{ display: 'flex', gap: 14, margin: '30px 0 10px' }}>
-            {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: i < pin.length ? 'var(--brand)' : 'transparent', border: `2px solid ${i < pin.length ? 'var(--brand)' : '#C4C9CE'}` }} />)}
+          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>{title}</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', maxWidth: 260 }}>{sub}</div>
+          {mode !== 'loading' && (
+            <div style={{ display: 'flex', gap: 14, margin: '28px 0 8px' }}>
+              {[0, 1, 2, 3, 4, 5].map((i) => <span key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: i < pin.length ? 'var(--brand)' : 'transparent', border: `2px solid ${i < pin.length ? 'var(--brand)' : '#C4C9CE'}` }} />)}
+            </div>
+          )}
+          {err && <div style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 600, marginTop: 8, textAlign: 'center' }}>{err}</div>}
+        </div>
+        {mode !== 'loading' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'].map((k, i) => k === '' ? <span key={i} /> : (
+              <button key={i} onClick={() => (k === 'back' ? (setPin(pin.slice(0, -1)), setErr(null)) : tap(k))}
+                style={{ height: 56, borderRadius: 14, border: 'none', background: k === 'back' ? 'transparent' : 'var(--bg)', fontSize: 22, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {k === 'back' ? <Icon n="backspace" size={22} color="var(--ink-2)" /> : k}
+              </button>
+            ))}
           </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'].map((k, i) => k === '' ? <span key={i} /> : (
-            <button key={i} onClick={() => (k === 'back' ? setPin(pin.slice(0, -1)) : tap(k))}
-              style={{ height: 56, borderRadius: 14, border: 'none', background: k === 'back' ? 'transparent' : 'var(--bg)', fontSize: 22, fontWeight: 600, cursor: 'pointer' }}>
-              {k === 'back' ? '⌫' : k}
-            </button>
-          ))}
-        </div>
+        )}
       </div>
     );
   }
@@ -78,7 +99,7 @@ function PayslipScreen({ back }: { back: () => void }) {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 20px', marginTop: -28 }}>
         <div style={{ background: 'var(--surface)', borderRadius: 18, padding: 20, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-          {note && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>{note}</div>}
+          {!slip && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>ยังไม่มีสลิปเงินเดือนสำหรับคุณ</div>}
           {slip && (
             <>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)', marginBottom: 10 }}>รายได้</div>
