@@ -20,7 +20,9 @@ export function initLiff(): Promise<void> {
         return;
       }
       await liff.init({ liffId });
-      if (!liff.isLoggedIn()) liff.login();
+      // Inside the LINE app the SDK already authenticates — calling liff.login()
+      // there pops LINE's "เข้าสู่ระบบ" screen. Only redirect in an external browser.
+      if (!liff.isLoggedIn() && !liff.isInClient()) liff.login();
     })().catch((e) => console.error('LIFF init failed', e));
   }
   return ready;

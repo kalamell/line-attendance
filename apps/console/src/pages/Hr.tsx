@@ -43,26 +43,233 @@ function DashboardView() {
 }
 
 /* ---------- staff ---------- */
-function StaffView() {
-  const [rows, setRows] = useState<{ id: string; name: string; department?: string; position?: string; role: string; employeeCode?: string; active: boolean }[]>([]);
-  useEffect(() => { api<typeof rows>('/employees').then(setRows).catch(() => {}); }, []);
+type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null };
+type EmpForm = { name: string; employeeCode: string; department: string; position: string; email: string; phone: string; baseSalary: string; role: string };
+const EMP_FIELDS: { key: keyof EmpForm; label: string; req?: boolean }[] = [
+  { key: 'name', label: 'ชื่อ-นามสกุล', req: true },
+  { key: 'employeeCode', label: 'รหัสพนักงาน' },
+  { key: 'department', label: 'แผนก' },
+  { key: 'position', label: 'ตำแหน่ง' },
+  { key: 'email', label: 'อีเมล' },
+  { key: 'phone', label: 'เบอร์โทร' },
+  { key: 'baseSalary', label: 'เงินเดือน' },
+  { key: 'role', label: 'บทบาท' },
+];
+const emptyEmp: EmpForm = { name: '', employeeCode: '', department: '', position: '', email: '', phone: '', baseSalary: '', role: 'employee' };
+
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = []; let row: string[] = []; let cur = ''; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter((r) => r.some((c) => c.trim() !== ''));
+}
+
+/* Add/edit modal */
+function EmployeeModal({ initial, id, onClose, onDone }: { initial: EmpForm; id?: string; onClose: () => void; onDone: (m: string) => void }) {
+  const [f, setF] = useState<EmpForm>(initial);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setBusy(true); setErr(null);
+    const body: Record<string, unknown> = { name: f.name, employeeCode: f.employeeCode, department: f.department, position: f.position, email: f.email, phone: f.phone, role: f.role };
+    if (f.baseSalary) body.baseSalary = f.baseSalary;
+    try {
+      if (id) await api(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      else await api('/employees', { method: 'POST', body: JSON.stringify(body) });
+      onDone(id ? 'บันทึกข้อมูลพนักงานแล้ว' : 'เพิ่มพนักงานแล้ว'); onClose();
+    } catch { setErr('บันทึกไม่สำเร็จ'); } finally { setBusy(false); }
+  }
+  const inp = (k: keyof EmpForm, label: string, type = 'text') => (
+    <div><label style={lbl}>{label}</label><input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} style={field} /></div>
+  );
   return (
-    <div style={{ ...card, padding: '8px 20px 12px' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-          <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>สถานะ</th></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
-              <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
-              <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
-              <td style={{ padding: 12, fontSize: 13 }}>{r.role}</td>
-              <td style={{ padding: 12 }}>{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="รอเริ่มงาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
-            </tr>
-          ))}
-          {rows.length === 0 && <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
-        </tbody>
-      </table>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={submit} style={{ ...card, width: 460, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{id ? 'แก้ไขพนักงาน' : 'เพิ่มพนักงาน'}</div>
+        {err && <div style={{ background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 13px', fontSize: 13, marginBottom: 14 }}>{err}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อ-นามสกุล *</label><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+          {inp('employeeCode', 'รหัสพนักงาน')}
+          {inp('department', 'แผนก')}
+          {inp('position', 'ตำแหน่ง')}
+          {inp('email', 'อีเมล', 'email')}
+          {inp('phone', 'เบอร์โทร')}
+          {inp('baseSalary', 'เงินเดือน (บาท)')}
+          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="submit" disabled={busy} style={{ ...btn('primary'), flex: 1, height: 44 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+          <button type="button" onClick={onClose} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* CSV import with column mapping */
+function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (m: string) => void }) {
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [data, setData] = useState<string[][]>([]);
+  const [map, setMap] = useState<Record<string, number>>({});
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ created: number; failed: number } | null>(null);
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCSV(String(reader.result ?? ''));
+      if (!rows.length) return;
+      const hs = rows[0].map((h) => h.trim());
+      setHeaders(hs); setData(rows.slice(1));
+      // auto-guess mapping by header keywords
+      const guess: Record<string, number> = {};
+      const rules: Record<string, string[]> = { name: ['name', 'ชื่อ', 'พนักงาน'], employeeCode: ['code', 'รหัส', 'id', 'emp'], department: ['dep', 'แผนก', 'ฝ่าย'], position: ['pos', 'ตำแหน่ง'], email: ['mail', 'อีเมล'], phone: ['phone', 'tel', 'เบอร์', 'โทร'], baseSalary: ['salary', 'เงินเดือน', 'ฐาน'], role: ['role', 'บทบาท', 'สิทธิ'] };
+      for (const fld of EMP_FIELDS) {
+        const idx = hs.findIndex((h) => (rules[fld.key] ?? []).some((k) => h.toLowerCase().includes(k.toLowerCase())));
+        guess[fld.key] = idx;
+      }
+      setMap(guess);
+    };
+    reader.readAsText(file);
+  }
+
+  async function doImport() {
+    setBusy(true);
+    try {
+      const rows = data.map((r) => {
+        const o: Record<string, string> = {};
+        for (const fld of EMP_FIELDS) {
+          const idx = map[fld.key];
+          if (idx != null && idx >= 0) {
+            let v = (r[idx] ?? '').trim();
+            if (fld.key === 'role') v = /super|หัวหน้า/i.test(v) ? 'supervisor' : 'employee';
+            o[fld.key] = v;
+          }
+        }
+        return o;
+      }).filter((o) => o.name);
+      const res = await api<{ created: number; failed: number }>('/employees/import', { method: 'POST', body: JSON.stringify({ rows }) });
+      setResult(res);
+      onDone(`นำเข้าสำเร็จ ${res.created} รายการ${res.failed ? ` · ล้มเหลว ${res.failed}` : ''}`);
+    } finally { setBusy(false); }
+  }
+
+  const mappedName = map.name != null && map.name >= 0;
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 560, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>นำเข้าพนักงานจาก CSV</div>
+        {result ? (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ ...card, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', padding: 16, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: 'var(--brand-700)' }}>นำเข้าเสร็จสิ้น</div>
+              <div style={{ fontSize: 14, marginTop: 6 }}>สำเร็จ {result.created} รายการ{result.failed ? ` · ล้มเหลว ${result.failed} รายการ` : ''}</div>
+            </div>
+            <button onClick={onClose} style={{ ...btn('primary'), width: '100%', height: 44 }}>เสร็จสิ้น</button>
+          </div>
+        ) : headers.length === 0 ? (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14, lineHeight: 1.6 }}>เลือกไฟล์ CSV (แถวแรกเป็นหัวคอลัมน์) แล้วจับคู่คอลัมน์กับข้อมูลพนักงานในขั้นถัดไป</div>
+            <input type="file" accept=".csv,text/csv" onChange={onFile} style={{ ...field, padding: 10 }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}><button onClick={onClose} style={{ ...btn('ghost'), height: 40 }}>ยกเลิก</button></div>
+          </div>
+        ) : (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14 }}>พบ {data.length} แถว · จับคู่คอลัมน์ (ระบบเดาให้แล้ว ปรับได้)</div>
+            <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+              {EMP_FIELDS.map((fld) => (
+                <div key={fld.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 130, fontSize: 13, fontWeight: 600 }}>{fld.label}{fld.req && <span style={{ color: 'var(--danger)' }}> *</span>}</div>
+                  <select value={map[fld.key] ?? -1} onChange={(e) => setMap({ ...map, [fld.key]: Number(e.target.value) })} style={{ ...field, flex: 1 }}>
+                    <option value={-1}>— ไม่ใช้ —</option>
+                    {headers.map((h, i) => <option key={i} value={i}>{h || `คอลัมน์ ${i + 1}`}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+            {!mappedName && <div style={{ background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 13px', fontSize: 13, marginBottom: 12 }}>ต้องจับคู่คอลัมน์ "ชื่อ-นามสกุล" ก่อน</div>}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button disabled={!mappedName || busy} onClick={doImport} style={{ ...btn('primary'), flex: 1, height: 44, opacity: mappedName ? 1 : 0.5 }}>{busy ? 'กำลังนำเข้า…' : `นำเข้า ${data.length} รายการ`}</button>
+              <button onClick={() => { setHeaders([]); setData([]); }} style={{ ...btn('ghost'), height: 44 }}>เลือกไฟล์ใหม่</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StaffView() {
+  const [rows, setRows] = useState<Employee[]>([]);
+  const [edit, setEdit] = useState<{ form: EmpForm; id?: string } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [del, setDel] = useState<Employee | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => api<Employee[]>('/employees').then(setRows).catch(() => {});
+  useEffect(() => { load(); }, []);
+  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
+  function openEdit(r: Employee) {
+    setEdit({ id: r.id, form: { ...emptyEmp, name: r.name, employeeCode: r.employeeCode ?? '', department: r.department ?? '', position: r.position ?? '', email: r.email ?? '', baseSalary: r.baseSalary ?? '', role: r.role === 'supervisor' ? 'supervisor' : 'employee' } });
+  }
+  async function remove(r: Employee) {
+    try { await api(`/employees/${r.id}`, { method: 'DELETE' }); flash(`ลบ ${r.name} แล้ว`); }
+    catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'ลบไม่สำเร็จ'); }
+    setDel(null); load();
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
+        <div style={{ flex: 1, fontSize: 14, color: 'var(--ink-2)' }}>ทั้งหมด {rows.length} คน</div>
+        <button onClick={() => setImporting(true)} style={{ ...btn('ghost'), height: 40 }}>นำเข้า CSV</button>
+        <button onClick={() => setEdit({ form: { ...emptyEmp } })} style={{ ...btn('primary'), height: 40 }}>+ เพิ่มพนักงาน</button>
+      </div>
+      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      <div style={{ ...card, padding: '8px 20px 12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
+            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
+                <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
+                <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
+                <td style={{ padding: 12, fontSize: 13 }}>{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
+                <td style={{ padding: 12 }}>{r.lineUserId ? <Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อม" c="var(--ink-3)" bg="#F0F2F4" />}</td>
+                <td style={{ padding: 12 }}>{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ปิดใช้งาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
+                <td style={{ padding: 12, textAlign: 'right' }}>
+                  <div style={{ display: 'inline-flex', gap: 6 }}>
+                    <button onClick={() => openEdit(r)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>แก้ไข</button>
+                    <button onClick={() => setDel(r)} style={{ ...btn('danger'), height: 32, padding: '0 12px', fontSize: 12 }}>ลบ</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {edit && <EmployeeModal initial={edit.form} id={edit.id} onClose={() => setEdit(null)} onDone={(m) => { flash(m); load(); }} />}
+      {importing && <ImportModal onClose={() => setImporting(false)} onDone={(m) => { flash(m); load(); }} />}
+      {del && (
+        <div onClick={() => setDel(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 380, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--danger)', marginBottom: 10 }}>ลบพนักงาน</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 18, lineHeight: 1.6 }}>ลบ "{del.name}"? หากมีประวัติในระบบ (ลงเวลา/ลา/เงินเดือน) ระบบจะปิดการใช้งานแทน</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => remove(del)} style={{ ...btn('danger'), flex: 1, height: 44, background: 'var(--danger)', color: '#fff', border: 'none' }}>ลบ</button>
+              <button onClick={() => setDel(null)} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
