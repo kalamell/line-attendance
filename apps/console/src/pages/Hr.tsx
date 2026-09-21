@@ -241,6 +241,11 @@ function StaffView() {
     catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'ลบไม่สำเร็จ'); }
     setDel(null); load();
   }
+  async function unlinkLine(r: Employee) {
+    try { await api(`/employees/${r.id}/unlink-line`, { method: 'POST' }); flash(`ยกเลิกการผูก LINE ของ ${r.name} แล้ว`); }
+    catch { flash('ยกเลิกผูก LINE ไม่สำเร็จ'); }
+    load();
+  }
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
@@ -259,7 +264,9 @@ function StaffView() {
                 <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
                 <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
                 <td style={{ padding: 12, fontSize: 13 }}>{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
-                <td style={{ padding: 12 }}>{r.lineUserId ? <Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อม" c="var(--ink-3)" bg="#F0F2F4" />}</td>
+                <td style={{ padding: 12 }}>{r.lineUserId
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /><button onClick={() => unlinkLine(r)} title="ยกเลิกการผูก LINE" style={{ border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}>ยกเลิกผูก</button></span>
+                  : <Badge text="ยังไม่เชื่อม" c="var(--ink-3)" bg="#F0F2F4" />}</td>
                 <td style={{ padding: 12 }}>{r.hasConsent ? <Badge text="ยินยอมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="รอยินยอม" c="var(--warn)" bg="var(--warn-tint)" />}</td>
                 <td style={{ padding: 12 }}>{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ปิดใช้งาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
                 <td style={{ padding: 12, textAlign: 'right' }}>
@@ -546,17 +553,18 @@ function OnboardingView() {
     finally { setBusy(null); }
   }
   const unlinked = emps.filter((e) => !e.lineUserId);
+  const visible = rows.filter((r) => r.status !== 'linked'); // matched ones move to the staff list
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16, lineHeight: 1.6 }}>
-        พนักงานใหม่กดเมนู "เริ่มใช้งาน" ใน LINE → รายชื่อจะขึ้นที่นี่ → กด "ส่งยืนยันตัวตน" → เมื่อพนักงานกดยืนยัน → เลือกว่าเป็นพนักงานคนไหนแล้วกด "จับคู่"
+        พนักงานใหม่กดเมนู "เริ่มใช้งาน" ใน LINE → รายชื่อจะขึ้นที่นี่ → กด "ส่งยืนยันตัวตน" → เมื่อพนักงานกดยืนยัน → เลือกว่าเป็นพนักงานคนไหนแล้วกด "จับคู่" (จับคู่แล้วจะย้ายไปหน้าพนักงาน)
       </div>
       {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
       <div style={{ ...card, padding: '8px 18px 12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}><th style={{ padding: 10 }}>ผู้ใช้ LINE</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10 }}>จับคู่กับพนักงาน</th><th style={{ padding: 10, textAlign: 'right' }}>การจัดการ</th></tr></thead>
           <tbody>
-            {rows.map((r) => (
+            {visible.map((r) => (
               <tr key={r.id} style={{ borderTop: '1px solid var(--line)' }}>
                 <td style={{ padding: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -586,7 +594,7 @@ function OnboardingView() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงานกดเริ่มใช้งานผ่าน LINE</td></tr>}
+            {visible.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>ไม่มีพนักงานที่รอจับคู่</td></tr>}
           </tbody>
         </table>
       </div>

@@ -21,6 +21,8 @@ import { RolesGuard } from '../../common/auth/roles.guard';
 import { Roles } from '../../common/auth/roles.decorator';
 import { TenantId } from '../../common/tenant/tenant.decorator';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { LineModule } from '../line/line.module';
+import { LineService } from '../line/line.service';
 
 const EMP_ROLES = ['employee', 'supervisor', 'org_admin'] as const;
 type EmpRole = (typeof EMP_ROLES)[number];
@@ -38,7 +40,19 @@ interface EmployeeInput {
 
 @Injectable()
 export class EmployeesService {
-  constructor(private readonly crypto: CryptoService) {}
+  constructor(private readonly crypto: CryptoService, private readonly line: LineService) {}
+
+  /** Unbind an employee's LINE: free the onboarding record + drop them to the default menu. */
+  async unlinkLine(tenantId: string, id: string) {
+    const [u] = await db.select({ id: users.id, lineUserId: users.lineUserId }).from(users).where(and(eq(users.tenantId, tenantId), eq(users.id, id))).limit(1);
+    if (!u) throw new NotFoundException('ไม่พบพนักงาน');
+    if (!u.lineUserId) return { ok: true };
+    await db.update(users).set({ lineUserId: null }).where(eq(users.id, id));
+    await db.update(lineOnboarding).set({ status: 'confirmed', linkedUserId: null, updatedAt: new Date() })
+      .where(and(eq(lineOnboarding.tenantId, tenantId), eq(lineOnboarding.lineUserId, u.lineUserId)));
+    await this.line.clearUserRichMenu(tenantId, u.lineUserId).catch(() => {});
+    return { ok: true };
+  }
 
   async list(tenantId: string) {
     const rows = await db
@@ -172,6 +186,11 @@ class EmployeesController {
     return this.employees.update(tenantId, id, dto);
   }
 
+  @Post(':id/unlink-line')
+  unlinkLine(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.employees.unlinkLine(tenantId, id);
+  }
+
   @Delete(':id')
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.employees.remove(tenantId, id);
@@ -179,6 +198,7 @@ class EmployeesController {
 }
 
 @Module({
+  imports: [LineModule],
   providers: [EmployeesService],
   controllers: [EmployeesController],
 })
