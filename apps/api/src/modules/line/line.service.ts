@@ -184,6 +184,10 @@ export class LineService {
     const token = this.crypto.decrypt(ch.accessTokenEnc);
     const auth = { authorization: `Bearer ${token}` };
     const W = 2500, H = 843, third = Math.round(W / 3);
+    // Rich menu must open the LIFF launch URL (liff.line.me/{liffId}), NOT the raw
+    // web URL — otherwise LINE opens it as a plain page with no LIFF context and
+    // the app can't get the LINE session (falls back to email/password login).
+    const liffBase = ch.liffId ? `https://liff.line.me/${ch.liffId}` : LINE_LIFF_URL;
     const area = (x: number, w: number, uri: string) => ({ bounds: { x, y: 0, width: w, height: H }, action: { type: 'uri', uri } });
 
     const createMenu = async (name: string, chatBarText: string, areas: unknown[], pngB64: string): Promise<string> => {
@@ -211,11 +215,11 @@ export class LineService {
         await Promise.all(olds.map((m) => fetch(`https://api.line.me/v2/bot/richmenu/${m.richMenuId}`, { method: 'DELETE', headers: auth })));
       }
 
-      const onboardId = await createMenu('TimeLine เริ่มใช้งาน', 'เริ่มใช้งาน', [area(0, W, `${LINE_LIFF_URL}?onboard=start`)], RICH_MENU_ONBOARD_PNG_BASE64);
+      const onboardId = await createMenu('TimeLine เริ่มใช้งาน', 'เริ่มใช้งาน', [area(0, W, `${liffBase}?onboard=start`)], RICH_MENU_ONBOARD_PNG_BASE64);
       const memberId = await createMenu('TimeLine เมนูสมาชิก', 'เมนู', [
-        area(0, third, `${LINE_LIFF_URL}?tab=home`),
-        area(third, third, `${LINE_LIFF_URL}?tab=payslip`),
-        area(third * 2, W - third * 2, `${LINE_LIFF_URL}?tab=leave`),
+        area(0, third, `${liffBase}?tab=home`),
+        area(third, third, `${liffBase}?tab=payslip`),
+        area(third * 2, W - third * 2, `${liffBase}?tab=leave`),
       ], RICH_MENU_PNG_BASE64);
 
       // onboarding menu is the default everyone sees first

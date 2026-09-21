@@ -113,6 +113,9 @@ export class OnboardingService {
   /** HR: push the identity-confirmation Flex card to this LINE user. */
   async sendFlex(tenantId: string, id: string) {
     const r = await this.row(tenantId, id);
+    const ch = await this.line.getChannel(tenantId);
+    // open as a LIFF launch so the app gets the LINE session (not a plain web page)
+    const confirmUri = ch?.liffId ? `https://liff.line.me/${ch.liffId}?onboard=confirm` : `${LIFF_URL}?onboard=confirm`;
     const flex = {
       type: 'flex',
       altText: 'ยืนยันตัวตนเพื่อเริ่มใช้งานระบบลงเวลา',
@@ -135,7 +138,7 @@ export class OnboardingService {
               type: 'button',
               style: 'primary',
               color: '#06C755',
-              action: { type: 'uri', label: 'ยืนยันตัวตน', uri: `${LIFF_URL}?onboard=confirm` },
+              action: { type: 'uri', label: 'ยืนยันตัวตน', uri: confirmUri },
             },
           ],
         },
