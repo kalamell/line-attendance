@@ -348,7 +348,8 @@ export function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [history, setHistory] = useState<AttRow[]>([]);
   const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number> } | null>(null);
-  const flash = (text: string, ok = false) => { setToast({ text, ok }); setTimeout(() => setToast(null), 3500); };
+  const [punching, setPunching] = useState<null | 'locating' | 'saving'>(null);
+  const flash = (text: string, ok = false, ms = 4000) => { setToast({ text, ok }); setTimeout(() => setToast(null), ms); };
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
@@ -398,18 +399,22 @@ export function App() {
     : <SplashScreen />;
 
   async function punch() {
+    if (punching) return; // guard against rapid double taps
     if (!getIdToken()) { flash('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
+    const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
+    setPunching('locating');
     let pos: GeolocationPosition;
     try {
-      pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 }));
-    } catch { flash('เปิดการเข้าถึงตำแหน่ง (GPS) ก่อนเช็คอิน'); return; }
-    const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
+      pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 }));
+    } catch { setPunching(null); flash('เปิดการเข้าถึงตำแหน่ง (GPS) ก่อนเช็คอิน'); return; }
+    setPunching('saving');
     const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
     try {
       setToday(await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) }));
-      flash(checkedIn ? 'เช็คเอาท์เรียบร้อย' : 'เช็คอินเรียบร้อย', true);
+      flash(checkedIn ? '✓ เช็คเอาท์เรียบร้อย' : '✓ เช็คอินเรียบร้อย', true);
       api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
-    } catch (e) { flash(errorMessage(e)); }
+    } catch (e) { flash('⚠️ ' + errorMessage(e), false, 5000); }
+    finally { setPunching(null); }
   }
 
   if (view === 'payslip') return <div style={{ maxWidth: 420, margin: '0 auto', background: 'var(--bg)' }}><PayslipScreen back={() => setView('profile')} /></div>;
@@ -435,9 +440,9 @@ export function App() {
             <div style={{ padding: '0 16px 20px', marginTop: -36 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 20, padding: '24px 20px', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', textAlign: 'center' }}>
                 <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{clock}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, color: done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>{done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, color: punching ? 'var(--brand-700)' : done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>{punching === 'locating' ? '📍 กำลังระบุตำแหน่ง…' : punching === 'saving' ? '⏳ กำลังบันทึก…' : done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}</div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <button onClick={punch} disabled={done} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done ? 'default' : 'pointer', background: done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done ? 'none' : '0 14px 34px rgba(6,199,85,0.42)' }}>{done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
+                  <button onClick={punch} disabled={done || !!punching} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done || punching ? 'default' : 'pointer', background: punching ? '#B8BFC7' : done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done || punching ? 'none' : '0 14px 34px rgba(6,199,85,0.42)', transition: 'background 0.2s' }}>{punching ? 'กำลังดำเนินการ…' : done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', marginTop: 14 }}>
