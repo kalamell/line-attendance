@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { initLiff, getIdToken, getProfile, isInClient, liff } from './lib/liff';
-import { api, setToken, loginPassword } from './lib/api';
+import { api, setToken, loginPassword, errorMessage } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
 type Attendance = { status: string; checkInAt: string | null; checkOutAt: string | null } | null;
+type AttRow = { id: string; workDate: string; status: string; checkInAt: string | null; checkOutAt: string | null };
+type LeaveRow = { id: string; type: 'sick' | 'personal' | 'vacation'; startDate: string; endDate: string; days: string; status: string; reason: string | null };
+type Summary = { weekHours: number; lateThisMonth: number };
 type View = 'home' | 'history' | 'leave' | 'profile' | 'payslip' | 'register' | 'editprofile';
+const LEAVE_LABEL: Record<string, string> = { sick: 'ลาป่วย', personal: 'ลากิจ', vacation: 'พักร้อน' };
+const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมัติ', approved: 'อนุมัติ', rejected: 'ไม่อนุมัติ', present: 'ปกติ', late: 'สาย', absent: 'ขาด', leave: 'ลา' };
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
@@ -291,6 +296,43 @@ function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactiv
   );
 }
 
+/* ================= Leave form ================= */
+function LeaveForm({ onSubmitted, onError }: { onSubmitted: () => void; onError: (m: string) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [type, setType] = useState<'sick' | 'personal' | 'vacation'>('sick');
+  const [startDate, setStart] = useState(today);
+  const [endDate, setEnd] = useState(today);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const fld: React.CSSProperties = { width: '100%', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', fontSize: 14, background: 'var(--surface)' };
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (endDate < startDate) { onError('วันสิ้นสุดต้องไม่ก่อนวันเริ่ม'); return; }
+    setBusy(true);
+    try {
+      await api('/leave', { method: 'POST', body: JSON.stringify({ type, startDate, endDate, reason }) });
+      setReason('');
+      onSubmitted();
+    } catch (e2) { onError(errorMessage(e2)); } finally { setBusy(false); }
+  }
+  return (
+    <form onSubmit={submit} style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>ยื่นคำขอลา</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        {(['sick', 'personal', 'vacation'] as const).map((t) => (
+          <button type="button" key={t} onClick={() => setType(t)} style={{ flex: 1, height: 38, borderRadius: 10, border: type === t ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: type === t ? 'var(--brand-tint)' : '#fff', color: type === t ? 'var(--brand-700)' : 'var(--ink-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{LEAVE_LABEL[t]}</button>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันเริ่ม</div><input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} style={fld} /></div>
+        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันสิ้นสุด</div><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} style={fld} /></div>
+      </div>
+      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="เหตุผล (ไม่บังคับ)" style={{ ...fld, marginBottom: 12 }} />
+      <button type="submit" disabled={busy} style={{ width: '100%', height: 44, border: 'none', borderRadius: 11, background: 'var(--brand)', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{busy ? 'กำลังส่ง…' : 'ส่งคำขอลา'}</button>
+    </form>
+  );
+}
+
 /* ================= App ================= */
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -302,6 +344,11 @@ export function App() {
   const [onboard, setOnboard] = useState<'none' | 'pending' | 'confirmed' | 'inactive'>('none');
   const [booting, setBooting] = useState(true);
   const [external, setExternal] = useState(false); // opened outside the LINE app
+  const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [history, setHistory] = useState<AttRow[]>([]);
+  const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number> } | null>(null);
+  const flash = (text: string, ok = false) => { setToast({ text, ok }); setTimeout(() => setToast(null), 3500); };
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
@@ -325,8 +372,8 @@ export function App() {
             await api('/line/onboarding/checkin', { method: 'POST', body: JSON.stringify({ idToken, displayName: p?.displayName, pictureUrl: p?.pictureUrl }) });
             if (wantConfirm) { await api('/line/onboarding/confirm', { method: 'POST', body: JSON.stringify({ idToken }) }); setOnboard('confirmed'); }
             else setOnboard('pending');
-          } catch (e2) { setNote(String(e2)); }
-        } else setNote(msg);
+          } catch (e2) { setNote(errorMessage(e2)); }
+        } else setNote(errorMessage(e));
       } finally { setBooting(false); }
     })();
   }, []);
@@ -339,14 +386,30 @@ export function App() {
     ? <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />
     : <SplashScreen />;
 
+  // load employee data after auth / on tab switch
+  useEffect(() => {
+    if (!authed) return;
+    api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
+  }, [authed]);
+  useEffect(() => {
+    if (!authed) return;
+    if (view === 'history') api<AttRow[]>('/attendance/history').then(setHistory).catch(() => {});
+    if (view === 'leave') api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {});
+  }, [view, authed]);
+
   async function punch() {
-    if (!getIdToken()) { setNote('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
+    if (!getIdToken()) { flash('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
+    let pos: GeolocationPosition;
     try {
-      const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true }));
-      const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
-      const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
+      pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000 }));
+    } catch { flash('เปิดการเข้าถึงตำแหน่ง (GPS) ก่อนเช็คอิน'); return; }
+    const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
+    const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
+    try {
       setToday(await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) }));
-    } catch (e) { setNote(String(e)); }
+      flash(checkedIn ? 'เช็คเอาท์เรียบร้อย' : 'เช็คอินเรียบร้อย', true);
+      api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
+    } catch (e) { flash(errorMessage(e)); }
   }
 
   if (view === 'payslip') return <div style={{ maxWidth: 420, margin: '0 auto', background: 'var(--bg)' }}><PayslipScreen back={() => setView('profile')} /></div>;
@@ -377,13 +440,13 @@ export function App() {
                   <button onClick={punch} disabled={done} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done ? 'default' : 'pointer', background: done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done ? 'none' : '0 14px 34px rgba(6,199,85,0.42)' }}>{done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: '12px 14px', marginTop: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', marginTop: 14 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg></div>
-                <div><div style={{ fontSize: 13, fontWeight: 600 }}>สำนักงานใหญ่ อโศก</div><div style={{ fontSize: 11, color: 'var(--brand-700)', fontWeight: 500 }}>✓ อยู่ในพื้นที่ทำงาน</div></div>
+                <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>เช็คอินได้เมื่ออยู่ในพื้นที่ออฟฟิศที่กำหนด · ระบบตรวจตำแหน่ง GPS อัตโนมัติ</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
-                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>ชั่วโมงสัปดาห์นี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>32.5<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> / 40</span></div></div>
-                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>มาสายเดือนนี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>2<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ครั้ง</span></div></div>
+                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>ชั่วโมงสัปดาห์นี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.weekHours ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ชม.</span></div></div>
+                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>มาสายเดือนนี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.lateThisMonth ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ครั้ง</span></div></div>
               </div>
             </div>
           </>
@@ -392,23 +455,44 @@ export function App() {
         {view === 'history' && (
           <div style={{ padding: 16 }}>
             <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ประวัติการเข้างาน</h2>
-            {[['09', 'พ.', '08:32 → 17:45', 'ปกติ'], ['08', 'อ.', '09:12 → 18:02', 'สาย'], ['07', 'จ.', '08:05 → 17:30', 'ปกติ']].map((r, i) => (
-              <div key={i} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 16, fontWeight: 700 }}>{r[0]}</span><span style={{ fontSize: 10, color: 'var(--ink-3)' }}>{r[1]}</span></div>
-                <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{r[2]}</div><span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-2)' }}>{r[3]}</span>
-              </div>
-            ))}
+            {history.map((r) => {
+              const d = new Date(r.workDate);
+              const dd = String(d.getDate()).padStart(2, '0');
+              const wd = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'][d.getDay()];
+              const times = `${r.checkInAt ? fmtTime(r.checkInAt) : '--:--'} → ${r.checkOutAt ? fmtTime(r.checkOutAt) : '--:--'}`;
+              const late = r.status === 'late';
+              return (
+                <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 16, fontWeight: 700 }}>{dd}</span><span style={{ fontSize: 10, color: 'var(--ink-3)' }}>{wd}</span></div>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{times}</div>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: late ? 'var(--warn)' : 'var(--ink-2)' }}>{STATUS_LABEL[r.status] ?? r.status}</span>
+                </div>
+              );
+            })}
+            {history.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 32 }}>ยังไม่มีประวัติการเข้างาน</div>}
           </div>
         )}
 
         {view === 'leave' && (
           <div style={{ padding: 16 }}>
             <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ลางาน</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-              {[['28', 'ลาป่วย', 'var(--danger)', '#FDECEC'], ['3', 'ลากิจ', 'var(--info)', '#EAF1FE'], ['6', 'พักร้อน', 'var(--brand-700)', 'var(--brand-tint)']].map((c, i) => (
-                <div key={i} style={{ background: c[3], borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: c[2] }}>{c[0]}</div><div style={{ fontSize: 11, color: c[2], fontWeight: 500 }}>{c[1]}</div></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
+              {([['sick', 'ลาป่วย', 'var(--danger)', '#FDECEC'], ['personal', 'ลากิจ', 'var(--info)', '#EAF1FE'], ['vacation', 'พักร้อน', 'var(--brand-700)', 'var(--brand-tint)']] as const).map(([k, label, col, bg]) => (
+                <div key={k} style={{ background: bg, borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: col }}>{leaveData?.used[k] ?? 0}</div><div style={{ fontSize: 11, color: col, fontWeight: 500 }}>{label} (ใช้ไป)</div></div>
               ))}
             </div>
+            <LeaveForm onSubmitted={() => { flash('ส่งคำขอลาแล้ว รออนุมัติ', true); api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {}); }} onError={(m) => flash(m)} />
+            <div style={{ fontSize: 13, fontWeight: 700, margin: '20px 4px 10px' }}>คำขอของฉัน</div>
+            {(leaveData?.requests ?? []).map((r) => (
+              <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{LEAVE_LABEL[r.type]} · {r.days} วัน</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{r.startDate} → {r.endDate}</div>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'approved' ? 'var(--brand-700)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warn)' }}>{STATUS_LABEL[r.status] ?? r.status}</span>
+              </div>
+            ))}
+            {(leaveData?.requests ?? []).length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 20 }}>ยังไม่มีคำขอลา</div>}
           </div>
         )}
 
@@ -433,7 +517,11 @@ export function App() {
         )}
       </div>
 
-      {note && <div style={{ position: 'fixed', bottom: 76, left: 0, right: 0, textAlign: 'center', fontSize: 12, color: 'var(--danger)' }}>{note}</div>}
+      {(toast || note) && (
+        <div style={{ position: 'fixed', bottom: 84, left: 16, right: 16, display: 'flex', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
+          <div style={{ maxWidth: 360, background: toast?.ok ? 'var(--brand-700)' : '#333', color: '#fff', borderRadius: 12, padding: '11px 18px', fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', textAlign: 'center' }}>{toast?.text ?? note}</div>
+        </div>
+      )}
 
       <nav style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)', padding: '6px 8px 10px', display: 'flex' }}>
         {([['home', 'หน้าหลัก', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['history', 'ประวัติ', 'M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8'], ['leave', 'ลางาน', 'M8 2v4M16 2v4M3 10h18'], ['profile', 'โปรไฟล์', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']] as const).map(([k, label, d]) => (

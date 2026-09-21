@@ -29,6 +29,16 @@ class AttendanceController {
     return this.attendance.today(tenantId, user.userId);
   }
 
+  @Get('history')
+  history(@TenantId() tenantId: string, @CurrentUser() user: AuthPrincipal) {
+    return this.attendance.history(tenantId, user.userId);
+  }
+
+  @Get('summary')
+  summary(@TenantId() tenantId: string, @CurrentUser() user: AuthPrincipal) {
+    return this.attendance.summary(tenantId, user.userId);
+  }
+
   @Post('check-in')
   checkIn(@TenantId() tenantId: string, @CurrentUser() user: AuthPrincipal, @Body() dto: CheckInDto) {
     return this.attendance.checkIn(tenantId, user.userId, dto.lat, dto.lng);

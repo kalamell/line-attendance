@@ -32,6 +32,23 @@ export class LeaveService {
     return rec;
   }
 
+  /** An employee's own leave requests + days used per type this year (real, from approved). */
+  async mine(tenantId: string, userId: string) {
+    const requests = await db
+      .select()
+      .from(leaveRequests)
+      .where(and(eq(leaveRequests.tenantId, tenantId), eq(leaveRequests.userId, userId)))
+      .orderBy(desc(leaveRequests.createdAt));
+    const year = new Date().getFullYear();
+    const used: Record<string, number> = { sick: 0, personal: 0, vacation: 0 };
+    for (const r of requests) {
+      if (r.status === 'approved' && new Date(r.startDate).getFullYear() === year) {
+        used[r.type] = (used[r.type] ?? 0) + Number(r.days ?? 0);
+      }
+    }
+    return { requests, used };
+  }
+
   listPending(tenantId: string) {
     return db
       .select()

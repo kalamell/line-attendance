@@ -21,6 +21,17 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/** Turn an api() error (`"<status> <json>"`) into a clean Thai message for the UI. */
+export function errorMessage(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  const body = raw.replace(/^Error:\s*/, '').replace(/^\d+\s*/, '');
+  try {
+    const j = JSON.parse(body);
+    if (j?.message) return Array.isArray(j.message) ? j.message.join(', ') : String(j.message);
+  } catch { /* not json */ }
+  return body || 'เกิดข้อผิดพลาด';
+}
+
 export type SessionUser = { id: string; name: string; role: string; active?: boolean };
 
 /** Employee login without LINE (email + password) — used when not opened in LINE. */

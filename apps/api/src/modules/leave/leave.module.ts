@@ -29,6 +29,11 @@ class LeaveController {
     return this.leave.create(tenantId, user.userId, dto);
   }
 
+  @Get('mine')
+  mine(@TenantId() tenantId: string, @CurrentUser() user: AuthPrincipal) {
+    return this.leave.mine(tenantId, user.userId);
+  }
+
   @UseGuards(RolesGuard)
   @Roles('supervisor')
   @Get('pending')
