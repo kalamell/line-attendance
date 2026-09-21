@@ -36,6 +36,14 @@ export function getIdToken(): string | null {
   }
 }
 
+export function isInClient(): boolean {
+  try {
+    return liff.isInClient();
+  } catch {
+    return false;
+  }
+}
+
 export async function getProfile(): Promise<{ displayName?: string; pictureUrl?: string } | null> {
   try {
     const p = await liff.getProfile();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { initLiff, getIdToken, getProfile, liff } from './lib/liff';
+import { initLiff, getIdToken, getProfile, isInClient, liff } from './lib/liff';
 import { api, setToken, loginPassword } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
@@ -301,13 +301,16 @@ export function App() {
   const [note, setNote] = useState<string | null>(null);
   const [onboard, setOnboard] = useState<'none' | 'pending' | 'confirmed' | 'inactive'>('none');
   const [booting, setBooting] = useState(true);
+  const [external, setExternal] = useState(false); // opened outside the LINE app
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
     (async () => {
       await initLiff();
+      const inClient = isInClient();
+      setExternal(!inClient);
       const idToken = getIdToken();
-      if (!idToken) { setBooting(false); return; } // not in LINE — fall back to employee login form
+      if (!idToken) { setBooting(false); return; } // no LINE token — external browser shows login form
       const wantConfirm = new URLSearchParams(location.search).get('onboard') === 'confirm';
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
@@ -330,7 +333,11 @@ export function App() {
 
   if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
   if (booting) return <SplashScreen />;
-  if (!authed) return <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />;
+  // Employee email/password form only outside the LINE app; inside LINE we keep
+  // the splash rather than flashing a login form during LINE's consent step.
+  if (!authed) return external
+    ? <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />
+    : <SplashScreen />;
 
   async function punch() {
     if (!getIdToken()) { setNote('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
