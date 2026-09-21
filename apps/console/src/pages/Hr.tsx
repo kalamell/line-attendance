@@ -196,6 +196,13 @@ function LineView() {
       load();
     } finally { setBusy(false); }
   }
+  async function provisionMenu() {
+    setBusy(true);
+    try {
+      const r = await api<{ ok: boolean; richMenuId?: string; reason?: string }>('/line/provision-richmenu', { method: 'POST' });
+      flash(r.ok ? `สร้าง Rich menu และตั้งเป็นค่าเริ่มต้นแล้ว` : `สร้าง Rich menu ไม่สำเร็จ: ${r.reason}`, 5000);
+    } finally { setBusy(false); }
+  }
   async function test() {
     const r = await api<{ ok: boolean; reason?: string; botName?: string }>('/line/test', { method: 'POST' });
     flash(r.ok ? `เชื่อมต่อสำเร็จ · OA: ${r.botName}` : `ทดสอบไม่ผ่าน: ${r.reason}`, 4000);
@@ -236,6 +243,82 @@ function LineView() {
         <button onClick={save} disabled={busy} style={{ ...btn('primary'), height: 46, padding: '0 22px', fontSize: 14 }}>บันทึกการเชื่อมต่อ</button>
         <button onClick={test} disabled={busy} style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ทดสอบการเชื่อมต่อ</button>
         <button onClick={provision} disabled={busy} title="สร้าง/เชื่อม LIFF จาก Access Token ที่บันทึกไว้" style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14 }}>สร้าง LIFF อัตโนมัติ</button>
+        <button onClick={provisionMenu} disabled={busy} title="สร้าง Rich menu และตั้งเป็นค่าเริ่มต้น" style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14 }}>สร้าง Rich menu</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- onboarding (new employees via LINE) ---------- */
+type Contact = { id: string; lineUserId: string; displayName: string | null; pictureUrl: string | null; status: 'incoming' | 'flex_sent' | 'confirmed' | 'linked' | 'rejected'; linkedUserId: string | null; linkedUserName: string | null; updatedAt: string };
+type Emp = { id: string; name: string; department: string | null; position: string | null; employeeCode: string | null; lineUserId: string | null };
+const ONB_STATUS: Record<Contact['status'], { c: string; bg: string; label: string }> = {
+  incoming: { c: 'var(--info)', bg: 'var(--info-tint)', label: 'เข้ามาใหม่' },
+  flex_sent: { c: 'var(--warn)', bg: 'var(--warn-tint)', label: 'ส่งยืนยันแล้ว' },
+  confirmed: { c: 'var(--brand-700)', bg: 'var(--brand-tint)', label: 'พนักงานยืนยันแล้ว' },
+  linked: { c: 'var(--brand-700)', bg: 'var(--brand-tint)', label: 'จับคู่แล้ว' },
+  rejected: { c: 'var(--ink-3)', bg: '#F0F2F4', label: 'ปฏิเสธ' },
+};
+function OnboardingView() {
+  const [rows, setRows] = useState<Contact[]>([]);
+  const [emps, setEmps] = useState<Emp[]>([]);
+  const [pick, setPick] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
+  function load() {
+    api<Contact[]>('/line/onboarding/manage').then(setRows).catch(() => {});
+    api<Emp[]>('/employees').then(setEmps).catch(() => {});
+  }
+  useEffect(() => { load(); }, []);
+  async function act(id: string, path: string, body?: unknown, ok?: string) {
+    setBusy(id);
+    try { await api(`/line/onboarding/manage/${id}/${path}`, { method: 'POST', body: body ? JSON.stringify(body) : undefined }); if (ok) flash(ok); load(); }
+    catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '') : 'ทำรายการไม่สำเร็จ'); }
+    finally { setBusy(null); }
+  }
+  const unlinked = emps.filter((e) => !e.lineUserId);
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16, lineHeight: 1.6 }}>
+        พนักงานใหม่กดเมนู "เริ่มใช้งาน" ใน LINE → รายชื่อจะขึ้นที่นี่ → กด "ส่งยืนยันตัวตน" → เมื่อพนักงานกดยืนยัน → เลือกว่าเป็นพนักงานคนไหนแล้วกด "จับคู่"
+      </div>
+      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      <div style={{ ...card, padding: '8px 18px 12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}><th style={{ padding: 10 }}>ผู้ใช้ LINE</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10 }}>จับคู่กับพนักงาน</th><th style={{ padding: 10, textAlign: 'right' }}>การจัดการ</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} style={{ borderTop: '1px solid var(--line)' }}>
+                <td style={{ padding: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {r.pictureUrl ? <img src={r.pictureUrl} alt="" style={{ width: 34, height: 34, borderRadius: '50%' }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--brand-tint)', color: 'var(--brand-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>{(r.displayName ?? '?')[0]}</div>}
+                    <div><div style={{ fontSize: 14, fontWeight: 600 }}>{r.displayName ?? '(ไม่มีชื่อ)'}</div><div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{r.lineUserId.slice(0, 12)}…</div></div>
+                  </div>
+                </td>
+                <td style={{ padding: 12 }}><Badge text={ONB_STATUS[r.status].label} c={ONB_STATUS[r.status].c} bg={ONB_STATUS[r.status].bg} /></td>
+                <td style={{ padding: 12 }}>
+                  {r.status === 'linked' ? <span style={{ fontSize: 13, fontWeight: 600 }}>{r.linkedUserName}</span> : (
+                    <select value={pick[r.id] ?? ''} onChange={(e) => setPick({ ...pick, [r.id]: e.target.value })} style={{ ...field, width: 210, padding: '8px 10px' }}>
+                      <option value="">— เลือกพนักงาน —</option>
+                      {unlinked.map((e) => <option key={e.id} value={e.id}>{e.name}{e.department ? ` · ${e.department}` : ''}</option>)}
+                    </select>
+                  )}
+                </td>
+                <td style={{ padding: 12, textAlign: 'right' }}>
+                  {r.status !== 'linked' && r.status !== 'rejected' && (
+                    <div style={{ display: 'inline-flex', gap: 6 }}>
+                      <button disabled={busy === r.id} onClick={() => act(r.id, 'send-flex', undefined, 'ส่งการ์ดยืนยันตัวตนแล้ว')} style={{ ...btn('ghost'), height: 34 }}>ส่งยืนยันตัวตน</button>
+                      <button disabled={busy === r.id || !pick[r.id]} onClick={() => act(r.id, 'link', { userId: pick[r.id] }, 'จับคู่พนักงานเรียบร้อย')} style={{ ...btn('primary'), height: 34, opacity: pick[r.id] ? 1 : 0.5 }}>จับคู่</button>
+                      <button disabled={busy === r.id} onClick={() => act(r.id, 'reject', undefined, 'ปฏิเสธแล้ว')} title="ปฏิเสธ" style={{ ...btn('danger'), height: 34, padding: '0 12px' }}>✕</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงานกดเริ่มใช้งานผ่าน LINE</td></tr>}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -245,12 +328,13 @@ function LineView() {
 const NAV = [
   { key: 'dashboard', label: 'แดชบอร์ด' },
   { key: 'staff', label: 'พนักงาน' },
+  { key: 'onboarding', label: 'พนักงานเข้าใหม่ (LINE)' },
   { key: 'hire', label: 'อนุมัติเริ่มงาน' },
   { key: 'leave', label: 'อนุมัติการลา' },
   { key: 'payroll', label: 'เงินเดือน' },
   { key: 'line', label: 'การเชื่อมต่อ LINE' },
 ] as const;
-const TITLES: Record<string, string> = { dashboard: 'ภาพรวม', staff: 'พนักงาน', hire: 'อนุมัติเริ่มงาน', leave: 'อนุมัติการลา', payroll: 'เงินเดือน', line: 'การเชื่อมต่อ LINE' };
+const TITLES: Record<string, string> = { dashboard: 'ภาพรวม', staff: 'พนักงาน', onboarding: 'พนักงานเข้าใหม่ (LINE)', hire: 'อนุมัติเริ่มงาน', leave: 'อนุมัติการลา', payroll: 'เงินเดือน', line: 'การเชื่อมต่อ LINE' };
 
 export function HrPage() {
   const me = currentUser();
@@ -291,6 +375,7 @@ export function HrPage() {
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
           {view === 'dashboard' && <DashboardView />}
           {view === 'staff' && <StaffView />}
+          {view === 'onboarding' && <OnboardingView />}
           {view === 'hire' && <HireView />}
           {view === 'leave' && <LeaveView />}
           {view === 'payroll' && <PayrollView />}

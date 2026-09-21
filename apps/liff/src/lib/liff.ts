@@ -30,4 +30,13 @@ export function getIdToken(): string | null {
   return liff.getIDToken();
 }
 
+export async function getProfile(): Promise<{ displayName?: string; pictureUrl?: string } | null> {
+  try {
+    const p = await liff.getProfile();
+    return { displayName: p.displayName, pictureUrl: p.pictureUrl };
+  } catch {
+    return null;
+  }
+}
+
 export { liff };

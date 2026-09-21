@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { initLiff, getIdToken, liff } from './lib/liff';
+import { initLiff, getIdToken, getProfile, liff } from './lib/liff';
 import { api, setToken, loginPassword } from './lib/api';
 
 type Me = { id: string; name: string; role: string; active: boolean };
@@ -267,6 +267,30 @@ function EmployeeLogin({ onDone }: { onDone: (u: Me) => void }) {
   );
 }
 
+/* ================= Onboarding / splash ================= */
+function SplashScreen() {
+  return (
+    <div style={{ maxWidth: 420, margin: '0 auto', height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--ink-3)', fontSize: 14 }}>
+      กำลังโหลด…
+    </div>
+  );
+}
+
+function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactive' }) {
+  const cfg = {
+    pending: { icon: '👋', title: 'ยินดีต้อนรับ!', body: 'เราส่งข้อมูลของคุณให้ฝ่ายบุคคลแล้ว ฝ่ายบุคคลจะส่งการ์ดยืนยันตัวตนมาให้คุณกดยืนยัน แล้วจับคู่บัญชีให้ กรุณารอสักครู่', tint: 'var(--brand-tint)' },
+    confirmed: { icon: '✅', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เมื่อเสร็จแล้วคุณจะเริ่มใช้งานได้ทันที', tint: 'var(--brand-tint)' },
+    inactive: { icon: '⏳', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน กรุณาติดต่อฝ่ายบุคคลหากรอนานเกินไป', tint: 'var(--warn-tint)' },
+  }[state];
+  return (
+    <div style={{ maxWidth: 420, margin: '0 auto', height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32, background: 'var(--bg)', textAlign: 'center' }}>
+      <div style={{ width: 84, height: 84, borderRadius: '50%', background: cfg.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>{cfg.icon}</div>
+      <div style={{ fontSize: 20, fontWeight: 700 }}>{cfg.title}</div>
+      <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, maxWidth: 320 }}>{cfg.body}</div>
+    </div>
+  );
+}
+
 /* ================= App ================= */
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -275,20 +299,37 @@ export function App() {
   const [clock, setClock] = useState('--:--:--');
   const [view, setView] = useState<View>('home');
   const [note, setNote] = useState<string | null>(null);
+  const [onboard, setOnboard] = useState<'none' | 'pending' | 'confirmed' | 'inactive'>('none');
+  const [booting, setBooting] = useState(true);
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
     (async () => {
       await initLiff();
       const idToken = getIdToken();
-      if (!idToken) return; // not in LINE — fall back to employee login form
+      if (!idToken) { setBooting(false); return; } // not in LINE — fall back to employee login form
+      const wantConfirm = new URLSearchParams(location.search).get('onboard') === 'confirm';
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
         setToken(r.token); setMe(r.user); setAuthed(true); setToday(await api<Attendance>('/attendance/today'));
-      } catch (e) { setNote(String(e)); }
+      } catch (e) {
+        const msg = String(e);
+        if (msg.includes('ACCOUNT_INACTIVE')) { setOnboard('inactive'); }
+        else if (msg.includes('ONBOARDING_REQUIRED')) {
+          // record this LINE user so HR can see + match them
+          const p = await getProfile();
+          try {
+            await api('/line/onboarding/checkin', { method: 'POST', body: JSON.stringify({ idToken, displayName: p?.displayName, pictureUrl: p?.pictureUrl }) });
+            if (wantConfirm) { await api('/line/onboarding/confirm', { method: 'POST', body: JSON.stringify({ idToken }) }); setOnboard('confirmed'); }
+            else setOnboard('pending');
+          } catch (e2) { setNote(String(e2)); }
+        } else setNote(msg);
+      } finally { setBooting(false); }
     })();
   }, []);
 
+  if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
+  if (booting && getIdToken()) return <SplashScreen />;
   if (!authed) return <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />;
 
   async function punch() {

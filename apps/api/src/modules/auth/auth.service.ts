@@ -44,22 +44,12 @@ export class AuthService {
     const where = tenantId
       ? and(eq(users.tenantId, tenantId), eq(users.lineUserId, profile.lineUserId))
       : and(isNull(users.tenantId), eq(users.lineUserId, profile.lineUserId));
-    let [user] = await db.select().from(users).where(where).limit(1);
+    const [user] = await db.select().from(users).where(where).limit(1);
 
-    if (!user) {
-      if (!tenantId) throw new UnauthorizedException('no platform account for this LINE user');
-      [user] = await db
-        .insert(users)
-        .values({
-          tenantId,
-          role: 'employee',
-          name: profile.name ?? 'พนักงานใหม่',
-          lineUserId: profile.lineUserId,
-          email: profile.email,
-          active: false,
-        })
-        .returning();
-    }
+    // New-employee onboarding is HR-driven: unknown LINE users are NOT auto-created.
+    // The LIFF catches this and records them via /line/onboarding/checkin so HR can match.
+    if (!user) throw new UnauthorizedException('ONBOARDING_REQUIRED');
+    if (!user.active) throw new UnauthorizedException('ACCOUNT_INACTIVE');
     return this.sign(user);
   }
 }
