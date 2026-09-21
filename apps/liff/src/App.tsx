@@ -329,7 +329,7 @@ export function App() {
   }, []);
 
   if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
-  if (booting && getIdToken()) return <SplashScreen />;
+  if (booting) return <SplashScreen />;
   if (!authed) return <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />;
 
   async function punch() {

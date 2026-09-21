@@ -27,7 +27,13 @@ export function initLiff(): Promise<void> {
 }
 
 export function getIdToken(): string | null {
-  return liff.getIDToken();
+  // liff.getIDToken() throws "liffId is necessary" if called before init — never
+  // let that bubble into React render.
+  try {
+    return liff.getIDToken();
+  } catch {
+    return null;
+  }
 }
 
 export async function getProfile(): Promise<{ displayName?: string; pictureUrl?: string } | null> {
