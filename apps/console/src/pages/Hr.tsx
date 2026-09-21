@@ -215,23 +215,63 @@ function LineView() {
       <span style={{ fontSize: 14 }}>{label}</span>
     </label>
   );
+  const hint = (t: React.ReactNode) => <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 5, lineHeight: 1.5 }}>{t}</div>;
   return (
-    <div style={{ maxWidth: 720 }}>
+    <div style={{ maxWidth: 760 }}>
+      <div style={{ ...card, padding: '14px 18px', marginBottom: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>
+        <div style={{ fontSize: 13, color: 'var(--brand-700)', lineHeight: 1.6 }}>
+          เปิด <b>LINE Developers Console</b> (developers.line.biz) → เลือก <b>Provider</b> ของคุณ จะเห็น 2 แชนแนล: <b>LINE Login</b> (สำหรับให้พนักงานล็อกอิน/LIFF) และ <b>Messaging API</b> (บอตสำหรับส่งแจ้งเตือน/สลิป/rich menu) — คัดลอกค่าจากแต่ละแชนแนลมาตามช่องด้านล่าง
+        </div>
+      </div>
+
+      {/* ---- LINE Login channel ---- */}
+      <div style={{ ...card, padding: 22, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>1) LINE Login channel <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 13 }}>— สำหรับล็อกอิน + LIFF</span></div>
+          {f.liffId && f.liffId.indexOf('abcdWXYZ') === -1 ? <Badge text="● พร้อมล็อกอิน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่พร้อม" c="var(--warn)" bg="var(--warn-tint)" />}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>ต้องเป็นแชนแนลชนิด LINE Login ที่เปิด <b>Web app</b> ไว้ (แท็บ LINE Login → App types)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 14 }}>
+          <div>
+            <label style={lbl}>LINE Login Channel ID</label>
+            <input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} placeholder="เช่น 2001234567" style={field} />
+            {hint(<>แชนแนล LINE Login → แท็บ <b>Basic settings</b> → หัวข้อ <b>Channel ID</b> (ตัวเลขล้วน)</>)}
+          </div>
+          <div>
+            <label style={lbl}>LINE Login Channel Secret {hasLoginSecret && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.loginChannelSecret} onChange={(e) => setF({ ...f, loginChannelSecret: e.target.value })} placeholder="••••••••" style={field} />
+            {hint(<>แชนแนลเดียวกัน → <b>Basic settings</b> → <b>Channel secret</b> · ใช้ให้ระบบสร้าง LIFF อัตโนมัติ</>)}
+          </div>
+        </div>
+        <label style={lbl}>LIFF ID <span style={{ color: 'var(--ink-3)' }}>(ระบบสร้าง/เชื่อมให้อัตโนมัติ)</span></label>
+        <input value={f.liffId} readOnly placeholder="— ระบบจะสร้างให้เมื่อกรอก Login Channel ID + Secret แล้วบันทึก —" style={{ ...field, marginBottom: 6, background: 'var(--bg)', color: 'var(--ink-2)' }} />
+        {hint(<>ไม่ต้องสร้าง LIFF ใน LINE เอง — ระบบสร้างให้ที่ endpoint <b>https://hr.poszee.com/liff/</b> (scope openid+profile) และตั้ง Channel ID ให้เอง</>)}
+      </div>
+
+      {/* ---- Messaging API channel ---- */}
       <div style={{ ...card, padding: 22, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>Messaging API & LIFF (ต่อหน่วยงาน)</div>
+          <div style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>2) Messaging API channel <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 13 }}>— บอต: แจ้งเตือน/สลิป/rich menu</span></div>
           {connected ? <Badge text="● เชื่อมต่อแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อมต่อ" c="var(--ink-3)" bg="#F0F2F4" />}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <div><label style={lbl}>LINE Login Channel ID</label><input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} placeholder="เช่น 2001234567" style={field} /></div>
-          <div><label style={lbl}>LINE Login Channel Secret {hasLoginSecret && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.loginChannelSecret} onChange={(e) => setF({ ...f, loginChannelSecret: e.target.value })} placeholder="••••••••" style={field} /></div>
-          <div><label style={lbl}>Messaging Channel ID</label><input value={f.channelId} onChange={(e) => setF({ ...f, channelId: e.target.value })} style={field} /></div>
-          <div><label style={lbl}>Channel Secret {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" style={field} /></div>
-          <div><label style={lbl}>Channel Access Token {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" style={field} /></div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 4 }}>
+          <div>
+            <label style={lbl}>Messaging Channel ID</label>
+            <input value={f.channelId} onChange={(e) => setF({ ...f, channelId: e.target.value })} placeholder="เช่น 2001234567" style={field} />
+            {hint(<>แชนแนล Messaging API → <b>Basic settings</b> → <b>Channel ID</b></>)}
+          </div>
+          <div>
+            <label style={lbl}>Channel Secret {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" style={field} />
+            {hint(<>Messaging API → <b>Basic settings</b> → <b>Channel secret</b> (ใช้ตรวจ webhook)</>)}
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label style={lbl}>Channel Access Token {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" style={field} />
+            {hint(<>Messaging API → แท็บ <b>Messaging API</b> → <b>Channel access token (long-lived)</b> → กด Issue · ใช้ส่งข้อความ/สร้าง rich menu</>)}
+          </div>
         </div>
-        <label style={lbl}>LIFF ID <span style={{ color: 'var(--ink-3)' }}>(ระบบสร้าง/เชื่อมให้อัตโนมัติจาก Access Token)</span></label>
-        <input value={f.liffId} readOnly placeholder="— ระบบจะสร้างให้เมื่อบันทึก Access Token —" style={{ ...field, marginBottom: 6, background: 'var(--bg)', color: 'var(--ink-2)' }} />
-        <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>ไม่ต้องไปสร้าง LIFF ใน LINE เอง — กรอก Access Token แล้วบันทึก ระบบจะสร้าง LIFF app (endpoint https://hr.poszee.com/liff/, scope openid+profile) และดึง Channel ID ให้เอง · credential ถูกเข้ารหัสก่อนจัดเก็บ</div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 12 }}>Webhook URL (ตั้งใน Messaging API → Webhook): <b>https://hr.poszee.com/api/line/webhook</b> · credential ทั้งหมดถูกเข้ารหัสก่อนจัดเก็บ</div>
       </div>
 
       <div style={{ ...card, padding: '4px 22px 16px', marginBottom: 16 }}>
