@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Injectable, Module, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Injectable, Module, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { and, desc, eq } from 'drizzle-orm';
 import { db, users, payslips, payrollRuns, salaryComponents, pdpaConsents } from '@poszee/db';
@@ -54,7 +54,9 @@ export class MeService {
     const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!u) throw new UnauthorizedException();
     if (u.passwordHash && !this.crypto.verifyPassword(currentPassword ?? '', u.passwordHash)) {
-      throw new UnauthorizedException('รหัสผ่านเดิมไม่ถูกต้อง');
+      // Business validation, NOT a token failure — must be 400 so the client
+      // shows an inline error instead of treating it as an expired session.
+      throw new BadRequestException('รหัสผ่านเดิมไม่ถูกต้อง');
     }
     await db.update(users).set({ passwordHash: this.crypto.hashPassword(newPassword) }).where(eq(users.id, userId));
     return { ok: true };

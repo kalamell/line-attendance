@@ -26,7 +26,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (t) headers.set('authorization', `Bearer ${t}`);
 
   const res = await fetch(`/api${path}`, { ...init, headers });
-  if (res.status === 401) {
+  // Only treat 401 as an expired session when we were actually authed with a
+  // token. Business validation errors use 4xx (e.g. 400) and are thrown to the
+  // caller so it can show an inline message instead of logging the user out.
+  if (res.status === 401 && t) {
     logout();
     throw new Error('unauthorized');
   }
