@@ -22,6 +22,13 @@
       "when": 1789950651935,
       "tag": "0002_thick_phalanx",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789955643459,
+      "tag": "0003_lean_black_bolt",
+      "breakpoints": true
     }
   ]
 }

@@ -57,4 +57,10 @@ export class LineSettingsController {
   provisionLiff(@TenantId() tenantId: string) {
     return this.line.provisionLiff(tenantId);
   }
+
+  /** One-click: create + set the default rich menu from the stored token. */
+  @Post('provision-richmenu')
+  provisionRichMenu(@TenantId() tenantId: string) {
+    return this.line.provisionRichMenu(tenantId);
+  }
 }

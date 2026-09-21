@@ -25,6 +25,7 @@ export const requestStatusEnum = pgEnum('request_status', ['pending', 'approved'
 export const payrollStatusEnum = pgEnum('payroll_status', ['draft', 'approved', 'paid']);
 export const salaryKindEnum = pgEnum('salary_kind', ['earning', 'deduction']);
 export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'expired', 'revoked']);
+export const onboardingStatusEnum = pgEnum('onboarding_status', ['incoming', 'flex_sent', 'confirmed', 'linked', 'rejected']);
 
 const pk = () => uuid('id').defaultRandom().primaryKey();
 const createdAt = () => timestamp('created_at', { withTimezone: true }).defaultNow().notNull();
@@ -231,6 +232,27 @@ export const invitations = pgTable('invitations', {
   createdAt: createdAt(),
 });
 
+// ---------- LINE onboarding (new employee self-checks-in via rich menu; HR matches) ----------
+export const lineOnboarding = pgTable(
+  'line_onboarding',
+  {
+    id: pk(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    lineUserId: text('line_user_id').notNull(),
+    displayName: text('display_name'),
+    pictureUrl: text('picture_url'),
+    status: onboardingStatusEnum('status').notNull().default('incoming'),
+    // employee record (created by HR) this LINE user is matched to
+    linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    onbTenantLineUq: uniqueIndex('onboarding_tenant_line_uq').on(t.tenantId, t.lineUserId),
+    onbTenantStatusIdx: index('onboarding_tenant_status_idx').on(t.tenantId, t.status),
+  }),
+);
+
 // ---------- audit log (PDPA: track access/changes to personal data) ----------
 export const auditLogs = pgTable(
   'audit_logs',
@@ -260,5 +282,6 @@ export const schema = {
   payslips,
   salaryComponents,
   invitations,
+  lineOnboarding,
   auditLogs,
 };

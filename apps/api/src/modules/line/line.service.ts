@@ -2,12 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db, tenantLineChannels } from '@poszee/db';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { RICH_MENU_PNG_BASE64 } from './richmenu-image';
 
 export interface LineProfile {
   lineUserId: string;
   name?: string;
   email?: string;
 }
+
+const LINE_LIFF_URL = 'https://hr.poszee.com/liff/';
 
 @Injectable()
 export class LineService {
@@ -100,7 +103,7 @@ export class LineService {
    * production endpoint, then persist liffId + loginChannelId. Idempotent.
    */
   async provisionLiff(tenantId: string) {
-    const endpointUrl = 'https://hr.poszee.com/liff/';
+    const endpointUrl = LINE_LIFF_URL;
     const ch = await this.getChannel(tenantId);
     if (!ch?.accessTokenEnc) return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token' };
     const token = this.crypto.decrypt(ch.accessTokenEnc);
@@ -140,6 +143,57 @@ export class LineService {
     // 4) persist so /line/config and id_token verification use the real values
     await this.saveSettings(tenantId, { liffId, loginChannelId: channelId, channelId });
     return { ok: true, liffId, channelId, created, endpointUrl };
+  }
+
+  /**
+   * Create (or replace) the OA rich menu and set it as default for all users.
+   * Three areas open the LIFF; new employees who tap it get an onboarding row.
+   * Uses the Messaging API access token (works without the LIFF app-type).
+   */
+  async provisionRichMenu(tenantId: string) {
+    const ch = await this.getChannel(tenantId);
+    if (!ch?.accessTokenEnc) return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token' };
+    const token = this.crypto.decrypt(ch.accessTokenEnc);
+    const auth = { authorization: `Bearer ${token}` };
+    const W = 2500, H = 843, third = Math.round(W / 3);
+    const area = (x: number, w: number, uri: string) => ({
+      bounds: { x, y: 0, width: w, height: H },
+      action: { type: 'uri', uri },
+    });
+
+    // 1) create the rich menu definition
+    const cr = await fetch('https://api.line.me/v2/bot/richmenu', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...auth },
+      body: JSON.stringify({
+        size: { width: W, height: H },
+        selected: true,
+        name: 'TimeLine เมนูหลัก',
+        chatBarText: 'เมนู',
+        areas: [
+          area(0, third, `${LINE_LIFF_URL}?tab=home`),
+          area(third, third, `${LINE_LIFF_URL}?tab=payslip`),
+          area(third * 2, W - third * 2, `${LINE_LIFF_URL}?tab=leave`),
+        ],
+      }),
+    });
+    if (!cr.ok) return { ok: false, reason: `สร้าง rich menu ไม่สำเร็จ (${cr.status}): ${await cr.text()}` };
+    const richMenuId = ((await cr.json()) as { richMenuId: string }).richMenuId;
+
+    // 2) upload the image
+    const png = Buffer.from(RICH_MENU_PNG_BASE64, 'base64');
+    const ur = await fetch(`https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`, {
+      method: 'POST',
+      headers: { 'content-type': 'image/png', ...auth },
+      body: png,
+    });
+    if (!ur.ok) return { ok: false, reason: `อัปโหลดรูป rich menu ไม่สำเร็จ (${ur.status}): ${await ur.text()}` };
+
+    // 3) set as default for all users
+    const sr = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${richMenuId}`, { method: 'POST', headers: auth });
+    if (!sr.ok) return { ok: false, reason: `ตั้ง default rich menu ไม่สำเร็จ (${sr.status}): ${await sr.text()}` };
+
+    return { ok: true, richMenuId };
   }
 
   async getChannel(tenantId: string) {

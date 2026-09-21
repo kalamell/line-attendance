@@ -14,6 +14,7 @@ import { LeaveModule } from './modules/leave/leave.module';
 import { HireModule } from './modules/hire/hire.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
 import { MeModule } from './modules/me/me.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MeModule } from './modules/me/me.module';
     HireModule,
     PayrollModule,
     MeModule,
+    OnboardingModule,
   ],
 })
 export class AppModule implements NestModule {

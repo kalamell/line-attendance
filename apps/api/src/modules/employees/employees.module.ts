@@ -18,6 +18,7 @@ export class EmployeesService {
         role: users.role,
         employeeCode: users.employeeCode,
         active: users.active,
+        lineUserId: users.lineUserId,
       })
       .from(users)
       .where(and(eq(users.tenantId, tenantId), inArray(users.role, ['employee', 'supervisor', 'org_admin'])));
