@@ -14,8 +14,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { IsArray, IsIn, IsNumberString, IsOptional, IsString, MinLength } from 'class-validator';
-import { and, eq, inArray } from 'drizzle-orm';
-import { db, users } from '@poszee/db';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import { db, users, pdpaConsents } from '@poszee/db';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { Roles } from '../../common/auth/roles.decorator';
@@ -40,8 +40,8 @@ interface EmployeeInput {
 export class EmployeesService {
   constructor(private readonly crypto: CryptoService) {}
 
-  list(tenantId: string) {
-    return db
+  async list(tenantId: string) {
+    const rows = await db
       .select({
         id: users.id,
         name: users.name,
@@ -56,6 +56,14 @@ export class EmployeesService {
       })
       .from(users)
       .where(and(eq(users.tenantId, tenantId), inArray(users.role, ['employee', 'supervisor', 'org_admin'])));
+    const consents = await db
+      .select({ userId: pdpaConsents.userId, consented: pdpaConsents.consented })
+      .from(pdpaConsents)
+      .where(eq(pdpaConsents.tenantId, tenantId))
+      .orderBy(desc(pdpaConsents.consentedAt));
+    const latest = new Map<string, boolean>();
+    for (const c of consents) if (!latest.has(c.userId)) latest.set(c.userId, c.consented);
+    return rows.map((r) => ({ ...r, hasConsent: latest.get(r.id) === true }));
   }
 
   private toRow(tenantId: string, dto: EmployeeInput) {

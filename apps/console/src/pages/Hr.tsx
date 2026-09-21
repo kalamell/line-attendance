@@ -659,7 +659,7 @@ function OfficeView() {
           <div><label style={lbl}>ละติจูด</label><input value={f.lat} onChange={(e) => setF({ ...f, lat: Number(e.target.value) })} type="number" step="any" style={field} /></div>
           <div><label style={lbl}>ลองจิจูด</label><input value={f.lng} onChange={(e) => setF({ ...f, lng: Number(e.target.value) })} type="number" step="any" style={field} /></div>
           <div><label style={lbl}>รัศมี (เมตร)</label><input value={f.radiusM} onChange={(e) => setF({ ...f, radiusM: Number(e.target.value) })} type="number" min={10} style={field} /></div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%' }}>📍 ใช้ตำแหน่งปัจจุบัน</button></div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg> ใช้ตำแหน่งปัจจุบัน</button></div>
         </div>
         <button onClick={save} style={{ ...btn('primary'), height: 46, padding: '0 22px' }}>บันทึกจุดออฟฟิศ</button>
       </div>

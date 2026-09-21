@@ -31,7 +31,24 @@ export class MeService {
       emergencyPhone: this.dec(u.emergencyPhoneEnc),
       hasPin: !!u.payslipPasswordHash,
       hasPassword: !!u.passwordHash,
+      hasConsent: await this.hasConsent(userId),
     };
+  }
+
+  /** Latest PDPA decision for the user (true only if the most recent record consented). */
+  async hasConsent(userId: string) {
+    const [c] = await db
+      .select({ consented: pdpaConsents.consented })
+      .from(pdpaConsents)
+      .where(eq(pdpaConsents.userId, userId))
+      .orderBy(desc(pdpaConsents.consentedAt))
+      .limit(1);
+    return c?.consented === true;
+  }
+
+  async withdrawConsent(tenantId: string | null, userId: string, ip?: string) {
+    await db.insert(pdpaConsents).values({ tenantId, userId, version: PDPA_CONSENT_VERSION, consented: false, ip });
+    return { ok: true };
   }
 
   /** Employees/admins correct their own contact info (PDPA rectify). HR owns dept/position/salary. */
@@ -136,6 +153,9 @@ class MeController {
   }
   @Post('consent') consent(@TenantId(false) tenantId: string | null, @CurrentUser() u: AuthPrincipal) {
     return this.me.consent(tenantId, u.userId);
+  }
+  @Post('consent/withdraw') withdraw(@TenantId(false) tenantId: string | null, @CurrentUser() u: AuthPrincipal) {
+    return this.me.withdrawConsent(tenantId, u.userId);
   }
 }
 

@@ -13,6 +13,11 @@ const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมั�
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
+/** Material Symbols (icon font) — replaces emoji for a professional look. */
+function Icon({ n, size = 20, color, style }: { n: string; size?: number; color?: string; style?: React.CSSProperties }) {
+  return <span className="msr" style={{ fontSize: size, color, ...style }}>{n}</span>;
+}
+
 /* ================= Payslip ================= */
 function PayslipScreen({ back }: { back: () => void }) {
   const [pin, setPin] = useState('');
@@ -101,7 +106,7 @@ function Row({ l, v }: { l: string; v: string }) {
 }
 
 /* ================= PDPA consent (data comes from HR; employee only consents) ================= */
-function RegisterScreen({ back }: { back: () => void }) {
+function RegisterScreen({ back, gate, onConsented }: { back: () => void; gate?: boolean; onConsented?: () => void }) {
   const [consent, setConsent] = useState(false);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -109,13 +114,15 @@ function RegisterScreen({ back }: { back: () => void }) {
   async function submit() {
     if (!consent) return;
     setBusy(true); setErr(null);
-    try { await api('/me/consent', { method: 'POST' }); setDone(true); }
+    try { await api('/me/consent', { method: 'POST' }); if (onConsented) onConsented(); else setDone(true); }
     catch (e) { setErr(errorMessage(e)); } finally { setBusy(false); }
   }
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
-        <button onClick={back} style={{ border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12 }}>‹ กลับ</button>
+        {gate
+          ? <div style={{ fontSize: 12, color: 'var(--brand-700)', fontWeight: 600, marginBottom: 8 }}>ต้องยินยอมก่อนเริ่มใช้งาน</div>
+          : <button onClick={back} style={{ border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12 }}>‹ กลับ</button>}
         <div style={{ fontSize: 18, fontWeight: 700 }}>ความยินยอมข้อมูลส่วนบุคคล (PDPA)</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
@@ -273,14 +280,14 @@ function SplashScreen() {
 
 function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactive' }) {
   const cfg = {
-    pending: { icon: '👋', title: 'ยินดีต้อนรับ!', body: 'เราแจ้งฝ่ายบุคคลว่าคุณเข้ามาแล้ว รอฝ่ายบุคคลยืนยันตัวตนและจับคู่บัญชีให้', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'ฝ่ายบุคคลส่งการ์ดยืนยันตัวตนมาให้', 'กดยืนยัน แล้วเริ่มใช้งานได้ทันที'], active: 0 },
-    confirmed: { icon: '✅', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เสร็จแล้วเริ่มใช้งานได้ทันที', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'คุณยืนยันตัวตนแล้ว', 'รอฝ่ายบุคคลจับคู่บัญชี'], active: 2 },
-    inactive: { icon: '⏳', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน หากรอนานเกินไปกรุณาติดต่อฝ่ายบุคคล', steps: [], active: -1 },
+    pending: { icon: 'waving_hand', title: 'ยินดีต้อนรับ!', body: 'เราแจ้งฝ่ายบุคคลว่าคุณเข้ามาแล้ว รอฝ่ายบุคคลยืนยันตัวตนและจับคู่บัญชีให้', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'ฝ่ายบุคคลส่งการ์ดยืนยันตัวตนมาให้', 'กดยืนยัน แล้วเริ่มใช้งานได้ทันที'], active: 0 },
+    confirmed: { icon: 'task_alt', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เสร็จแล้วเริ่มใช้งานได้ทันที', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'คุณยืนยันตัวตนแล้ว', 'รอฝ่ายบุคคลจับคู่บัญชี'], active: 2 },
+    inactive: { icon: 'hourglass_top', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน หากรอนานเกินไปกรุณาติดต่อฝ่ายบุคคล', steps: [], active: -1 },
   }[state];
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '64px 28px 48px', textAlign: 'center' }}>
-        <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, marginBottom: 16 }}>{cfg.icon}</div>
+        <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}><Icon n={cfg.icon} size={46} color="#fff" /></div>
         <div style={{ fontSize: 22, fontWeight: 700 }}>{cfg.title}</div>
       </div>
       <div style={{ flex: 1, padding: '24px 20px' }}>
@@ -288,7 +295,7 @@ function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactiv
           <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, marginBottom: cfg.steps.length ? 18 : 0 }}>{cfg.body}</div>
           {cfg.steps.map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0' }}>
-              <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: i <= cfg.active ? 'var(--brand)' : 'var(--bg)', color: i <= cfg.active ? '#fff' : 'var(--ink-3)', border: i <= cfg.active ? 'none' : '1px solid var(--line)' }}>{i < cfg.active ? '✓' : i + 1}</span>
+              <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: i <= cfg.active ? 'var(--brand)' : 'var(--bg)', color: i <= cfg.active ? '#fff' : 'var(--ink-3)', border: i <= cfg.active ? 'none' : '1px solid var(--line)' }}>{i < cfg.active ? <Icon n="check" size={16} color="#fff" /> : i + 1}</span>
               <span style={{ fontSize: 13, color: i === cfg.active ? 'var(--ink)' : 'var(--ink-2)', fontWeight: i === cfg.active ? 600 : 400 }}>{s}</span>
             </div>
           ))}
@@ -352,6 +359,7 @@ export function App() {
   const [history, setHistory] = useState<AttRow[]>([]);
   const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number> } | null>(null);
   const [punching, setPunching] = useState<null | 'locating' | 'saving'>(null);
+  const [consented, setConsented] = useState<boolean | null>(null); // PDPA gate: null=checking
   const flash = (text: string, ok = false, ms = 4000) => { setToast({ text, ok }); setTimeout(() => setToast(null), ms); };
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
@@ -386,6 +394,7 @@ export function App() {
   useEffect(() => {
     if (!authed) return;
     api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
+    api<{ hasConsent: boolean }>('/me/profile').then((p) => setConsented(!!p.hasConsent)).catch(() => setConsented(true));
   }, [authed]);
   useEffect(() => {
     if (!authed) return;
@@ -400,6 +409,9 @@ export function App() {
   if (!authed) return external
     ? <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />
     : <SplashScreen />;
+  // PDPA gate: must consent before using check-in / payslip / leave
+  if (consented === null) return <SplashScreen />;
+  if (!consented) return <RegisterScreen gate back={() => { /* no skip */ }} onConsented={() => setConsented(true)} />;
 
   async function punch() {
     if (punching) return; // guard against rapid double taps
@@ -414,9 +426,9 @@ export function App() {
     const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
     try {
       setToday(await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) }));
-      flash(checkedIn ? '✓ เช็คเอาท์เรียบร้อย' : '✓ เช็คอินเรียบร้อย', true);
+      flash(checkedIn ? 'เช็คเอาท์เรียบร้อย' : 'เช็คอินเรียบร้อย', true);
       api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
-    } catch (e) { flash('⚠️ ' + errorMessage(e), false, 5000); }
+    } catch (e) { flash(errorMessage(e), false, 5000); }
     finally { setPunching(null); }
   }
 
@@ -437,13 +449,15 @@ export function App() {
             <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '24px 20px 52px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{me?.name?.[0] ?? 'พ'}</div>
-                <div><div style={{ fontSize: 13, opacity: 0.9 }}>{greeting} 👋</div><div style={{ fontSize: 17, fontWeight: 600 }}>{me?.name ?? 'พนักงาน'}</div></div>
+                <div><div style={{ fontSize: 13, opacity: 0.9 }}>{greeting}</div><div style={{ fontSize: 17, fontWeight: 600 }}>{me?.name ?? 'พนักงาน'}</div></div>
               </div>
             </div>
             <div style={{ padding: '0 16px 20px', marginTop: -36 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 20, padding: '24px 20px', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', textAlign: 'center' }}>
                 <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{clock}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, color: punching ? 'var(--brand-700)' : done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>{punching === 'locating' ? '📍 กำลังระบุตำแหน่ง…' : punching === 'saving' ? '⏳ กำลังบันทึก…' : done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: punching ? 'var(--brand-700)' : done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>
+                  {punching === 'locating' ? <><Icon n="my_location" size={16} /> กำลังระบุตำแหน่ง…</> : punching === 'saving' ? <><Icon n="sync" size={16} /> กำลังบันทึก…</> : done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <button onClick={punch} disabled={done || !!punching} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done || punching ? 'default' : 'pointer', background: punching ? '#B8BFC7' : done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done || punching ? 'none' : '0 14px 34px rgba(6,199,85,0.42)', transition: 'background 0.2s' }}>{punching ? 'กำลังดำเนินการ…' : done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
                 </div>
@@ -513,11 +527,11 @@ export function App() {
             </div>
             <div style={{ padding: '0 16px', marginTop: -42 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-                <button onClick={() => setView('editprofile')} style={rowBtn}><span>👤 แก้ไขข้อมูลส่วนตัว</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('editprofile')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="person" color="var(--brand-700)" /> แก้ไขข้อมูลส่วนตัว</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
-                <button onClick={() => setView('payslip')} style={rowBtn}><span>💰 สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('payslip')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="payments" color="var(--brand-700)" /> สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
-                <button onClick={() => setView('register')} style={rowBtn}><span>📝 ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('register')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="shield_person" color="var(--brand-700)" /> ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
               </div>
               <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }} style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ออกจากระบบ</button>
             </div>
@@ -527,7 +541,9 @@ export function App() {
 
       {(toast || note) && (
         <div style={{ position: 'fixed', bottom: 84, left: 16, right: 16, display: 'flex', justifyContent: 'center', zIndex: 90, pointerEvents: 'none' }}>
-          <div style={{ maxWidth: 360, background: toast?.ok ? 'var(--brand-700)' : '#333', color: '#fff', borderRadius: 12, padding: '11px 18px', fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', textAlign: 'center' }}>{toast?.text ?? note}</div>
+          <div style={{ maxWidth: 360, background: toast?.ok ? 'var(--brand-700)' : '#333', color: '#fff', borderRadius: 12, padding: '11px 18px', fontSize: 13, fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {toast && <Icon n={toast.ok ? 'check_circle' : 'error'} size={18} />}<span>{toast?.text ?? note}</span>
+          </div>
         </div>
       )}
 
