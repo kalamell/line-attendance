@@ -42,7 +42,9 @@ export class LineSettingsController {
     // need to create a LIFF ID in the LINE console). Prefers the Login channel
     // secret; falls back to the Messaging API token. Failures don't fail the save.
     const canProvision = (saved.loginChannelId && saved.hasLoginChannelSecret) || saved.hasAccessToken;
-    if (canProvision && !saved.liffId) {
+    // treat the seed placeholder liffId as "not set" so first real save provisions
+    const noRealLiff = !saved.liffId || saved.liffId.includes('abcdWXYZ');
+    if (canProvision && noRealLiff) {
       const provision = await this.line.provisionLiff(tenantId).catch((e) => ({ ok: false, reason: String(e) }));
       return { ...(await this.line.getSettings(tenantId)), provision };
     }
