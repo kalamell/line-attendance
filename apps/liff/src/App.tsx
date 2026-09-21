@@ -324,7 +324,7 @@ function LeaveForm({ onSubmitted, onError }: { onSubmitted: () => void; onError:
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันเริ่ม</div><input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} style={fld} /></div>
+        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันเริ่ม</div><input type="date" value={startDate} onChange={(e) => { setStart(e.target.value); if (endDate < e.target.value) setEnd(e.target.value); }} style={fld} /></div>
         <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันสิ้นสุด</div><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} style={fld} /></div>
       </div>
       <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="เหตุผล (ไม่บังคับ)" style={{ ...fld, marginBottom: 12 }} />

@@ -16,6 +16,7 @@ export class LeaveService {
     userId: string,
     dto: { type: LeaveType; startDate: string; endDate: string; reason?: string },
   ) {
+    if (dto.endDate < dto.startDate) throw new BadRequestException('วันสิ้นสุดต้องไม่ก่อนวันเริ่ม');
     const days = daySpanInclusive(dto.startDate, dto.endDate);
     const [rec] = await db
       .insert(leaveRequests)
