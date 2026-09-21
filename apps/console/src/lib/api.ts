@@ -34,7 +34,8 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error('unauthorized');
   }
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return (await res.json()) as T;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 export async function login(email: string, password: string) {

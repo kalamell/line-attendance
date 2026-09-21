@@ -16,7 +16,9 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`/api${path}`, { ...init, headers });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return (await res.json()) as T;
+  // Empty body (e.g. a handler returning null → no content) must not crash res.json().
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 export type SessionUser = { id: string; name: string; role: string; active?: boolean };
