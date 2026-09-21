@@ -181,6 +181,17 @@ export class OnboardingService {
     await db.update(lineOnboarding).set({ status: 'rejected', updatedAt: new Date() }).where(eq(lineOnboarding.id, r.id));
     return { ok: true };
   }
+
+  /** Undo a match: unbind the employee's LINE, reset the contact so it can be re-matched. */
+  async unlink(tenantId: string, id: string) {
+    const r = await this.row(tenantId, id);
+    if (r.linkedUserId) {
+      await db.update(users).set({ lineUserId: null }).where(and(eq(users.tenantId, tenantId), eq(users.id, r.linkedUserId)));
+    }
+    await db.update(lineOnboarding).set({ status: 'confirmed', linkedUserId: null, updatedAt: new Date() }).where(eq(lineOnboarding.id, r.id));
+    await this.line.clearUserRichMenu(tenantId, r.lineUserId).catch(() => {});
+    return { ok: true };
+  }
 }
 
 class TokenDto {
@@ -233,6 +244,11 @@ class OnboardingManageController {
   @Post(':id/reject')
   reject(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.svc.reject(tenantId, id);
+  }
+
+  @Post(':id/unlink')
+  unlink(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.svc.unlink(tenantId, id);
   }
 }
 

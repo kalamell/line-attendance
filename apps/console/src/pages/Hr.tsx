@@ -566,7 +566,7 @@ function OnboardingView() {
                 </td>
                 <td style={{ padding: 12 }}><Badge text={ONB_STATUS[r.status].label} c={ONB_STATUS[r.status].c} bg={ONB_STATUS[r.status].bg} /></td>
                 <td style={{ padding: 12 }}>
-                  {r.status === 'linked' ? <span style={{ fontSize: 13, fontWeight: 600 }}>{r.linkedUserName}</span> : (
+                  {r.status === 'linked' ? <span style={{ fontSize: 13, fontWeight: 600 }}>{r.linkedUserName ?? <span style={{ color: 'var(--danger)' }}>(พนักงานถูกลบ)</span>}</span> : (
                     <select value={pick[r.id] ?? ''} onChange={(e) => setPick({ ...pick, [r.id]: e.target.value })} style={{ ...field, width: 210, padding: '8px 10px' }}>
                       <option value="">— เลือกพนักงาน —</option>
                       {unlinked.map((e) => <option key={e.id} value={e.id}>{e.name}{e.department ? ` · ${e.department}` : ''}</option>)}
@@ -574,7 +574,9 @@ function OnboardingView() {
                   )}
                 </td>
                 <td style={{ padding: 12, textAlign: 'right' }}>
-                  {r.status !== 'linked' && r.status !== 'rejected' && (
+                  {r.status === 'linked' ? (
+                    <button disabled={busy === r.id} onClick={() => act(r.id, 'unlink', undefined, 'ยกเลิกการจับคู่แล้ว')} style={{ ...btn('ghost'), height: 34 }}>ยกเลิกจับคู่</button>
+                  ) : r.status !== 'rejected' && (
                     <div style={{ display: 'inline-flex', gap: 6 }}>
                       <button disabled={busy === r.id} onClick={() => act(r.id, 'send-flex', undefined, 'ส่งการ์ดยืนยันตัวตนแล้ว')} style={{ ...btn('ghost'), height: 34 }}>ส่งยืนยันตัวตน</button>
                       <button disabled={busy === r.id || !pick[r.id]} onClick={() => act(r.id, 'link', { userId: pick[r.id] }, 'จับคู่พนักงานเรียบร้อย')} style={{ ...btn('primary'), height: 34, opacity: pick[r.id] ? 1 : 0.5 }}>จับคู่</button>

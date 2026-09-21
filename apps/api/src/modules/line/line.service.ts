@@ -259,6 +259,17 @@ export class LineService {
     if (!res.ok) this.log.warn(`assign member rich menu failed ${res.status}: ${await res.text()}`);
   }
 
+  /** Remove a user's per-user rich menu so they fall back to the default (onboarding). */
+  async clearUserRichMenu(tenantId: string, lineUserId: string): Promise<void> {
+    const ch = await this.getChannel(tenantId);
+    if (!ch?.accessTokenEnc) return;
+    const token = this.crypto.decrypt(ch.accessTokenEnc);
+    await fetch(`https://api.line.me/v2/bot/user/${lineUserId}/richmenu`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${token}` },
+    }).catch(() => undefined);
+  }
+
   async getChannel(tenantId: string) {
     const [ch] = await db
       .select()

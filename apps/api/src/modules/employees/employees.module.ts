@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { IsArray, IsIn, IsNumberString, IsOptional, IsString, MinLength } from 'class-validator';
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { db, users, pdpaConsents } from '@poszee/db';
+import { db, users, pdpaConsents, lineOnboarding } from '@poszee/db';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { Roles } from '../../common/auth/roles.decorator';
@@ -97,7 +97,7 @@ export class EmployeesService {
   }
 
   async remove(tenantId: string, id: string) {
-    const [existing] = await db.select({ id: users.id }).from(users).where(and(eq(users.tenantId, tenantId), eq(users.id, id))).limit(1);
+    const [existing] = await db.select({ id: users.id, lineUserId: users.lineUserId }).from(users).where(and(eq(users.tenantId, tenantId), eq(users.id, id))).limit(1);
     if (!existing) throw new NotFoundException('ไม่พบพนักงาน');
     try {
       await db.delete(users).where(eq(users.id, id));
@@ -105,6 +105,11 @@ export class EmployeesService {
       // FK restrict (e.g. approved leave/hire) — deactivate instead
       await db.update(users).set({ active: false }).where(eq(users.id, id));
       throw new ConflictException('พนักงานมีประวัติในระบบ ลบไม่ได้ — ปิดการใช้งานแทนแล้ว');
+    }
+    // if this employee was matched to a LINE user, free the onboarding record so it isn't stuck "linked"
+    if (existing.lineUserId) {
+      await db.update(lineOnboarding).set({ status: 'confirmed', linkedUserId: null, updatedAt: new Date() })
+        .where(and(eq(lineOnboarding.tenantId, tenantId), eq(lineOnboarding.lineUserId, existing.lineUserId)));
     }
     return { ok: true };
   }
