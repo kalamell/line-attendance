@@ -168,17 +168,37 @@ function LineView() {
     if (s) { setConnected(s.connected); setF((p) => ({ ...p, loginChannelId: s.loginChannelId ?? '', channelId: s.channelId ?? '', liffId: s.liffId ?? '', features: s.features })); }
   }
   useEffect(() => { load(); }, []);
+  const [busy, setBusy] = useState(false);
+  type Provision = { ok: boolean; liffId?: string; channelId?: string; created?: boolean; reason?: string };
+  function flash(m: string, ms = 3500) { setMsg(m); setTimeout(() => setMsg(null), ms); }
   async function save() {
-    const body: Record<string, unknown> = { loginChannelId: f.loginChannelId, channelId: f.channelId, liffId: f.liffId, features: f.features };
-    if (f.channelSecret) body.channelSecret = f.channelSecret;
-    if (f.accessToken) body.accessToken = f.accessToken;
-    await api('/line/settings', { method: 'PUT', body: JSON.stringify(body) });
-    setF((p) => ({ ...p, channelSecret: '', accessToken: '' }));
-    setMsg('บันทึกการเชื่อมต่อ LINE แล้ว'); setTimeout(() => setMsg(null), 3000); load();
+    setBusy(true);
+    try {
+      const body: Record<string, unknown> = { channelId: f.channelId, features: f.features };
+      if (f.loginChannelId) body.loginChannelId = f.loginChannelId;
+      if (f.liffId) body.liffId = f.liffId;
+      if (f.channelSecret) body.channelSecret = f.channelSecret;
+      if (f.accessToken) body.accessToken = f.accessToken;
+      // Response may carry an auto-provision result when a token was saved without a LIFF.
+      const r = await api<{ liffId: string | null; provision?: Provision }>('/line/settings', { method: 'PUT', body: JSON.stringify(body) });
+      setF((p) => ({ ...p, channelSecret: '', accessToken: '' }));
+      if (r.provision) flash(r.provision.ok ? `บันทึกแล้ว · ระบบสร้าง LIFF ให้อัตโนมัติ (${r.provision.liffId})` : `บันทึกแล้ว · สร้าง LIFF ไม่สำเร็จ: ${r.provision.reason}`, 5000);
+      else flash('บันทึกการเชื่อมต่อ LINE แล้ว');
+      load();
+    } finally { setBusy(false); }
+  }
+  async function provision() {
+    setBusy(true);
+    try {
+      const r = await api<Provision>('/line/provision-liff', { method: 'POST' });
+      if (r.ok) flash(`${r.created ? 'สร้าง' : 'เชื่อม'} LIFF สำเร็จ · ${r.liffId}`, 5000);
+      else flash(`สร้าง LIFF ไม่สำเร็จ: ${r.reason}`, 5000);
+      load();
+    } finally { setBusy(false); }
   }
   async function test() {
     const r = await api<{ ok: boolean; reason?: string; botName?: string }>('/line/test', { method: 'POST' });
-    setMsg(r.ok ? `เชื่อมต่อสำเร็จ · OA: ${r.botName}` : `ทดสอบไม่ผ่าน: ${r.reason}`); setTimeout(() => setMsg(null), 4000);
+    flash(r.ok ? `เชื่อมต่อสำเร็จ · OA: ${r.botName}` : `ทดสอบไม่ผ่าน: ${r.reason}`, 4000);
   }
   const Toggle = ({ k, label }: { k: 'richMenu' | 'notifyPush' | 'sendSlip'; label: string }) => (
     <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer' }}>
@@ -199,9 +219,9 @@ function LineView() {
           <div><label style={lbl}>Channel Secret {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" style={field} /></div>
           <div><label style={lbl}>Channel Access Token {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" style={field} /></div>
         </div>
-        <label style={lbl}>LIFF ID</label>
-        <input value={f.liffId} onChange={(e) => setF({ ...f, liffId: e.target.value })} style={{ ...field, marginBottom: 6 }} />
-        <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>Webhook: https://{location.host === 'hr.poszee.com' ? '<org>' : location.host}.poszee.com/api/line/webhook · credential ถูกเข้ารหัสก่อนจัดเก็บ</div>
+        <label style={lbl}>LIFF ID <span style={{ color: 'var(--ink-3)' }}>(ระบบสร้าง/เชื่อมให้อัตโนมัติจาก Access Token)</span></label>
+        <input value={f.liffId} readOnly placeholder="— ระบบจะสร้างให้เมื่อบันทึก Access Token —" style={{ ...field, marginBottom: 6, background: 'var(--bg)', color: 'var(--ink-2)' }} />
+        <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>ไม่ต้องไปสร้าง LIFF ใน LINE เอง — กรอก Access Token แล้วบันทึก ระบบจะสร้าง LIFF app (endpoint https://hr.poszee.com/liff/, scope openid+profile) และดึง Channel ID ให้เอง · credential ถูกเข้ารหัสก่อนจัดเก็บ</div>
       </div>
 
       <div style={{ ...card, padding: '4px 22px 16px', marginBottom: 16 }}>
@@ -213,8 +233,9 @@ function LineView() {
 
       {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={save} style={{ ...btn('primary'), height: 46, padding: '0 22px', fontSize: 14 }}>บันทึกการเชื่อมต่อ</button>
-        <button onClick={test} style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ทดสอบการเชื่อมต่อ</button>
+        <button onClick={save} disabled={busy} style={{ ...btn('primary'), height: 46, padding: '0 22px', fontSize: 14 }}>บันทึกการเชื่อมต่อ</button>
+        <button onClick={test} disabled={busy} style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ทดสอบการเชื่อมต่อ</button>
+        <button onClick={provision} disabled={busy} title="สร้าง/เชื่อม LIFF จาก Access Token ที่บันทึกไว้" style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14 }}>สร้าง LIFF อัตโนมัติ</button>
       </div>
     </div>
   );

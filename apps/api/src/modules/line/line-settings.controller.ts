@@ -35,8 +35,16 @@ export class LineSettingsController {
   }
 
   @Put('settings')
-  save(@TenantId() tenantId: string, @Body() dto: SaveLineDto) {
-    return this.line.saveSettings(tenantId, dto);
+  async save(@TenantId() tenantId: string, @Body() dto: SaveLineDto) {
+    const saved = await this.line.saveSettings(tenantId, dto);
+    // Once a working access token is present, the system provisions the LIFF app
+    // itself (no need to create a LIFF ID in the LINE console). Runs when no LIFF
+    // is wired yet; failures are surfaced but don't fail the save.
+    if (saved.hasAccessToken && !saved.liffId) {
+      const provision = await this.line.provisionLiff(tenantId).catch((e) => ({ ok: false, reason: String(e) }));
+      return { ...(await this.line.getSettings(tenantId)), provision };
+    }
+    return saved;
   }
 
   @Post('test')
