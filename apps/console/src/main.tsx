@@ -7,9 +7,20 @@ import { SuperAdminPage } from './pages/SuperAdmin';
 import { HrPage } from './pages/Hr';
 import { currentUser } from './lib/api';
 
+function homeFor(role: string | undefined) {
+  return role === 'super_admin' ? '/super' : '/hr';
+}
+
 function RoleHome() {
+  return <Navigate to={homeFor(currentUser()?.role)} replace />;
+}
+
+/** Client-side gate: send users who lack the role back to their own home.
+ *  (Backend RolesGuard is the real enforcement; this keeps the UI honest.) */
+function RequireRole({ role, children }: { role: string; children: React.ReactElement }) {
   const me = currentUser();
-  return <Navigate to={me?.role === 'super_admin' ? '/super' : '/hr'} replace />;
+  if (me?.role !== role) return <Navigate to={homeFor(me?.role)} replace />;
+  return children;
 }
 
 const router = createBrowserRouter([
@@ -18,7 +29,7 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <RoleHome /> },
-      { path: 'super', element: <SuperAdminPage /> },
+      { path: 'super', element: <RequireRole role="super_admin"><SuperAdminPage /></RequireRole> },
       { path: 'hr', element: <HrPage /> },
     ],
   },
