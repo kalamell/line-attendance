@@ -106,21 +106,15 @@ export class LineService {
     const token = this.crypto.decrypt(ch.accessTokenEnc);
     const auth = { authorization: `Bearer ${token}` };
 
-    // 1) channel id (= client_id) from the channel access token
-    const vr = await fetch(`https://api.line.me/v2/oauth/verify?access_token=${encodeURIComponent(token)}`);
-    if (!vr.ok) return { ok: false, reason: `ตรวจสอบ token ไม่ผ่าน (${vr.status})` };
-    const channelId = ((await vr.json()) as { client_id?: string }).client_id ?? null;
-    if (!channelId) return { ok: false, reason: 'อ่าน Channel ID จาก token ไม่ได้' };
-
-    // 2) reuse an existing LIFF app pointing at our endpoint, if any
+    // 1) reuse an existing LIFF app pointing at our endpoint, if any
     const norm = (u: string) => u.replace(/\/+$/, '');
     const lr = await fetch('https://api.line.me/liff/v1/apps', { headers: auth });
-    if (!lr.ok) return { ok: false, reason: `อ่านรายการ LIFF ไม่ได้ (${lr.status})` };
+    if (!lr.ok) return { ok: false, reason: `อ่านรายการ LIFF ไม่ได้ (${lr.status}): ${await lr.text()}` };
     const apps = ((await lr.json()) as { apps?: { liffId: string; view?: { url?: string } }[] }).apps ?? [];
     let liffId = apps.find((a) => norm(a.view?.url ?? '') === norm(endpointUrl))?.liffId ?? null;
     let created = false;
 
-    // 3) otherwise create it
+    // 2) otherwise create it
     if (!liffId) {
       const cr = await fetch('https://api.line.me/liff/v1/apps', {
         method: 'POST',
@@ -137,6 +131,10 @@ export class LineService {
       liffId = ((await cr.json()) as { liffId: string }).liffId;
       created = true;
     }
+
+    // 3) the LIFF ID is `{channelId}-{suffix}` — the id_token audience is that channel,
+    //    so derive loginChannelId from the prefix (no oauth/verify needed).
+    const channelId = liffId.split('-')[0];
 
     // 4) persist so /line/config and id_token verification use the real values
     await this.saveSettings(tenantId, { liffId, loginChannelId: channelId, channelId });
