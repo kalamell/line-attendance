@@ -100,63 +100,53 @@ function Row({ l, v }: { l: string; v: string }) {
   return <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '5px 0' }}><span style={{ color: 'var(--ink-2)' }}>{l}</span><span style={{ fontWeight: 500 }}>{v}</span></div>;
 }
 
-/* ================= Register (PDPA) ================= */
+/* ================= PDPA consent (data comes from HR; employee only consents) ================= */
 function RegisterScreen({ back }: { back: () => void }) {
-  const [step, setStep] = useState(1);
   const [consent, setConsent] = useState(false);
-  async function next() {
-    if (step === 1 && !consent) return;
-    if (step === 2) { try { await api('/me/consent', { method: 'POST' }); } catch { /* preview */ } }
-    setStep(step + 1);
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function submit() {
+    if (!consent) return;
+    setBusy(true); setErr(null);
+    try { await api('/me/consent', { method: 'POST' }); setDone(true); }
+    catch (e) { setErr(errorMessage(e)); } finally { setBusy(false); }
   }
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
-      <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--line)' }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
+      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
         <button onClick={back} style={{ border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12 }}>‹ กลับ</button>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>ลงทะเบียนพนักงานใหม่</div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-          {[1, 2, 3].map((s) => <div key={s} style={{ flex: 1, height: 5, borderRadius: 999, background: step >= s ? 'var(--brand)' : 'var(--line)' }} />)}
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>ขั้นที่ {step} จาก 3 · {step === 1 ? 'ความยินยอม PDPA' : step === 2 ? 'ข้อมูลส่วนตัว' : 'เสร็จสิ้น'}</div>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>ความยินยอมข้อมูลส่วนบุคคล (PDPA)</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-        {step === 1 && (
+        {done ? (
+          <div style={{ textAlign: 'center', paddingTop: 40 }}>
+            <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'var(--brand-tint)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </div>
+            <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 8 }}>บันทึกความยินยอมแล้ว</div>
+            <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>ขอบคุณครับ ระบบบันทึกความยินยอม PDPA ของท่านเรียบร้อย</div>
+            <button onClick={back} style={{ marginTop: 24, height: 48, padding: '0 28px', border: '1px solid var(--line)', borderRadius: 14, background: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>กลับ</button>
+          </div>
+        ) : (
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>ความยินยอมข้อมูลส่วนบุคคล</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, marginBottom: 16 }}>ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) บริษัทขอความยินยอมในการเก็บและใช้ข้อมูลของท่าน</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, marginBottom: 16 }}>ข้อมูลพนักงานถูกจัดทำโดยฝ่ายบุคคล ท่านเพียงให้ความยินยอมการเก็บและใช้ข้อมูลตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)</div>
             {[['ข้อมูลที่จัดเก็บ (PII)', 'ชื่อ-นามสกุล, เลขบัตรประชาชน, ที่อยู่, บัญชีธนาคาร, ข้อมูลการเข้างาน'], ['วัตถุประสงค์ & สิทธิ', 'ใช้เพื่อการจ้างงาน/จ่ายเงินเดือน · เข้าถึงเฉพาะฝ่ายบุคคล เก็บแบบเข้ารหัส · ขอเข้าถึง/แก้ไข/ลบได้ทุกเมื่อ']].map((b, i) => (
               <div key={i} style={{ background: 'var(--bg)', borderRadius: 14, padding: 16, marginBottom: 12 }}><div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{b[0]}</div><div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>{b[1]}</div></div>
             ))}
+            {err && <div style={{ background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 13px', fontSize: 13, marginTop: 8 }}>{err}</div>}
             <button onClick={() => setConsent(!consent)} style={{ width: '100%', marginTop: 6, border: `1.5px solid ${consent ? 'var(--brand)' : 'var(--line)'}`, background: consent ? 'var(--brand-tint)' : '#fff', borderRadius: 14, padding: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}>
               <span style={{ width: 24, height: 24, borderRadius: 7, border: `2px solid ${consent ? 'var(--brand)' : '#C4C9CE'}`, background: consent ? 'var(--brand)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{consent && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>}</span>
               <span style={{ fontSize: 13, lineHeight: 1.5 }}>ข้าพเจ้าได้อ่านและ<b>ยินยอม</b>ให้เก็บและใช้ข้อมูลส่วนบุคคลตามวัตถุประสงค์ข้างต้น</span>
             </button>
           </div>
         )}
-        {step === 2 && (
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>กรอกข้อมูลลงทะเบียน</div>
-            <div style={{ fontSize: 12, color: 'var(--brand-700)', marginBottom: 18 }}>🔒 ข้อมูล PII เข้ารหัส เข้าถึงเฉพาะฝ่ายบุคคล</div>
-            {[['ชื่อ-นามสกุล', 'สมหญิง รักงาน'], ['เลขบัตรประชาชน', '1-2345-xxxxx-xx-3'], ['เบอร์โทร', '08x-xxx-xx78'], ['แผนกที่สมัคร', 'ฝ่ายขาย']].map((r, i) => (
-              <div key={i} style={{ marginBottom: 14 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 6 }}>{r[0]}</div><div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '13px 14px', fontSize: 14, fontWeight: 500 }}>{r[1]}</div></div>
-            ))}
-          </div>
-        )}
-        {step === 3 && (
-          <div style={{ textAlign: 'center', paddingTop: 30 }}>
-            <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'var(--brand-tint)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6v6l4 2" /><circle cx="12" cy="12" r="9" /></svg>
-            </div>
-            <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 8 }}>ส่งข้อมูลเรียบร้อย</div>
-            <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>คำขอลงทะเบียนถูกส่งให้<b>ฝ่ายบุคคล</b>พิจารณาอนุมัติการเริ่มงาน<br />ท่านจะได้รับแจ้งผลผ่าน LINE</div>
-          </div>
-        )}
       </div>
-      {step !== 3 && (
+      {!done && (
         <div style={{ padding: '14px 20px 22px', borderTop: '1px solid var(--line)' }}>
-          <button onClick={next} disabled={step === 1 && !consent}
-            style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: step === 1 && !consent ? '#EEF0F3' : 'var(--brand)', color: step === 1 && !consent ? 'var(--ink-3)' : '#fff', fontSize: 16, fontWeight: 600, cursor: step === 1 && !consent ? 'default' : 'pointer' }}>
-            {step === 1 ? 'ยอมรับและดำเนินการต่อ' : 'ส่งลงทะเบียน'}
+          <button onClick={submit} disabled={!consent || busy}
+            style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: consent && !busy ? 'var(--brand)' : '#EEF0F3', color: consent && !busy ? '#fff' : 'var(--ink-3)', fontSize: 16, fontWeight: 600, cursor: consent && !busy ? 'pointer' : 'default' }}>
+            {busy ? 'กำลังบันทึก…' : 'บันทึกความยินยอม'}
           </button>
         </div>
       )}
@@ -283,15 +273,28 @@ function SplashScreen() {
 
 function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactive' }) {
   const cfg = {
-    pending: { icon: '👋', title: 'ยินดีต้อนรับ!', body: 'เราส่งข้อมูลของคุณให้ฝ่ายบุคคลแล้ว ฝ่ายบุคคลจะส่งการ์ดยืนยันตัวตนมาให้คุณกดยืนยัน แล้วจับคู่บัญชีให้ กรุณารอสักครู่', tint: 'var(--brand-tint)' },
-    confirmed: { icon: '✅', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เมื่อเสร็จแล้วคุณจะเริ่มใช้งานได้ทันที', tint: 'var(--brand-tint)' },
-    inactive: { icon: '⏳', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน กรุณาติดต่อฝ่ายบุคคลหากรอนานเกินไป', tint: 'var(--warn-tint)' },
+    pending: { icon: '👋', title: 'ยินดีต้อนรับ!', body: 'เราแจ้งฝ่ายบุคคลว่าคุณเข้ามาแล้ว รอฝ่ายบุคคลยืนยันตัวตนและจับคู่บัญชีให้', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'ฝ่ายบุคคลส่งการ์ดยืนยันตัวตนมาให้', 'กดยืนยัน แล้วเริ่มใช้งานได้ทันที'], active: 0 },
+    confirmed: { icon: '✅', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เสร็จแล้วเริ่มใช้งานได้ทันที', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'คุณยืนยันตัวตนแล้ว', 'รอฝ่ายบุคคลจับคู่บัญชี'], active: 2 },
+    inactive: { icon: '⏳', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน หากรอนานเกินไปกรุณาติดต่อฝ่ายบุคคล', steps: [], active: -1 },
   }[state];
   return (
-    <div style={{ maxWidth: 420, margin: '0 auto', height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32, background: 'var(--bg)', textAlign: 'center' }}>
-      <div style={{ width: 84, height: 84, borderRadius: '50%', background: cfg.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>{cfg.icon}</div>
-      <div style={{ fontSize: 20, fontWeight: 700 }}>{cfg.title}</div>
-      <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, maxWidth: 320 }}>{cfg.body}</div>
+    <div style={{ maxWidth: 420, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '64px 28px 48px', textAlign: 'center' }}>
+        <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 44, marginBottom: 16 }}>{cfg.icon}</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>{cfg.title}</div>
+      </div>
+      <div style={{ flex: 1, padding: '24px 20px' }}>
+        <div style={{ background: 'var(--surface)', borderRadius: 18, padding: 20, marginTop: -36, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
+          <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.7, marginBottom: cfg.steps.length ? 18 : 0 }}>{cfg.body}</div>
+          {cfg.steps.map((s, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0' }}>
+              <span style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: i <= cfg.active ? 'var(--brand)' : 'var(--bg)', color: i <= cfg.active ? '#fff' : 'var(--ink-3)', border: i <= cfg.active ? 'none' : '1px solid var(--line)' }}>{i < cfg.active ? '✓' : i + 1}</span>
+              <span style={{ fontSize: 13, color: i === cfg.active ? 'var(--ink)' : 'var(--ink-2)', fontWeight: i === cfg.active ? 600 : 400 }}>{s}</span>
+            </div>
+          ))}
+        </div>
+        {state !== 'inactive' && <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-3)', marginTop: 20 }}>หน้านี้จะอัปเดตเองเมื่อฝ่ายบุคคลดำเนินการ</div>}
+      </div>
     </div>
   );
 }
@@ -514,7 +517,7 @@ export function App() {
                 <div style={{ height: 1, background: 'var(--line)' }} />
                 <button onClick={() => setView('payslip')} style={rowBtn}><span>💰 สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
-                <button onClick={() => setView('register')} style={rowBtn}><span>📝 ลงทะเบียน / ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('register')} style={rowBtn}><span>📝 ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
               </div>
               <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }} style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ออกจากระบบ</button>
             </div>
