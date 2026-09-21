@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_line_channels" ADD COLUMN "login_channel_secret_enc" text;

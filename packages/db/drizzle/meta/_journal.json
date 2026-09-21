@@ -29,6 +29,13 @@
       "when": 1789955643459,
       "tag": "0003_lean_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789956777500,
+      "tag": "0004_shallow_sinister_six",
+      "breakpoints": true
     }
   ]
 }

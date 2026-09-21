@@ -50,6 +50,7 @@ export class LineService {
       connected: ch?.connected ?? false,
       features: ch?.features ?? { richMenu: true, notifyPush: true, sendSlip: true },
       hasChannelSecret: !!ch?.channelSecretEnc,
+      hasLoginChannelSecret: !!ch?.loginChannelSecretEnc,
       hasAccessToken: !!ch?.accessTokenEnc,
     };
   }
@@ -59,6 +60,7 @@ export class LineService {
     tenantId: string,
     dto: {
       loginChannelId?: string;
+      loginChannelSecret?: string;
       channelId?: string;
       channelSecret?: string;
       accessToken?: string;
@@ -71,6 +73,7 @@ export class LineService {
     if (dto.loginChannelId !== undefined) patch.loginChannelId = dto.loginChannelId;
     if (dto.channelId !== undefined) patch.channelId = dto.channelId;
     if (dto.liffId !== undefined) patch.liffId = dto.liffId;
+    if (dto.loginChannelSecret) patch.loginChannelSecretEnc = this.crypto.encrypt(dto.loginChannelSecret);
     if (dto.channelSecret) patch.channelSecretEnc = this.crypto.encrypt(dto.channelSecret);
     if (dto.accessToken) patch.accessTokenEnc = this.crypto.encrypt(dto.accessToken);
     if (dto.features) patch.features = dto.features;
@@ -105,8 +108,28 @@ export class LineService {
   async provisionLiff(tenantId: string) {
     const endpointUrl = LINE_LIFF_URL;
     const ch = await this.getChannel(tenantId);
-    if (!ch?.accessTokenEnc) return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token' };
-    const token = this.crypto.decrypt(ch.accessTokenEnc);
+
+    // LIFF/LINE-Login lives on the LINE Login channel (needs a Web app type). If its
+    // secret is set, mint a token via client_credentials; else fall back to the
+    // Messaging API token (only works if that channel itself has a Web/LIFF app type).
+    let token: string;
+    let via: 'login' | 'messaging';
+    if (ch?.loginChannelId && ch?.loginChannelSecretEnc) {
+      const secret = this.crypto.decrypt(ch.loginChannelSecretEnc);
+      const tr = await fetch('https://api.line.me/v2/oauth/accessToken', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'client_credentials', client_id: ch.loginChannelId, client_secret: secret }),
+      });
+      if (!tr.ok) return { ok: false, reason: `ขอ token จาก Login channel ไม่สำเร็จ (${tr.status}): ${await tr.text()}` };
+      token = ((await tr.json()) as { access_token: string }).access_token;
+      via = 'login';
+    } else if (ch?.accessTokenEnc) {
+      token = this.crypto.decrypt(ch.accessTokenEnc);
+      via = 'messaging';
+    } else {
+      return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token หรือ Login Channel Secret' };
+    }
     const auth = { authorization: `Bearer ${token}` };
 
     // 1) reuse an existing LIFF app pointing at our endpoint, if any.
@@ -140,9 +163,13 @@ export class LineService {
     //    so derive loginChannelId from the prefix (no oauth/verify needed).
     const channelId = liffId.split('-')[0];
 
-    // 4) persist so /line/config and id_token verification use the real values
-    await this.saveSettings(tenantId, { liffId, loginChannelId: channelId, channelId });
-    return { ok: true, liffId, channelId, created, endpointUrl };
+    // 4) persist so /line/config and id_token verification use the real values.
+    //    When provisioned via the Login channel, keep the Messaging channelId intact.
+    await this.saveSettings(
+      tenantId,
+      via === 'login' ? { liffId, loginChannelId: channelId } : { liffId, loginChannelId: channelId, channelId },
+    );
+    return { ok: true, liffId, channelId, created, via, endpointUrl };
   }
 
   /**

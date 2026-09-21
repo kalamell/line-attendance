@@ -160,12 +160,13 @@ function PayrollView() {
 
 /* ---------- LINE settings ---------- */
 function LineView() {
-  const [f, setF] = useState({ loginChannelId: '', channelId: '', liffId: '', channelSecret: '', accessToken: '', features: { richMenu: true, notifyPush: true, sendSlip: true } });
+  const [f, setF] = useState({ loginChannelId: '', channelId: '', liffId: '', loginChannelSecret: '', channelSecret: '', accessToken: '', features: { richMenu: true, notifyPush: true, sendSlip: true } });
   const [connected, setConnected] = useState(false);
+  const [hasLoginSecret, setHasLoginSecret] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   async function load() {
-    const s = await api<{ loginChannelId: string | null; channelId: string | null; liffId: string | null; connected: boolean; features: { richMenu: boolean; notifyPush: boolean; sendSlip: boolean } }>('/line/settings').catch(() => null);
-    if (s) { setConnected(s.connected); setF((p) => ({ ...p, loginChannelId: s.loginChannelId ?? '', channelId: s.channelId ?? '', liffId: s.liffId ?? '', features: s.features })); }
+    const s = await api<{ loginChannelId: string | null; channelId: string | null; liffId: string | null; connected: boolean; hasLoginChannelSecret?: boolean; features: { richMenu: boolean; notifyPush: boolean; sendSlip: boolean } }>('/line/settings').catch(() => null);
+    if (s) { setConnected(s.connected); setHasLoginSecret(!!s.hasLoginChannelSecret); setF((p) => ({ ...p, loginChannelId: s.loginChannelId ?? '', channelId: s.channelId ?? '', liffId: s.liffId ?? '', features: s.features })); }
   }
   useEffect(() => { load(); }, []);
   const [busy, setBusy] = useState(false);
@@ -177,11 +178,12 @@ function LineView() {
       const body: Record<string, unknown> = { channelId: f.channelId, features: f.features };
       if (f.loginChannelId) body.loginChannelId = f.loginChannelId;
       if (f.liffId) body.liffId = f.liffId;
+      if (f.loginChannelSecret) body.loginChannelSecret = f.loginChannelSecret;
       if (f.channelSecret) body.channelSecret = f.channelSecret;
       if (f.accessToken) body.accessToken = f.accessToken;
       // Response may carry an auto-provision result when a token was saved without a LIFF.
       const r = await api<{ liffId: string | null; provision?: Provision }>('/line/settings', { method: 'PUT', body: JSON.stringify(body) });
-      setF((p) => ({ ...p, channelSecret: '', accessToken: '' }));
+      setF((p) => ({ ...p, channelSecret: '', accessToken: '', loginChannelSecret: '' }));
       if (r.provision) flash(r.provision.ok ? `บันทึกแล้ว · ระบบสร้าง LIFF ให้อัตโนมัติ (${r.provision.liffId})` : `บันทึกแล้ว · สร้าง LIFF ไม่สำเร็จ: ${r.provision.reason}`, 5000);
       else flash('บันทึกการเชื่อมต่อ LINE แล้ว');
       load();
@@ -221,7 +223,8 @@ function LineView() {
           {connected ? <Badge text="● เชื่อมต่อแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อมต่อ" c="var(--ink-3)" bg="#F0F2F4" />}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <div><label style={lbl}>LINE Login Channel ID</label><input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} style={field} /></div>
+          <div><label style={lbl}>LINE Login Channel ID</label><input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} placeholder="เช่น 2001234567" style={field} /></div>
+          <div><label style={lbl}>LINE Login Channel Secret {hasLoginSecret && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.loginChannelSecret} onChange={(e) => setF({ ...f, loginChannelSecret: e.target.value })} placeholder="••••••••" style={field} /></div>
           <div><label style={lbl}>Messaging Channel ID</label><input value={f.channelId} onChange={(e) => setF({ ...f, channelId: e.target.value })} style={field} /></div>
           <div><label style={lbl}>Channel Secret {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" style={field} /></div>
           <div><label style={lbl}>Channel Access Token {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label><input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" style={field} /></div>

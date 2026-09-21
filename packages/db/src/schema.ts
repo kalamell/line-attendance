@@ -51,6 +51,8 @@ export const tenantLineChannels = pgTable('tenant_line_channels', {
   id: pk(),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   loginChannelId: text('login_channel_id'),
+  // LINE Login channel secret — used to mint a token (client_credentials) to create the LIFF app
+  loginChannelSecretEnc: text('login_channel_secret_enc'),
   channelId: text('channel_id'),
   channelSecretEnc: text('channel_secret_enc'),
   accessTokenEnc: text('access_token_enc'),

@@ -15,6 +15,7 @@ class FeaturesDto {
 
 class SaveLineDto {
   @IsOptional() @IsString() loginChannelId?: string;
+  @IsOptional() @IsString() loginChannelSecret?: string;
   @IsOptional() @IsString() channelId?: string;
   @IsOptional() @IsString() channelSecret?: string;
   @IsOptional() @IsString() accessToken?: string;
@@ -37,10 +38,11 @@ export class LineSettingsController {
   @Put('settings')
   async save(@TenantId() tenantId: string, @Body() dto: SaveLineDto) {
     const saved = await this.line.saveSettings(tenantId, dto);
-    // Once a working access token is present, the system provisions the LIFF app
-    // itself (no need to create a LIFF ID in the LINE console). Runs when no LIFF
-    // is wired yet; failures are surfaced but don't fail the save.
-    if (saved.hasAccessToken && !saved.liffId) {
+    // Once credentials are present, the system provisions the LIFF app itself (no
+    // need to create a LIFF ID in the LINE console). Prefers the Login channel
+    // secret; falls back to the Messaging API token. Failures don't fail the save.
+    const canProvision = (saved.loginChannelId && saved.hasLoginChannelSecret) || saved.hasAccessToken;
+    if (canProvision && !saved.liffId) {
       const provision = await this.line.provisionLiff(tenantId).catch((e) => ({ ok: false, reason: String(e) }));
       return { ...(await this.line.getSettings(tenantId)), provision };
     }
