@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import { db, tenantLineChannels } from '@poszee/db';
+import { and, eq, isNotNull } from 'drizzle-orm';
+import { db, tenantLineChannels, users } from '@poszee/db';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { RICH_MENU_PNG_BASE64, RICH_MENU_ONBOARD_PNG_BASE64 } from './richmenu-image';
 
@@ -223,7 +223,20 @@ export class LineService {
       if (!sr.ok) return { ok: false, reason: `ตั้ง default rich menu ไม่สำเร็จ (${sr.status}): ${await sr.text()}` };
 
       await db.update(tenantLineChannels).set({ richMenuIds: { default: onboardId, member: memberId } }).where(eq(tenantLineChannels.tenantId, tenantId));
-      return { ok: true, defaultRichMenuId: onboardId, memberRichMenuId: memberId };
+
+      // re-assign the (new) member menu to already-linked employees so a re-provision
+      // doesn't drop them back to the onboarding menu
+      const linked = await db
+        .select({ lineUserId: users.lineUserId })
+        .from(users)
+        .where(and(eq(users.tenantId, tenantId), isNotNull(users.lineUserId)));
+      let reassigned = 0;
+      for (const u of linked) {
+        if (!u.lineUserId) continue;
+        const rr = await fetch(`https://api.line.me/v2/bot/user/${u.lineUserId}/richmenu/${memberId}`, { method: 'POST', headers: auth });
+        if (rr.ok) reassigned++;
+      }
+      return { ok: true, defaultRichMenuId: onboardId, memberRichMenuId: memberId, reassigned };
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : String(e) };
     }
