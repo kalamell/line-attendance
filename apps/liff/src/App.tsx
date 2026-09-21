@@ -378,15 +378,7 @@ export function App() {
     })();
   }, []);
 
-  if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
-  if (booting) return <SplashScreen />;
-  // Employee email/password form only outside the LINE app; inside LINE we keep
-  // the splash rather than flashing a login form during LINE's consent step.
-  if (!authed) return external
-    ? <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />
-    : <SplashScreen />;
-
-  // load employee data after auth / on tab switch
+  // load employee data after auth / on tab switch (must stay above early returns)
   useEffect(() => {
     if (!authed) return;
     api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
@@ -396,6 +388,14 @@ export function App() {
     if (view === 'history') api<AttRow[]>('/attendance/history').then(setHistory).catch(() => {});
     if (view === 'leave') api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {});
   }, [view, authed]);
+
+  if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
+  if (booting) return <SplashScreen />;
+  // Employee email/password form only outside the LINE app; inside LINE we keep
+  // the splash rather than flashing a login form during LINE's consent step.
+  if (!authed) return external
+    ? <EmployeeLogin onDone={(u) => { setMe(u); setAuthed(true); api<Attendance>('/attendance/today').then(setToday).catch(() => {}); }} />
+    : <SplashScreen />;
 
   async function punch() {
     if (!getIdToken()) { flash('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
