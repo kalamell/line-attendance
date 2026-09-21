@@ -63,6 +63,28 @@ export class AttendanceService {
     return rec;
   }
 
+  listOffices(tenantId: string) {
+    return db.select().from(officeLocations).where(eq(officeLocations.tenantId, tenantId));
+  }
+
+  /** Upsert the tenant's (single) office geofence — used by HR/testing. */
+  async upsertOffice(tenantId: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {
+    const [existing] = await this.listOffices(tenantId);
+    if (existing) {
+      const [o] = await db
+        .update(officeLocations)
+        .set({ name: dto.name ?? existing.name, lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
+        .where(eq(officeLocations.id, existing.id))
+        .returning();
+      return o;
+    }
+    const [o] = await db
+      .insert(officeLocations)
+      .values({ tenantId, name: dto.name ?? 'สำนักงานใหญ่', lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
+      .returning();
+    return o;
+  }
+
   async today(tenantId: string, userId: string) {
     const [rec] = await db
       .select()

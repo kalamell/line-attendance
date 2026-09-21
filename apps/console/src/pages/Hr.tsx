@@ -1,6 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, currentUser, logout } from '../lib/api';
 import { MyProfile } from '../components/MyProfile';
+
+/* Leaflet (map picker) loaded lazily from CDN */
+let leafletPromise: Promise<void> | null = null;
+function loadLeaflet(): Promise<void> {
+  if (leafletPromise) return leafletPromise;
+  leafletPromise = new Promise((resolve) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(css);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    s.onload = () => resolve();
+    document.head.appendChild(s);
+  });
+  return leafletPromise;
+}
 
 /* ---------- shared bits ---------- */
 const card: React.CSSProperties = { background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)' };
@@ -574,6 +591,82 @@ function OnboardingView() {
   );
 }
 
+/* ---------- office geofence picker ---------- */
+function OfficeView() {
+  const [f, setF] = useState({ name: 'สำนักงานใหญ่', lat: 13.7563, lng: 100.5018, radiusM: 150 });
+  const [ready, setReady] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const refs = useRef<{ map?: any; marker?: any; circle?: any }>({});
+  const fRef = useRef(f);
+  fRef.current = f;
+
+  useEffect(() => {
+    api<{ name: string; lat: number; lng: number; radiusM: number }[]>('/attendance/office')
+      .then((list) => { if (list[0]) setF({ name: list[0].name, lat: Number(list[0].lat), lng: Number(list[0].lng), radiusM: list[0].radiusM }); })
+      .catch(() => {});
+    loadLeaflet().then(() => setReady(true));
+  }, []);
+
+  // init the map once Leaflet + the initial point are ready
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const L = (window as any).L;
+    if (!ready || !L || !boxRef.current || refs.current.map) return;
+    const c = fRef.current;
+    const map = L.map(boxRef.current).setView([c.lat, c.lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    const marker = L.marker([c.lat, c.lng], { draggable: true }).addTo(map);
+    const circle = L.circle([c.lat, c.lng], { radius: c.radiusM, color: '#06C755', fillColor: '#06C755', fillOpacity: 0.12 }).addTo(map);
+    const set = (lat: number, lng: number) => { setF((p) => ({ ...p, lat, lng })); };
+    map.on('click', (e: { latlng: { lat: number; lng: number } }) => set(e.latlng.lat, e.latlng.lng));
+    marker.on('dragend', () => { const ll = marker.getLatLng(); set(ll.lat, ll.lng); });
+    refs.current = { map, marker, circle };
+    setTimeout(() => map.invalidateSize(), 100);
+  }, [ready]);
+
+  // keep marker + circle in sync with state
+  useEffect(() => {
+    const { marker, circle, map } = refs.current;
+    if (!marker || !circle) return;
+    marker.setLatLng([f.lat, f.lng]);
+    circle.setLatLng([f.lat, f.lng]);
+    circle.setRadius(f.radiusM);
+    if (map) map.panTo([f.lat, f.lng]);
+  }, [f.lat, f.lng, f.radiusM]);
+
+  function useMyLocation() {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setF((p) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude })),
+      () => { setMsg('อ่านตำแหน่งไม่สำเร็จ — อนุญาตการเข้าถึงตำแหน่งก่อน'); setTimeout(() => setMsg(null), 3500); },
+      { enableHighAccuracy: true },
+    );
+  }
+  async function save() {
+    await api('/attendance/office', { method: 'POST', body: JSON.stringify({ name: f.name, lat: f.lat, lng: f.lng, radiusM: f.radiusM }) });
+    setMsg('บันทึกจุดออฟฟิศแล้ว'); setTimeout(() => setMsg(null), 3000);
+  }
+
+  return (
+    <div style={{ maxWidth: 760 }}>
+      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14, lineHeight: 1.6 }}>คลิกบนแผนที่หรือลากหมุดเพื่อกำหนดจุดออฟฟิศ พนักงานจะเช็คอินได้เมื่ออยู่ในรัศมีที่กำหนด</div>
+      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 14, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      <div ref={boxRef} style={{ height: 340, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 16, background: '#e9edf0' }} />
+      <div style={{ ...card, padding: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อสถานที่</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+          <div><label style={lbl}>ละติจูด</label><input value={f.lat} onChange={(e) => setF({ ...f, lat: Number(e.target.value) })} type="number" step="any" style={field} /></div>
+          <div><label style={lbl}>ลองจิจูด</label><input value={f.lng} onChange={(e) => setF({ ...f, lng: Number(e.target.value) })} type="number" step="any" style={field} /></div>
+          <div><label style={lbl}>รัศมี (เมตร)</label><input value={f.radiusM} onChange={(e) => setF({ ...f, radiusM: Number(e.target.value) })} type="number" min={10} style={field} /></div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%' }}>📍 ใช้ตำแหน่งปัจจุบัน</button></div>
+        </div>
+        <button onClick={save} style={{ ...btn('primary'), height: 46, padding: '0 22px' }}>บันทึกจุดออฟฟิศ</button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- shell ---------- */
 const NAV = [
   { key: 'dashboard', label: 'แดชบอร์ด' },
@@ -582,9 +675,10 @@ const NAV = [
   { key: 'hire', label: 'อนุมัติเริ่มงาน' },
   { key: 'leave', label: 'อนุมัติการลา' },
   { key: 'payroll', label: 'เงินเดือน' },
+  { key: 'office', label: 'จุดเช็คอิน (ออฟฟิศ)' },
   { key: 'line', label: 'การเชื่อมต่อ LINE' },
 ] as const;
-const TITLES: Record<string, string> = { dashboard: 'ภาพรวม', staff: 'พนักงาน', onboarding: 'พนักงานเข้าใหม่ (LINE)', hire: 'อนุมัติเริ่มงาน', leave: 'อนุมัติการลา', payroll: 'เงินเดือน', line: 'การเชื่อมต่อ LINE' };
+const TITLES: Record<string, string> = { dashboard: 'ภาพรวม', staff: 'พนักงาน', onboarding: 'พนักงานเข้าใหม่ (LINE)', hire: 'อนุมัติเริ่มงาน', leave: 'อนุมัติการลา', payroll: 'เงินเดือน', office: 'จุดเช็คอิน (ออฟฟิศ)', line: 'การเชื่อมต่อ LINE' };
 
 export function HrPage() {
   const me = currentUser();
@@ -629,6 +723,7 @@ export function HrPage() {
           {view === 'hire' && <HireView />}
           {view === 'leave' && <LeaveView />}
           {view === 'payroll' && <PayrollView />}
+          {view === 'office' && <OfficeView />}
           {view === 'line' && <LineView />}
         </div>
       </main>
