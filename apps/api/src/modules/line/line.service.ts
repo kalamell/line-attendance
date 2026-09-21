@@ -106,11 +106,12 @@ export class LineService {
     const token = this.crypto.decrypt(ch.accessTokenEnc);
     const auth = { authorization: `Bearer ${token}` };
 
-    // 1) reuse an existing LIFF app pointing at our endpoint, if any
+    // 1) reuse an existing LIFF app pointing at our endpoint, if any.
+    //    404 = the channel simply has no LIFF apps yet (treat as empty).
     const norm = (u: string) => u.replace(/\/+$/, '');
     const lr = await fetch('https://api.line.me/liff/v1/apps', { headers: auth });
-    if (!lr.ok) return { ok: false, reason: `อ่านรายการ LIFF ไม่ได้ (${lr.status}): ${await lr.text()}` };
-    const apps = ((await lr.json()) as { apps?: { liffId: string; view?: { url?: string } }[] }).apps ?? [];
+    if (!lr.ok && lr.status !== 404) return { ok: false, reason: `อ่านรายการ LIFF ไม่ได้ (${lr.status}): ${await lr.text()}` };
+    const apps = lr.ok ? (((await lr.json()) as { apps?: { liffId: string; view?: { url?: string } }[] }).apps ?? []) : [];
     let liffId = apps.find((a) => norm(a.view?.url ?? '') === norm(endpointUrl))?.liffId ?? null;
     let created = false;
 
