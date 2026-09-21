@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import { db, tenants, tenantLineChannels, invitations, users, auditLogs } from '@poszee/db';
@@ -54,10 +54,29 @@ export class TenantsService {
     return { tenant, invite: { token, url: `https://${tenant.subdomain}.poszee.com/invite/${token}` } };
   }
 
-  async update(id: string, patch: { status?: TenantStatus; plan?: TenantPlan }, actorId?: string) {
-    const [t] = await db.update(tenants).set(patch).where(eq(tenants.id, id)).returning();
+  async update(
+    id: string,
+    patch: { name?: string; subdomain?: string; status?: TenantStatus; plan?: TenantPlan },
+    actorId?: string,
+  ) {
+    const clean: Record<string, unknown> = {};
+    if (patch.name !== undefined) clean.name = patch.name;
+    if (patch.subdomain !== undefined) clean.subdomain = patch.subdomain;
+    if (patch.status !== undefined) clean.status = patch.status;
+    if (patch.plan !== undefined) clean.plan = patch.plan;
+    const [t] = await db.update(tenants).set(clean).where(eq(tenants.id, id)).returning();
     await this.audit(actorId, id, 'tenant.update', 'tenant', id);
     return t;
+  }
+
+  /** Hard-delete a tenant. All tenant-scoped rows cascade (FK onDelete: cascade);
+   *  audit rows keep with tenant_id set null. Irreversible. */
+  async remove(id: string, actorId?: string) {
+    const [t] = await db.select({ id: tenants.id, name: tenants.name }).from(tenants).where(eq(tenants.id, id)).limit(1);
+    if (!t) throw new NotFoundException('ไม่พบหน่วยงาน');
+    await db.delete(tenants).where(eq(tenants.id, id));
+    await this.audit(actorId, null, 'tenant.delete', 'tenant', id);
+    return { ok: true, id, name: t.name };
   }
 
   listAdmins(tenantId: string) {
@@ -82,6 +101,41 @@ export class TenantsService {
       .returning();
     await this.audit(actorId, tenantId, 'admin.create', 'user', u.id);
     return { id: u.id, name: u.name, email: u.email, tempPassword };
+  }
+
+  async updateAdmin(id: string, patch: { name?: string; email?: string; active?: boolean }, actorId?: string) {
+    const [u] = await db.select().from(users).where(and(eq(users.id, id), eq(users.role, 'org_admin'))).limit(1);
+    if (!u) throw new NotFoundException('ไม่พบผู้ดูแล');
+    const clean: Record<string, unknown> = {};
+    if (patch.name !== undefined) clean.name = patch.name;
+    if (patch.email !== undefined) clean.email = patch.email;
+    if (patch.active !== undefined) clean.active = patch.active;
+    const [updated] = await db.update(users).set(clean).where(eq(users.id, id)).returning();
+    await this.audit(actorId, u.tenantId, 'admin.update', 'user', id);
+    return { id: updated.id, name: updated.name, email: updated.email, active: updated.active };
+  }
+
+  async resetAdminPassword(id: string, actorId?: string) {
+    const [u] = await db.select().from(users).where(and(eq(users.id, id), eq(users.role, 'org_admin'))).limit(1);
+    if (!u) throw new NotFoundException('ไม่พบผู้ดูแล');
+    const tempPassword = randomBytes(6).toString('base64url');
+    await db.update(users).set({ passwordHash: this.crypto.hashPassword(tempPassword) }).where(eq(users.id, id));
+    await this.audit(actorId, u.tenantId, 'admin.reset_password', 'user', id);
+    return { id, email: u.email, tempPassword };
+  }
+
+  /** Delete an org_admin. May fail if the admin approved leave/hire (FK restrict);
+   *  the caller surfaces that as "deactivate instead". */
+  async removeAdmin(id: string, actorId?: string) {
+    const [u] = await db.select().from(users).where(and(eq(users.id, id), eq(users.role, 'org_admin'))).limit(1);
+    if (!u) throw new NotFoundException('ไม่พบผู้ดูแล');
+    try {
+      await db.delete(users).where(eq(users.id, id));
+    } catch {
+      throw new ConflictException('ผู้ดูแลนี้เคยอนุมัติรายการในระบบ ลบไม่ได้ — ให้ปิดการใช้งานแทน');
+    }
+    await this.audit(actorId, u.tenantId, 'admin.delete', 'user', id);
+    return { ok: true, id };
   }
 
   listAllAdmins() {
