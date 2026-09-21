@@ -43,4 +43,10 @@ export class LineSettingsController {
   test(@TenantId() tenantId: string) {
     return this.line.testConnection(tenantId);
   }
+
+  /** One-click: create/reuse the LIFF app from the stored token and wire up login. */
+  @Post('provision-liff')
+  provisionLiff(@TenantId() tenantId: string) {
+    return this.line.provisionLiff(tenantId);
+  }
 }
