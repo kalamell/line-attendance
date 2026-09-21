@@ -33,7 +33,8 @@ function PayslipScreen({ back }: { back: () => void }) {
     api<{ hasPin: boolean }>('/me/profile').then((p) => setMode(p.hasPin ? 'enterpin' : 'setpin')).catch(() => setMode('enterpin'));
   }, []);
 
-  async function openSlip() { setSlip(await api('/me/payslip').catch(() => null)); setMode('unlocked'); }
+  type Slip = { period: string; gross: string; deductions: string; net: string; items: { kind: string; label: string; amount: string }[] };
+  async function openSlip() { setSlip(await api<Slip>('/me/payslip').catch(() => null)); setMode('unlocked'); }
 
   async function complete(code: string) {
     if (mode === 'enterpin') {
