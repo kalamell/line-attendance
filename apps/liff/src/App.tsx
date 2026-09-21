@@ -17,8 +17,12 @@ function PayslipScreen({ back }: { back: () => void }) {
   const [sent, setSent] = useState(false);
 
   async function unlock(next: string) {
-    setUnlocked(true);
-    try { setSlip(await api('/me/payslip')); } catch { setNote('เปิดผ่านแอป LINE เพื่อดูสลิปจริง'); }
+    try {
+      const v = await api<{ ok: boolean }>('/me/verify-pin', { method: 'POST', body: JSON.stringify({ pin: next }) });
+      if (!v.ok) { setNote('PIN ไม่ถูกต้อง'); setPin(''); return; }
+      setUnlocked(true);
+      setSlip(await api('/me/payslip'));
+    } catch { setNote('เปิดผ่านแอป LINE เพื่อดูสลิปจริง'); }
   }
   function tap(d: string) {
     if (pin.length >= 6) return;
@@ -156,23 +160,39 @@ function RegisterScreen({ back }: { back: () => void }) {
 }
 
 /* ================= Edit profile ================= */
+type ProfileForm = { name: string; email: string; phone: string; address: string; emergencyContactName: string; emergencyPhone: string; department: string; position: string };
 function EditProfileScreen({ back }: { back: () => void }) {
-  const [f, setF] = useState<{ name: string; phone: string; department: string; position: string } | null>(null);
-  const [note, setNote] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [f, setF] = useState<ProfileForm | null>(null);
+  const [pw, setPw] = useState({ current: '', next: '' });
+  const [pin, setPin] = useState('');
+  const [msg, setMsg] = useState<{ t: string; ok: boolean } | null>(null);
+  const flash = (t: string, ok = true) => { setMsg({ t, ok }); setTimeout(() => setMsg(null), 2800); };
   useEffect(() => {
-    api<{ name: string; phone: string; department: string; position: string }>('/me/profile')
-      .then((p) => setF({ name: p.name ?? '', phone: p.phone ?? '', department: p.department ?? '', position: p.position ?? '' }))
-      .catch(() => setNote('เปิดผ่านแอป LINE เพื่อแก้ไขโปรไฟล์'));
+    api<ProfileForm>('/me/profile')
+      .then((p) => setF({ name: p.name ?? '', email: p.email ?? '', phone: p.phone ?? '', address: p.address ?? '', emergencyContactName: p.emergencyContactName ?? '', emergencyPhone: p.emergencyPhone ?? '', department: p.department ?? '', position: p.position ?? '' }))
+      .catch(() => flash('เปิดผ่านแอป LINE เพื่อแก้ไขโปรไฟล์', false));
   }, []);
   async function save() {
     if (!f) return;
-    try { await api('/me/profile', { method: 'PATCH', body: JSON.stringify({ name: f.name, phone: f.phone }) }); setSaved(true); setTimeout(() => setSaved(false), 2500); }
-    catch { setNote('บันทึกไม่สำเร็จ'); }
+    try { await api('/me/profile', { method: 'PATCH', body: JSON.stringify({ name: f.name, email: f.email, phone: f.phone, address: f.address, emergencyContactName: f.emergencyContactName, emergencyPhone: f.emergencyPhone }) }); flash('บันทึกข้อมูลแล้ว'); }
+    catch { flash('บันทึกไม่สำเร็จ', false); }
+  }
+  async function changePw() {
+    if (!pw.next) return;
+    try { await api('/me/password', { method: 'PATCH', body: JSON.stringify({ currentPassword: pw.current, newPassword: pw.next }) }); setPw({ current: '', next: '' }); flash('เปลี่ยนรหัสผ่านแล้ว'); }
+    catch { flash('รหัสผ่านเดิมไม่ถูกต้อง (ใหม่ ≥6 ตัว)', false); }
+  }
+  async function savePin() {
+    if (pin.length < 4) { flash('PIN ต้อง ≥4 หลัก', false); return; }
+    try { await api('/me/pin', { method: 'PATCH', body: JSON.stringify({ pin }) }); setPin(''); flash('ตั้ง PIN สลิปแล้ว'); }
+    catch { flash('ตั้ง PIN ไม่สำเร็จ', false); }
   }
   const field: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 12, padding: '13px 14px', fontSize: 14, width: '100%' };
   const ro: React.CSSProperties = { ...field, background: 'var(--bg)', color: 'var(--ink-3)' };
   const lbl: React.CSSProperties = { fontSize: 12, color: 'var(--ink-2)', margin: '0 0 6px' };
+  const sect: React.CSSProperties = { fontSize: 13, fontWeight: 700, margin: '22px 0 12px' };
+  const primary: React.CSSProperties = { width: '100%', height: 50, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' };
+  const ghost: React.CSSProperties = { width: '100%', height: 48, border: '1px solid var(--brand)', borderRadius: 14, background: '#fff', color: 'var(--brand-700)', fontSize: 15, fontWeight: 600, cursor: 'pointer' };
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
@@ -180,19 +200,33 @@ function EditProfileScreen({ back }: { back: () => void }) {
         <div style={{ fontSize: 18, fontWeight: 700 }}>แก้ไขข้อมูลส่วนตัว</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-        {note && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>{note}</div>}
+        {msg && <div style={{ background: msg.ok ? 'var(--brand-tint)' : 'var(--danger-tint)', color: msg.ok ? 'var(--brand-700)' : 'var(--danger)', borderRadius: 12, padding: 12, fontWeight: 600, fontSize: 13, marginBottom: 14 }}>{msg.t}</div>}
         {f && (
           <>
             <div style={{ marginBottom: 14 }}><div style={lbl}>ชื่อ-นามสกุล</div><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>อีเมล</div><input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} type="email" style={field} /></div>
             <div style={{ marginBottom: 14 }}><div style={lbl}>เบอร์โทร</div><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="08x-xxx-xxxx" style={field} /></div>
-            <div style={{ marginBottom: 14 }}><div style={lbl}>แผนก (ดูแลโดยฝ่ายบุคคล)</div><div style={ro}>{f.department || '—'}</div></div>
-            <div style={{ marginBottom: 20 }}><div style={lbl}>ตำแหน่ง (ดูแลโดยฝ่ายบุคคล)</div><div style={ro}>{f.position || '—'}</div></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>ที่อยู่</div><input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} style={field} /></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>ผู้ติดต่อฉุกเฉิน</div><input value={f.emergencyContactName} onChange={(e) => setF({ ...f, emergencyContactName: e.target.value })} placeholder="ชื่อผู้ติดต่อ" style={field} /></div>
+            <div style={{ marginBottom: 16 }}><div style={lbl}>เบอร์ผู้ติดต่อฉุกเฉิน</div><input value={f.emergencyPhone} onChange={(e) => setF({ ...f, emergencyPhone: e.target.value })} placeholder="08x-xxx-xxxx" style={field} /></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <div><div style={lbl}>แผนก (HR คุม)</div><div style={ro}>{f.department || '—'}</div></div>
+              <div><div style={lbl}>ตำแหน่ง (HR คุม)</div><div style={ro}>{f.position || '—'}</div></div>
+            </div>
             <div style={{ fontSize: 11, color: 'var(--ink-3)', marginBottom: 16, display: 'flex', gap: 6, alignItems: 'center' }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-              เบอร์โทรถูกเก็บแบบเข้ารหัส · แก้ไขได้เฉพาะข้อมูลของคุณเอง (PDPA)
+              ข้อมูลติดต่อถูกเก็บแบบเข้ารหัส · แก้ไขได้เฉพาะของคุณเอง (PDPA)
             </div>
-            {saved && <div style={{ background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 12, padding: 12, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, marginBottom: 14 }}>บันทึกข้อมูลแล้ว</div>}
-            <button onClick={save} style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>บันทึก</button>
+            <button onClick={save} style={primary}>บันทึกข้อมูล</button>
+
+            <div style={sect}>เปลี่ยนรหัสผ่าน</div>
+            <div style={{ marginBottom: 12 }}><div style={lbl}>รหัสผ่านเดิม</div><input value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} type="password" style={field} /></div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>รหัสผ่านใหม่ (≥6 ตัว)</div><input value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} type="password" style={field} /></div>
+            <button onClick={changePw} style={ghost}>เปลี่ยนรหัสผ่าน</button>
+
+            <div style={sect}>PIN เปิดสลิปเงินเดือน</div>
+            <div style={{ marginBottom: 14 }}><div style={lbl}>ตั้ง/เปลี่ยน PIN (≥4 หลัก)</div><input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} inputMode="numeric" maxLength={6} type="password" style={field} /></div>
+            <button onClick={savePin} style={{ ...ghost, marginBottom: 8 }}>ตั้ง PIN สลิป</button>
           </>
         )}
       </div>

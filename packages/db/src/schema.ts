@@ -80,6 +80,9 @@ export const users = pgTable(
     nationalIdEnc: text('national_id_enc'),
     phoneEnc: text('phone_enc'),
     bankAccountEnc: text('bank_account_enc'),
+    addressEnc: text('address_enc'),
+    emergencyContactName: text('emergency_contact_name'),
+    emergencyPhoneEnc: text('emergency_phone_enc'),
     baseSalary: numeric('base_salary', { precision: 12, scale: 2 }),
     // payslip open password (hashed) — employee-set, NOT derived from PII
     payslipPasswordHash: text('payslip_password_hash'),

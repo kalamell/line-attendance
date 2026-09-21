@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Injectable, Module, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Injectable, Module, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { and, desc, eq } from 'drizzle-orm';
 import { db, users, payslips, payrollRuns, salaryComponents, pdpaConsents } from '@poszee/db';
@@ -12,6 +12,10 @@ import { PDPA_CONSENT_VERSION, type AuthPrincipal } from '@poszee/shared';
 export class MeService {
   constructor(private readonly crypto: CryptoService) {}
 
+  private dec(v: string | null): string {
+    return v ? this.crypto.decrypt(v) : '';
+  }
+
   async profile(userId: string) {
     const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!u) return null;
@@ -21,17 +25,50 @@ export class MeService {
       department: u.department,
       position: u.position,
       employeeCode: u.employeeCode,
-      phone: u.phoneEnc ? this.crypto.decrypt(u.phoneEnc) : '',
+      phone: this.dec(u.phoneEnc),
+      address: this.dec(u.addressEnc),
+      emergencyContactName: u.emergencyContactName ?? '',
+      emergencyPhone: this.dec(u.emergencyPhoneEnc),
+      hasPin: !!u.payslipPasswordHash,
+      hasPassword: !!u.passwordHash,
     };
   }
 
-  /** Employees may correct their own name/phone (PDPA right to rectify). HR owns dept/position/salary. */
-  async updateProfile(userId: string, dto: { name?: string; phone?: string }) {
+  /** Employees/admins correct their own contact info (PDPA rectify). HR owns dept/position/salary. */
+  async updateProfile(
+    userId: string,
+    dto: { name?: string; email?: string; phone?: string; address?: string; emergencyContactName?: string; emergencyPhone?: string },
+  ) {
     const patch: Record<string, unknown> = {};
     if (dto.name !== undefined) patch.name = dto.name;
+    if (dto.email !== undefined) patch.email = dto.email;
+    if (dto.emergencyContactName !== undefined) patch.emergencyContactName = dto.emergencyContactName;
     if (dto.phone !== undefined) patch.phoneEnc = dto.phone ? this.crypto.encrypt(dto.phone) : null;
+    if (dto.address !== undefined) patch.addressEnc = dto.address ? this.crypto.encrypt(dto.address) : null;
+    if (dto.emergencyPhone !== undefined) patch.emergencyPhoneEnc = dto.emergencyPhone ? this.crypto.encrypt(dto.emergencyPhone) : null;
     if (Object.keys(patch).length) await db.update(users).set(patch).where(eq(users.id, userId));
     return this.profile(userId);
+  }
+
+  async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
+    const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!u) throw new UnauthorizedException();
+    if (u.passwordHash && !this.crypto.verifyPassword(currentPassword ?? '', u.passwordHash)) {
+      throw new UnauthorizedException('รหัสผ่านเดิมไม่ถูกต้อง');
+    }
+    await db.update(users).set({ passwordHash: this.crypto.hashPassword(newPassword) }).where(eq(users.id, userId));
+    return { ok: true };
+  }
+
+  async setPin(userId: string, pin: string) {
+    await db.update(users).set({ payslipPasswordHash: this.crypto.hashPassword(pin) }).where(eq(users.id, userId));
+    return { ok: true };
+  }
+
+  async verifyPin(userId: string, pin: string) {
+    const [u] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!u?.payslipPasswordHash) return { ok: true, unset: true }; // no PIN set yet
+    return { ok: this.crypto.verifyPassword(pin, u.payslipPasswordHash) };
   }
 
   async payslip(tenantId: string, userId: string) {
@@ -58,7 +95,18 @@ export class MeService {
 
 class UpdateProfileDto {
   @IsOptional() @IsString() @MinLength(1) name?: string;
+  @IsOptional() @IsString() email?: string;
   @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() address?: string;
+  @IsOptional() @IsString() emergencyContactName?: string;
+  @IsOptional() @IsString() emergencyPhone?: string;
+}
+class ChangePasswordDto {
+  @IsOptional() @IsString() currentPassword?: string;
+  @IsString() @MinLength(6) newPassword!: string;
+}
+class PinDto {
+  @IsString() @MinLength(4) pin!: string;
 }
 
 @UseGuards(JwtAuthGuard)
@@ -66,23 +114,25 @@ class UpdateProfileDto {
 class MeController {
   constructor(private readonly me: MeService) {}
 
-  @Get('profile')
-  profile(@CurrentUser() u: AuthPrincipal) {
+  @Get('profile') profile(@CurrentUser() u: AuthPrincipal) {
     return this.me.profile(u.userId);
   }
-
-  @Patch('profile')
-  update(@CurrentUser() u: AuthPrincipal, @Body() dto: UpdateProfileDto) {
+  @Patch('profile') update(@CurrentUser() u: AuthPrincipal, @Body() dto: UpdateProfileDto) {
     return this.me.updateProfile(u.userId, dto);
   }
-
-  @Get('payslip')
-  payslip(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal) {
+  @Patch('password') password(@CurrentUser() u: AuthPrincipal, @Body() dto: ChangePasswordDto) {
+    return this.me.changePassword(u.userId, dto.currentPassword, dto.newPassword);
+  }
+  @Patch('pin') pin(@CurrentUser() u: AuthPrincipal, @Body() dto: PinDto) {
+    return this.me.setPin(u.userId, dto.pin);
+  }
+  @Post('verify-pin') verifyPin(@CurrentUser() u: AuthPrincipal, @Body() dto: PinDto) {
+    return this.me.verifyPin(u.userId, dto.pin);
+  }
+  @Get('payslip') payslip(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal) {
     return this.me.payslip(tenantId, u.userId);
   }
-
-  @Post('consent')
-  consent(@TenantId(false) tenantId: string | null, @CurrentUser() u: AuthPrincipal) {
+  @Post('consent') consent(@TenantId(false) tenantId: string | null, @CurrentUser() u: AuthPrincipal) {
     return this.me.consent(tenantId, u.userId);
   }
 }

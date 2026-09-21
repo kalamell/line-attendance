@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, currentUser, logout } from '../lib/api';
+import { MyProfile } from '../components/MyProfile';
 
 /* ---------- shared bits ---------- */
 const card: React.CSSProperties = { background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)' };
@@ -233,6 +234,7 @@ const TITLES: Record<string, string> = { dashboard: 'ภาพรวม', staff:
 export function HrPage() {
   const me = currentUser();
   const [view, setView] = useState<string>('dashboard');
+  const [showProfile, setShowProfile] = useState(false);
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <aside style={{ width: 244, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--line)', padding: '22px 14px', display: 'flex', flexDirection: 'column' }}>
@@ -253,11 +255,15 @@ export function HrPage() {
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 8px', borderTop: '1px solid var(--line)' }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand-tint)', color: 'var(--brand-700)', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{me?.name?.[0] ?? 'H'}</div>
           <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{me?.name ?? 'HR'}</div><div style={{ fontSize: 11, color: 'var(--ink-3)' }}>org admin</div></div>
+          <button onClick={() => setShowProfile(true)} title="โปรไฟล์ของฉัน" style={{ border: '1px solid var(--line)', background: '#fff', color: 'var(--ink-3)', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg>
+          </button>
           <button onClick={logout} title="ออกจากระบบ" style={{ border: '1px solid var(--line)', background: '#fff', color: 'var(--ink-3)', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></svg>
           </button>
         </div>
       </aside>
+      {showProfile && <MyProfile onClose={() => setShowProfile(false)} />}
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ height: 72, flexShrink: 0, background: 'var(--surface)', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', padding: '0 28px', fontSize: 18, fontWeight: 700 }}>{TITLES[view]}</div>

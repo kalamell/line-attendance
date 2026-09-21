@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, currentUser, logout } from '../lib/api';
+import { MyProfile } from '../components/MyProfile';
 
 type Tenant = { id: string; name: string; subdomain: string; plan: 'trial' | 'starter' | 'pro'; status: 'active' | 'trial' | 'suspended'; createdAt: string };
 type Admin = { id: string; name: string; email: string | null; tenantId: string; tenantName: string; active: boolean };
@@ -227,6 +228,7 @@ const NAV = [
 export function SuperAdminPage() {
   const me = currentUser();
   const [view, setView] = useState<string>('tenants');
+  const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(null), 3500); };
 
@@ -247,9 +249,11 @@ export function SuperAdminPage() {
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{me?.name?.[0] ?? 'S'}</div>
           <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{me?.name ?? 'Super Admin'}</div><div style={{ fontSize: 11, color: '#6B7683' }}>platform owner</div></div>
+          <button onClick={() => setShowProfile(true)} title="โปรไฟล์ของฉัน" style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#9AA6B2', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></button>
           <button onClick={logout} title="ออกจากระบบ" style={{ border: 'none', background: 'rgba(255,255,255,0.08)', color: '#9AA6B2', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></svg></button>
         </div>
       </aside>
+      {showProfile && <MyProfile onClose={() => setShowProfile(false)} />}
 
       <main style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', position: 'relative' }}>
         {toast && <div style={{ position: 'fixed', top: 20, right: 28, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 12, padding: '12px 16px', color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, zIndex: 60 }}>{toast}</div>}
