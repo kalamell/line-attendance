@@ -609,7 +609,7 @@ export function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}><Icon n="translate" color="var(--brand-700)" /> <span style={{ fontSize: 14, fontWeight: 600 }}>{tr('pf_language')}</span></div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
                   {LOCALES.map((l) => (
-                    <button key={l.code} onClick={() => { pickLocale(l.code); flash(tr('lang_changed'), true); }} style={{ height: 44, borderRadius: 10, border: locale === l.code ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: locale === l.code ? 'var(--brand-tint)' : '#fff', color: locale === l.code ? 'var(--brand-700)' : 'var(--ink)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{l.native}</button>
+                    <button key={l.code} onClick={() => { pickLocale(l.code); flash(makeT(l.code)('lang_changed'), true); }} style={{ height: 44, borderRadius: 10, border: locale === l.code ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: locale === l.code ? 'var(--brand-tint)' : '#fff', color: locale === l.code ? 'var(--brand-700)' : 'var(--ink)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{l.native}</button>
                   ))}
                 </div>
               </div>
