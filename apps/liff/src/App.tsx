@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { initLiff, getIdToken, getProfile, isInClient, liff } from './lib/liff';
 import { api, setToken, loginPassword, errorMessage } from './lib/api';
+import { makeT, LOCALES, type Locale } from './i18n';
 
 type Me = { id: string; name: string; role: string; active: boolean };
 type Attendance = { status: string; checkInAt: string | null; checkOutAt: string | null } | null;
@@ -8,8 +9,16 @@ type AttRow = { id: string; workDate: string; status: string; checkInAt: string 
 type LeaveRow = { id: string; type: 'sick' | 'personal' | 'vacation'; startDate: string; endDate: string; days: string; status: string; reason: string | null };
 type Summary = { weekHours: number; lateThisMonth: number };
 type View = 'home' | 'history' | 'leave' | 'profile' | 'payslip' | 'register' | 'editprofile';
-const LEAVE_LABEL: Record<string, string> = { sick: 'ลาป่วย', personal: 'ลากิจ', vacation: 'พักร้อน' };
-const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมัติ', approved: 'อนุมัติ', rejected: 'ไม่อนุมัติ', present: 'ปกติ', late: 'สาย', absent: 'ขาด', leave: 'ลา' };
+
+// module-level translator; App sets it from the current locale on every render
+// (React renders top-down, so children see the updated value).
+let _t = makeT('th');
+const tr = (k: string): string => _t(k);
+const LEAVE_LABEL: Record<string, string> = { sick: 'lv_sick', personal: 'lv_personal', vacation: 'lv_vacation' };
+const leaveLabel = (t: string) => tr(LEAVE_LABEL[t] ?? t);
+const statusLabel = (s: string) => tr('st_' + s) || s;
+function readLocale(): Locale | null { try { const v = localStorage.getItem('locale'); return (['th','en','my','lo'].includes(v as string) ? v : null) as Locale | null; } catch { return null; } }
+function storeLocale(l: Locale) { try { localStorage.setItem('locale', l); } catch { /* ignore */ } }
 
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
@@ -40,15 +49,15 @@ function PayslipScreen({ back }: { back: () => void }) {
     if (mode === 'enterpin') {
       try {
         const v = await api<{ ok: boolean }>('/me/verify-pin', { method: 'POST', body: JSON.stringify({ pin: code }) });
-        if (!v.ok) { setErr('PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง'); setPin(''); return; }
+        if (!v.ok) { setErr(tr('pin_wrong')); setPin(''); return; }
         await openSlip();
-      } catch { setErr('เปิดผ่านแอป LINE เพื่อดูสลิป'); setPin(''); }
+      } catch { setErr(tr('open_in_line')); setPin(''); }
     } else if (mode === 'setpin') {
       if (setStep === 'new') { setFirstPin(code); setPin(''); setSetStep('confirm'); setErr(null); }
       else {
-        if (code !== firstPin) { setErr('PIN ไม่ตรงกัน เริ่มตั้งใหม่'); setPin(''); setFirstPin(''); setSetStep('new'); return; }
+        if (code !== firstPin) { setErr(tr('pin_mismatch')); setPin(''); setFirstPin(''); setSetStep('new'); return; }
         try { await api('/me/pin', { method: 'PATCH', body: JSON.stringify({ pin: code }) }); await openSlip(); }
-        catch { setErr('ตั้ง PIN ไม่สำเร็จ'); setPin(''); }
+        catch { setErr(tr('pin_set_fail')); setPin(''); }
       }
     }
   }
@@ -57,13 +66,13 @@ function PayslipScreen({ back }: { back: () => void }) {
   const deductions = slip?.items.filter((i) => i.kind === 'deduction') ?? [];
 
   if (mode !== 'unlocked') {
-    const title = mode === 'loading' ? 'กำลังโหลด…' : mode === 'setpin' ? (setStep === 'new' ? 'ตั้งรหัส PIN สำหรับสลิป' : 'ยืนยันรหัส PIN') : 'สลิปเงินเดือนถูกป้องกัน';
+    const title = mode === 'loading' ? tr('loading') : mode === 'setpin' ? (setStep === 'new' ? tr('pay_set_title') : tr('pay_confirm_title')) : tr('pay_locked_title');
     const sub = mode === 'setpin'
-      ? (setStep === 'new' ? 'ยังไม่มีรหัส — ตั้ง PIN 6 หลักเพื่อป้องกันสลิปของคุณ' : 'กรอกรหัสอีกครั้งเพื่อยืนยัน')
-      : mode === 'enterpin' ? 'กรอกรหัส PIN 6 หลักที่คุณตั้งไว้' : '';
+      ? (setStep === 'new' ? tr('pay_set_sub') : tr('pay_confirm_sub'))
+      : mode === 'enterpin' ? tr('pay_enter_sub') : '';
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', padding: '16px 28px 28px' }}>
-        <button onClick={back} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer' }}>‹ กลับ</button>
+        <button onClick={back} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', color: 'var(--ink-2)', fontSize: 14, cursor: 'pointer' }}>‹ {tr('back')}</button>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: 22, background: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
             <Icon n={mode === 'setpin' ? 'lock_reset' : 'lock'} size={34} color="var(--brand)" />
@@ -94,30 +103,30 @@ function PayslipScreen({ back }: { back: () => void }) {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '18px 20px 40px' }}>
-        <button onClick={back} style={{ border: 'none', background: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 8 }}>‹ กลับ</button>
-        <div style={{ fontSize: 17, fontWeight: 700 }}>สลิปเงินเดือน</div>
-        <div style={{ fontSize: 13, opacity: 0.9 }}>งวดประจำเดือน {slip?.period ?? '—'}</div>
+        <button onClick={back} style={{ border: 'none', background: 'none', color: '#fff', fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 8 }}>‹ {tr('back')}</button>
+        <div style={{ fontSize: 17, fontWeight: 700 }}>{tr('pf_payslip')}</div>
+        <div style={{ fontSize: 13, opacity: 0.9 }}>{tr('pay_period')} {slip?.period ?? '—'}</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 20px', marginTop: -28 }}>
         <div style={{ background: 'var(--surface)', borderRadius: 18, padding: 20, boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-          {!slip && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>ยังไม่มีสลิปเงินเดือนสำหรับคุณ</div>}
+          {!slip && <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 12 }}>{tr('pay_no_slip')}</div>}
           {slip && (
             <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)', marginBottom: 10 }}>รายได้</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)', marginBottom: 10 }}>{tr('pay_income')}</div>
               {earnings.map((e, i) => <Row key={i} l={e.label} v={e.amount} />)}
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', margin: '14px 0 10px' }}>รายการหัก</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', margin: '14px 0 10px' }}>{tr('pay_deduction')}</div>
               {deductions.map((e, i) => <Row key={i} l={e.label} v={`-${e.amount}`} />)}
               <div style={{ background: 'var(--brand-tint)', borderRadius: 14, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-700)' }}>เงินได้สุทธิ</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-700)' }}>{tr('pay_net')}</span>
                 <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--brand-700)' }}>฿{slip.net}</span>
               </div>
             </>
           )}
         </div>
         {slip && (sent ? (
-          <div style={{ marginTop: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: 16, textAlign: 'center', color: 'var(--brand-700)', fontWeight: 700, fontSize: 14 }}>ส่งสลิป PDF เข้ารหัสทาง LINE แล้ว</div>
+          <div style={{ marginTop: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: 16, textAlign: 'center', color: 'var(--brand-700)', fontWeight: 700, fontSize: 14 }}>{tr('pay_sent')}</div>
         ) : (
-          <button onClick={() => setSent(true)} style={{ width: '100%', height: 52, marginTop: 16, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>ส่งเป็น PDF (เข้ารหัส) ทาง LINE</button>
+          <button onClick={() => setSent(true)} style={{ width: '100%', height: 52, marginTop: 16, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>{tr('pay_send_pdf')}</button>
         ))}
       </div>
     </div>
@@ -295,16 +304,37 @@ function EmployeeLogin({ onDone }: { onDone: (u: Me) => void }) {
 function SplashScreen() {
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--ink-3)', fontSize: 14 }}>
-      กำลังโหลด…
+      {tr('loading')}
+    </div>
+  );
+}
+
+/* ================= Language picker ================= */
+function LanguagePicker({ onPick }: { onPick: (l: Locale) => void }) {
+  return (
+    <div style={{ maxWidth: 420, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '72px 28px 48px', textAlign: 'center' }}>
+        <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}><Icon n="translate" size={44} color="#fff" /></div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>เลือกภาษา · Language</div>
+        <div style={{ fontSize: 13, opacity: 0.92, marginTop: 6 }}>ภาษา / Language / ဘာသာ / ພາສາ</div>
+      </div>
+      <div style={{ flex: 1, padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {LOCALES.map((l) => (
+          <button key={l.code} onClick={() => onPick(l.code)} style={{ width: '100%', height: 64, border: '1px solid var(--line)', borderRadius: 16, background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', cursor: 'pointer' }}>
+            <span style={{ fontSize: 18, fontWeight: 700 }}>{l.native}</span>
+            <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{l.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
 function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactive' }) {
   const cfg = {
-    pending: { icon: 'waving_hand', title: 'ยินดีต้อนรับ!', body: 'เราแจ้งฝ่ายบุคคลว่าคุณเข้ามาแล้ว รอฝ่ายบุคคลยืนยันตัวตนและจับคู่บัญชีให้', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'ฝ่ายบุคคลส่งการ์ดยืนยันตัวตนมาให้', 'กดยืนยัน แล้วเริ่มใช้งานได้ทันที'], active: 0 },
-    confirmed: { icon: 'task_alt', title: 'ยืนยันตัวตนแล้ว', body: 'ขอบคุณครับ ฝ่ายบุคคลกำลังจับคู่บัญชีของคุณกับข้อมูลพนักงาน เสร็จแล้วเริ่มใช้งานได้ทันที', steps: ['ฝ่ายบุคคลเห็นคุณในระบบแล้ว', 'คุณยืนยันตัวตนแล้ว', 'รอฝ่ายบุคคลจับคู่บัญชี'], active: 2 },
-    inactive: { icon: 'hourglass_top', title: 'บัญชียังไม่เปิดใช้งาน', body: 'บัญชีของคุณกำลังรอฝ่ายบุคคลอนุมัติเริ่มงาน หากรอนานเกินไปกรุณาติดต่อฝ่ายบุคคล', steps: [], active: -1 },
+    pending: { icon: 'waving_hand', title: tr('onb_pending_title'), body: tr('onb_pending_body'), steps: [tr('onb_pending_s1'), tr('onb_pending_s2'), tr('onb_pending_s3')], active: 0 },
+    confirmed: { icon: 'task_alt', title: tr('onb_confirmed_title'), body: tr('onb_confirmed_body'), steps: [tr('onb_pending_s1'), tr('onb_pending_s2'), tr('onb_pending_s3')], active: 2 },
+    inactive: { icon: 'hourglass_top', title: tr('onb_inactive_title'), body: tr('onb_inactive_body'), steps: [], active: -1 },
   }[state];
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -322,7 +352,7 @@ function OnboardingScreen({ state }: { state: 'pending' | 'confirmed' | 'inactiv
             </div>
           ))}
         </div>
-        {state !== 'inactive' && <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-3)', marginTop: 20 }}>หน้านี้จะอัปเดตเองเมื่อฝ่ายบุคคลดำเนินการ</div>}
+        {state !== 'inactive' && <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-3)', marginTop: 20 }}>{tr('onb_wait_note')}</div>}
       </div>
     </div>
   );
@@ -339,7 +369,7 @@ function LeaveForm({ onSubmitted, onError }: { onSubmitted: () => void; onError:
   const fld: React.CSSProperties = { width: '100%', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', fontSize: 14, background: 'var(--surface)' };
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (endDate < startDate) { onError('วันสิ้นสุดต้องไม่ก่อนวันเริ่ม'); return; }
+    if (endDate < startDate) { onError(tr('date_err')); return; }
     setBusy(true);
     try {
       await api('/leave', { method: 'POST', body: JSON.stringify({ type, startDate, endDate, reason }) });
@@ -349,18 +379,18 @@ function LeaveForm({ onSubmitted, onError }: { onSubmitted: () => void; onError:
   }
   return (
     <form onSubmit={submit} style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>ยื่นคำขอลา</div>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{tr('leave_form_title')}</div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         {(['sick', 'personal', 'vacation'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setType(t)} style={{ flex: 1, height: 38, borderRadius: 10, border: type === t ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: type === t ? 'var(--brand-tint)' : '#fff', color: type === t ? 'var(--brand-700)' : 'var(--ink-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{LEAVE_LABEL[t]}</button>
+          <button type="button" key={t} onClick={() => setType(t)} style={{ flex: 1, height: 38, borderRadius: 10, border: type === t ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: type === t ? 'var(--brand-tint)' : '#fff', color: type === t ? 'var(--brand-700)' : 'var(--ink-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{leaveLabel(t)}</button>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันเริ่ม</div><input type="date" value={startDate} onChange={(e) => { setStart(e.target.value); if (endDate < e.target.value) setEnd(e.target.value); }} style={fld} /></div>
-        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>วันสิ้นสุด</div><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} style={fld} /></div>
+        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>{tr('date_start')}</div><input type="date" value={startDate} onChange={(e) => { setStart(e.target.value); if (endDate < e.target.value) setEnd(e.target.value); }} style={fld} /></div>
+        <div><div style={{ fontSize: 11, color: 'var(--ink-2)', marginBottom: 4 }}>{tr('date_end')}</div><input type="date" value={endDate} min={startDate} onChange={(e) => setEnd(e.target.value)} style={fld} /></div>
       </div>
-      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="เหตุผล (ไม่บังคับ)" style={{ ...fld, marginBottom: 12 }} />
-      <button type="submit" disabled={busy} style={{ width: '100%', height: 44, border: 'none', borderRadius: 11, background: 'var(--brand)', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{busy ? 'กำลังส่ง…' : 'ส่งคำขอลา'}</button>
+      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tr('reason_ph')} style={{ ...fld, marginBottom: 12 }} />
+      <button type="submit" disabled={busy} style={{ width: '100%', height: 44, border: 'none', borderRadius: 11, background: 'var(--brand)', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{busy ? tr('leave_sending') : tr('leave_submit')}</button>
     </form>
   );
 }
@@ -382,7 +412,15 @@ export function App() {
   const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number> } | null>(null);
   const [punching, setPunching] = useState<null | 'locating' | 'saving'>(null);
   const [consented, setConsented] = useState<boolean | null>(null); // PDPA gate: null=checking
+  const [locale, setLocaleState] = useState<Locale | null>(readLocale());
+  const [needOnboard, setNeedOnboard] = useState<false | 'pending' | 'confirmed'>(false);
   const flash = (text: string, ok = false, ms = 4000) => { setToast({ text, ok }); setTimeout(() => setToast(null), ms); };
+  _t = makeT(locale ?? 'th'); // keep the module translator in sync every render
+
+  function pickLocale(l: Locale) {
+    setLocaleState(l); storeLocale(l);
+    if (authed) api('/me/locale', { method: 'PATCH', body: JSON.stringify({ locale: l }) }).catch(() => {});
+  }
 
   useEffect(() => { const t = setInterval(() => setClock(new Date().toLocaleTimeString('th-TH')), 1000); return () => clearInterval(t); }, []);
   useEffect(() => {
@@ -395,28 +433,36 @@ export function App() {
       const wantConfirm = new URLSearchParams(location.search).get('onboard') === 'confirm';
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
-        setToken(r.token); setMe(r.user); setAuthed(true); setToday(await api<Attendance>('/attendance/today'));
+        setToken(r.token); setMe(r.user); setAuthed(true);
+        const prof = await api<{ hasConsent: boolean; locale: Locale }>('/me/profile').catch(() => null);
+        if (prof) { setConsented(!!prof.hasConsent); if (prof.locale) { setLocaleState(prof.locale); storeLocale(prof.locale); } }
+        setToday(await api<Attendance>('/attendance/today'));
       } catch (e) {
         const msg = String(e);
-        if (msg.includes('ACCOUNT_INACTIVE')) { setOnboard('inactive'); }
-        else if (msg.includes('ONBOARDING_REQUIRED')) {
-          // record this LINE user so HR can see + match them
-          const p = await getProfile();
-          try {
-            await api('/line/onboarding/checkin', { method: 'POST', body: JSON.stringify({ idToken, displayName: p?.displayName, pictureUrl: p?.pictureUrl }) });
-            if (wantConfirm) { await api('/line/onboarding/confirm', { method: 'POST', body: JSON.stringify({ idToken }) }); setOnboard('confirmed'); }
-            else setOnboard('pending');
-          } catch (e2) { setNote(errorMessage(e2)); }
-        } else setNote(errorMessage(e));
+        if (msg.includes('ACCOUNT_INACTIVE')) setOnboard('inactive');
+        else if (msg.includes('ONBOARDING_REQUIRED')) setNeedOnboard(wantConfirm ? 'confirmed' : 'pending'); // checkin runs once language is chosen
+        else setNote(errorMessage(e));
       } finally { setBooting(false); }
     })();
   }, []);
 
-  // load employee data after auth / on tab switch (must stay above early returns)
+  // onboarding check-in — waits until a language is chosen so the record + rich menu use it
+  useEffect(() => {
+    if (!needOnboard || !locale || onboard !== 'none') return;
+    (async () => {
+      const idToken = getIdToken(); if (!idToken) return;
+      const p = await getProfile();
+      try {
+        await api('/line/onboarding/checkin', { method: 'POST', body: JSON.stringify({ idToken, displayName: p?.displayName, pictureUrl: p?.pictureUrl, locale }) });
+        if (needOnboard === 'confirmed') await api('/line/onboarding/confirm', { method: 'POST', body: JSON.stringify({ idToken }) });
+        setOnboard(needOnboard);
+      } catch (e2) { setNote(errorMessage(e2)); }
+    })();
+  }, [needOnboard, locale, onboard]);
+
   useEffect(() => {
     if (!authed) return;
     api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
-    api<{ hasConsent: boolean }>('/me/profile').then((p) => setConsented(!!p.hasConsent)).catch(() => setConsented(true));
   }, [authed]);
   useEffect(() => {
     if (!authed) return;
@@ -424,8 +470,11 @@ export function App() {
     if (view === 'leave') api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {});
   }, [view, authed]);
 
-  if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
   if (booting) return <SplashScreen />;
+  // first-run: choose a language (also when a returning user has none stored)
+  if (locale === null) return <LanguagePicker onPick={pickLocale} />;
+  if (onboard !== 'none') return <OnboardingScreen state={onboard} />;
+  if (needOnboard) return <SplashScreen />; // waiting for check-in to resolve
   // Employee email/password form only outside the LINE app; inside LINE we keep
   // the splash rather than flashing a login form during LINE's consent step.
   if (!authed) return external
@@ -437,18 +486,18 @@ export function App() {
 
   async function punch() {
     if (punching) return; // guard against rapid double taps
-    if (!getIdToken()) { flash('เปิดผ่านแอป LINE เพื่อเช็คอิน'); return; }
+    if (!getIdToken()) { flash(tr('open_in_line')); return; }
     const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
     setPunching('locating');
     let pos: GeolocationPosition;
     try {
       pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 }));
-    } catch { setPunching(null); flash('เปิดการเข้าถึงตำแหน่ง (GPS) ก่อนเช็คอิน'); return; }
+    } catch { setPunching(null); flash(tr('gps_needed')); return; }
     setPunching('saving');
     const path = checkedIn ? '/attendance/check-out' : '/attendance/check-in';
     try {
       setToday(await api<NonNullable<Attendance>>(path, { method: 'POST', body: checkedIn ? undefined : JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }) }));
-      flash(checkedIn ? 'เช็คเอาท์เรียบร้อย' : 'เช็คอินเรียบร้อย', true);
+      flash(checkedIn ? tr('checkout_ok') : tr('checkin_ok'), true);
       api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
     } catch (e) { flash(errorMessage(e), false, 5000); }
     finally { setPunching(null); }
@@ -461,7 +510,7 @@ export function App() {
   const checkedIn = !!today?.checkInAt && !today?.checkOutAt;
   const done = !!today?.checkOutAt;
   const hr = new Date().getHours();
-  const greeting = hr < 12 ? 'สวัสดีตอนเช้า' : hr < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+  const greeting = hr < 12 ? tr('greeting_morning') : hr < 17 ? tr('greeting_afternoon') : tr('greeting_evening');
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -471,26 +520,26 @@ export function App() {
             <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '24px 20px 52px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{me?.name?.[0] ?? 'พ'}</div>
-                <div><div style={{ fontSize: 13, opacity: 0.9 }}>{greeting}</div><div style={{ fontSize: 17, fontWeight: 600 }}>{me?.name ?? 'พนักงาน'}</div></div>
+                <div><div style={{ fontSize: 13, opacity: 0.9 }}>{greeting}</div><div style={{ fontSize: 17, fontWeight: 600 }}>{me?.name ?? tr('employee')}</div></div>
               </div>
             </div>
             <div style={{ padding: '0 16px 20px', marginTop: -36 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 20, padding: '24px 20px', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', textAlign: 'center' }}>
                 <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{clock}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: punching ? 'var(--brand-700)' : done ? 'var(--ink-2)' : checkedIn ? 'var(--brand-700)' : 'var(--ink-3)' }}>
-                  {punching === 'locating' ? <><Icon n="my_location" size={16} /> กำลังระบุตำแหน่ง…</> : punching === 'saving' ? <><Icon n="sync" size={16} /> กำลังบันทึก…</> : done ? 'ทำงานครบวันแล้ว' : checkedIn ? `เข้างานแล้ว · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''} น.` : 'ยังไม่ได้เช็คอินวันนี้'}
+                  {punching === 'locating' ? <><Icon n="my_location" size={16} /> {tr('locating')}</> : punching === 'saving' ? <><Icon n="sync" size={16} /> {tr('saving')}</> : done ? tr('done_today') : checkedIn ? `${tr('checked_in_at')} · ${today?.checkInAt ? fmtTime(today.checkInAt) : ''}` : tr('not_checked_in')}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <button onClick={punch} disabled={done || !!punching} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done || punching ? 'default' : 'pointer', background: punching ? '#B8BFC7' : done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done || punching ? 'none' : '0 14px 34px rgba(6,199,85,0.42)', transition: 'background 0.2s' }}>{punching ? 'กำลังดำเนินการ…' : done ? 'เสร็จสิ้นวันนี้' : checkedIn ? 'เช็คเอาท์ออกงาน' : 'เช็คอินเข้างาน'}</button>
+                  <button onClick={punch} disabled={done || !!punching} style={{ width: 168, height: 168, borderRadius: '50%', border: 'none', fontSize: 17, fontWeight: 700, cursor: done || punching ? 'default' : 'pointer', background: punching ? '#B8BFC7' : done ? '#EEF0F3' : checkedIn ? 'radial-gradient(circle at 50% 35%,#FFB43D,#F59E0B)' : 'radial-gradient(circle at 50% 35%,#12D866,#06C755)', color: done ? 'var(--ink-3)' : '#fff', boxShadow: done || punching ? 'none' : '0 14px 34px rgba(6,199,85,0.42)', transition: 'background 0.2s' }}>{punching ? tr('processing') : done ? tr('btn_done') : checkedIn ? tr('btn_checkout') : tr('btn_checkin')}</button>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', marginTop: 14 }}>
                 <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg></div>
-                <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>เช็คอินได้เมื่ออยู่ในพื้นที่ออฟฟิศที่กำหนด · ระบบตรวจตำแหน่ง GPS อัตโนมัติ</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>{tr('geo_hint')}</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
-                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>ชั่วโมงสัปดาห์นี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.weekHours ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ชม.</span></div></div>
-                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>มาสายเดือนนี้</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.lateThisMonth ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> ครั้ง</span></div></div>
+                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>{tr('hours_week')}</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.weekHours ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> {tr('hours_unit')}</span></div></div>
+                <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>{tr('late_month')}</div><div style={{ fontSize: 24, fontWeight: 700 }}>{summary?.lateThisMonth ?? 0}<span style={{ fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 }}> {tr('times_unit')}</span></div></div>
               </div>
             </div>
           </>
@@ -498,7 +547,7 @@ export function App() {
 
         {view === 'history' && (
           <div style={{ padding: 16 }}>
-            <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ประวัติการเข้างาน</h2>
+            <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>{tr('history_title')}</h2>
             {history.map((r) => {
               const d = new Date(r.workDate);
               const dd = String(d.getDate()).padStart(2, '0');
@@ -509,34 +558,34 @@ export function App() {
                 <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                   <div style={{ width: 46, height: 46, borderRadius: 12, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 16, fontWeight: 700 }}>{dd}</span><span style={{ fontSize: 10, color: 'var(--ink-3)' }}>{wd}</span></div>
                   <div style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{times}</div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: late ? 'var(--warn)' : 'var(--ink-2)' }}>{STATUS_LABEL[r.status] ?? r.status}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: late ? 'var(--warn)' : 'var(--ink-2)' }}>{statusLabel(r.status)}</span>
                 </div>
               );
             })}
-            {history.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 32 }}>ยังไม่มีประวัติการเข้างาน</div>}
+            {history.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 32 }}>{tr('history_empty')}</div>}
           </div>
         )}
 
         {view === 'leave' && (
           <div style={{ padding: 16 }}>
-            <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>ลางาน</h2>
+            <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>{tr('leave_title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
-              {([['sick', 'ลาป่วย', 'var(--danger)', '#FDECEC'], ['personal', 'ลากิจ', 'var(--info)', '#EAF1FE'], ['vacation', 'พักร้อน', 'var(--brand-700)', 'var(--brand-tint)']] as const).map(([k, label, col, bg]) => (
-                <div key={k} style={{ background: bg, borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: col }}>{leaveData?.used[k] ?? 0}</div><div style={{ fontSize: 11, color: col, fontWeight: 500 }}>{label} (ใช้ไป)</div></div>
+              {([['sick', 'var(--danger)', '#FDECEC'], ['personal', 'var(--info)', '#EAF1FE'], ['vacation', 'var(--brand-700)', 'var(--brand-tint)']] as const).map(([k, col, bg]) => (
+                <div key={k} style={{ background: bg, borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: col }}>{leaveData?.used[k] ?? 0}</div><div style={{ fontSize: 11, color: col, fontWeight: 500 }}>{leaveLabel(k)} · {tr('used_suffix')}</div></div>
               ))}
             </div>
-            <LeaveForm onSubmitted={() => { flash('ส่งคำขอลาแล้ว รออนุมัติ', true); api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {}); }} onError={(m) => flash(m)} />
-            <div style={{ fontSize: 13, fontWeight: 700, margin: '20px 4px 10px' }}>คำขอของฉัน</div>
+            <LeaveForm onSubmitted={() => { flash(tr('leave_submitted'), true); api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {}); }} onError={(m) => flash(m)} />
+            <div style={{ fontSize: 13, fontWeight: 700, margin: '20px 4px 10px' }}>{tr('my_requests')}</div>
             {(leaveData?.requests ?? []).map((r) => (
               <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{LEAVE_LABEL[r.type]} · {r.days} วัน</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{leaveLabel(r.type)} · {r.days} {tr('days_unit')}</div>
                   <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{r.startDate} → {r.endDate}</div>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'approved' ? 'var(--brand-700)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warn)' }}>{STATUS_LABEL[r.status] ?? r.status}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: r.status === 'approved' ? 'var(--brand-700)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--warn)' }}>{statusLabel(r.status)}</span>
               </div>
             ))}
-            {(leaveData?.requests ?? []).length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 20 }}>ยังไม่มีคำขอลา</div>}
+            {(leaveData?.requests ?? []).length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 13, padding: 20 }}>{tr('leave_empty')}</div>}
           </div>
         )}
 
@@ -544,18 +593,27 @@ export function App() {
           <div>
             <div style={{ background: 'linear-gradient(160deg,#06C755,#04A548)', color: '#fff', padding: '28px 20px 56px', textAlign: 'center' }}>
               <div style={{ width: 84, height: 84, borderRadius: 26, background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 700, marginBottom: 12 }}>{me?.name?.[0] ?? 'พ'}</div>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{me?.name ?? 'พนักงาน'}</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{me?.name ?? tr('employee')}</div>
               <div style={{ fontSize: 13, opacity: 0.9 }}>{me?.role ?? 'employee'}</div>
             </div>
             <div style={{ padding: '0 16px', marginTop: -42 }}>
               <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)' }}>
-                <button onClick={() => setView('editprofile')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="person" color="var(--brand-700)" /> แก้ไขข้อมูลส่วนตัว</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('editprofile')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="person" color="var(--brand-700)" /> {tr('pf_edit')}</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
-                <button onClick={() => setView('payslip')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="payments" color="var(--brand-700)" /> สลิปเงินเดือน</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('payslip')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="payments" color="var(--brand-700)" /> {tr('pf_payslip')}</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
                 <div style={{ height: 1, background: 'var(--line)' }} />
-                <button onClick={() => setView('register')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="shield_person" color="var(--brand-700)" /> ความยินยอม PDPA</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
+                <button onClick={() => setView('register')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="shield_person" color="var(--brand-700)" /> {tr('pf_pdpa')}</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
               </div>
-              <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }} style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>ออกจากระบบ</button>
+              {/* language switcher */}
+              <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', marginTop: 14, padding: '14px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}><Icon n="translate" color="var(--brand-700)" /> <span style={{ fontSize: 14, fontWeight: 600 }}>{tr('pf_language')}</span></div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+                  {LOCALES.map((l) => (
+                    <button key={l.code} onClick={() => { pickLocale(l.code); flash(tr('lang_changed'), true); }} style={{ height: 44, borderRadius: 10, border: locale === l.code ? '1.5px solid var(--brand)' : '1px solid var(--line)', background: locale === l.code ? 'var(--brand-tint)' : '#fff', color: locale === l.code ? 'var(--brand-700)' : 'var(--ink)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{l.native}</button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={() => { try { liff.logout(); } catch { /* not in LINE */ } location.reload(); }} style={{ width: '100%', height: 50, marginTop: 16, border: '1px solid #FADBDB', borderRadius: 14, background: '#fff', color: 'var(--danger)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>{tr('logout')}</button>
             </div>
           </div>
         )}
@@ -570,10 +628,10 @@ export function App() {
       )}
 
       <nav style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)', padding: '6px 8px 10px', display: 'flex' }}>
-        {([['home', 'หน้าหลัก', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['history', 'ประวัติ', 'M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8'], ['leave', 'ลางาน', 'M8 2v4M16 2v4M3 10h18'], ['profile', 'โปรไฟล์', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']] as const).map(([k, label, d]) => (
+        {([['home', 'nav_home', 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['history', 'nav_history', 'M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8'], ['leave', 'nav_leave', 'M8 2v4M16 2v4M3 10h18'], ['profile', 'nav_profile', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z']] as const).map(([k, label, d]) => (
           <button key={k} onClick={() => setView(k as View)} style={{ flex: 1, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 4px' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={view === k ? 'var(--brand)' : 'var(--ink-3)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
-            <span style={{ fontSize: 10, fontWeight: 600, color: view === k ? 'var(--brand)' : 'var(--ink-3)' }}>{label}</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: view === k ? 'var(--brand)' : 'var(--ink-3)' }}>{tr(label)}</span>
           </button>
         ))}
       </nav>

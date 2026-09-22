@@ -31,10 +31,12 @@ export class OnboardingService {
     return this.line.verifyIdToken(idToken, ch?.loginChannelId ?? undefined);
   }
 
-  /** LIFF: a new employee tapped the rich-menu entry — record them as incoming. */
-  async checkin(tenantId: string, idToken: string, displayName?: string, pictureUrl?: string) {
+  /** LIFF: a new employee tapped the rich-menu entry — record them as incoming.
+   *  `locale` is their chosen language: stored and used to switch their rich menu. */
+  async checkin(tenantId: string, idToken: string, displayName?: string, pictureUrl?: string, locale?: string) {
     const profile = await this.lineUserFromToken(tenantId, idToken);
     const lineUserId = profile.lineUserId;
+    const loc = locale && ['th', 'en', 'my', 'lo'].includes(locale) ? locale : undefined;
 
     const [linkedUser] = await db
       .select({ id: users.id, name: users.name })
@@ -42,6 +44,9 @@ export class OnboardingService {
       .where(and(eq(users.tenantId, tenantId), eq(users.lineUserId, lineUserId)))
       .limit(1);
     if (linkedUser) return { status: 'linked' as const, name: linkedUser.name };
+
+    // switch their menu to the chosen language (still the onboarding menu, translated)
+    if (loc) await this.line.assignRichMenu(tenantId, lineUserId, 'onboard', loc).catch(() => {});
 
     const [row] = await db
       .select()
@@ -51,7 +56,7 @@ export class OnboardingService {
     if (row) {
       await db
         .update(lineOnboarding)
-        .set({ displayName: displayName ?? row.displayName, pictureUrl: pictureUrl ?? row.pictureUrl, updatedAt: new Date() })
+        .set({ displayName: displayName ?? row.displayName, pictureUrl: pictureUrl ?? row.pictureUrl, ...(loc ? { locale: loc } : {}), updatedAt: new Date() })
         .where(eq(lineOnboarding.id, row.id));
       return { status: row.status };
     }
@@ -60,6 +65,7 @@ export class OnboardingService {
       lineUserId,
       displayName: displayName ?? profile.name ?? null,
       pictureUrl: pictureUrl ?? null,
+      ...(loc ? { locale: loc } : {}),
     });
     return { status: 'incoming' as const };
   }
@@ -169,10 +175,10 @@ export class OnboardingService {
       .limit(1);
     if (clash) throw new BadRequestException('LINE นี้ถูกผูกกับพนักงานคนอื่นแล้ว');
 
-    await db.update(users).set({ lineUserId: r.lineUserId }).where(eq(users.id, userId));
+    await db.update(users).set({ lineUserId: r.lineUserId, locale: r.locale ?? 'th' }).where(eq(users.id, userId));
     await db.update(lineOnboarding).set({ status: 'linked', linkedUserId: userId, updatedAt: new Date() }).where(eq(lineOnboarding.id, r.id));
-    // switch this user from the "เริ่มใช้งาน" menu to the member menu
-    await this.line.assignMemberRichMenu(tenantId, r.lineUserId).catch(() => {});
+    // switch this user from the onboarding menu to the member menu, in their language
+    await this.line.assignRichMenu(tenantId, r.lineUserId, 'member', r.locale ?? 'th').catch(() => {});
     return { ok: true };
   }
 
@@ -189,7 +195,8 @@ export class OnboardingService {
       await db.update(users).set({ lineUserId: null }).where(and(eq(users.tenantId, tenantId), eq(users.id, r.linkedUserId)));
     }
     await db.update(lineOnboarding).set({ status: 'confirmed', linkedUserId: null, updatedAt: new Date() }).where(eq(lineOnboarding.id, r.id));
-    await this.line.clearUserRichMenu(tenantId, r.lineUserId).catch(() => {});
+    // back to the onboarding menu in their language
+    await this.line.assignRichMenu(tenantId, r.lineUserId, 'onboard', r.locale ?? 'th').catch(() => {});
     return { ok: true };
   }
 }
@@ -198,6 +205,7 @@ class TokenDto {
   @IsString() idToken!: string;
   @IsOptional() @IsString() displayName?: string;
   @IsOptional() @IsString() pictureUrl?: string;
+  @IsOptional() @IsString() locale?: string;
 }
 class LinkDto {
   @IsString() userId!: string;
@@ -210,7 +218,7 @@ class OnboardingPublicController {
 
   @Post('checkin')
   checkin(@TenantId() tenantId: string, @Body() dto: TokenDto) {
-    return this.svc.checkin(tenantId, dto.idToken, dto.displayName, dto.pictureUrl);
+    return this.svc.checkin(tenantId, dto.idToken, dto.displayName, dto.pictureUrl, dto.locale);
   }
 
   @Post('confirm')

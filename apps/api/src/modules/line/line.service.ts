@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { db, tenantLineChannels, users } from '@poszee/db';
 import { CryptoService } from '../../common/crypto/crypto.service';
-import { RICH_MENU_PNG_BASE64, RICH_MENU_ONBOARD_PNG_BASE64 } from './richmenu-image';
+import { RICH_MENU_IMAGES } from './richmenu-images';
+
+const RICH_MENU_LOCALES = ['th', 'en', 'my', 'lo'] as const;
 
 export interface LineProfile {
   lineUserId: string;
@@ -173,24 +175,20 @@ export class LineService {
   }
 
   /**
-   * Create two rich menus and set the onboarding one as default:
-   *  - "เริ่มใช้งาน" (default, for new/unlinked users) — one area -> LIFF checkin
-   *  - "สมาชิก" (เช็คอิน/สลิป/ลางาน) — assigned per-user after HR links them
-   * Uses the Messaging API access token (works without the LIFF app-type).
+   * Create per-language rich menus (onboard + member × th/en/my/lo) and set the
+   * Thai onboarding menu as the global default. Each user is later switched to
+   * the menu matching their kind (onboard/member) and chosen language.
    */
   async provisionRichMenu(tenantId: string) {
     const ch = await this.getChannel(tenantId);
     if (!ch?.accessTokenEnc) return { ok: false, reason: 'ยังไม่ได้ตั้งค่า Access Token' };
     const token = this.crypto.decrypt(ch.accessTokenEnc);
     const auth = { authorization: `Bearer ${token}` };
-    const W = 2500, H = 843, third = Math.round(W / 3);
-    // Rich menu must open the LIFF launch URL (liff.line.me/{liffId}), NOT the raw
-    // web URL — otherwise LINE opens it as a plain page with no LIFF context and
-    // the app can't get the LINE session (falls back to email/password login).
+    const W = 1200, H = 405, third = 400;
     const liffBase = ch.liffId ? `https://liff.line.me/${ch.liffId}` : LINE_LIFF_URL;
     const area = (x: number, w: number, uri: string) => ({ bounds: { x, y: 0, width: w, height: H }, action: { type: 'uri', uri } });
 
-    const createMenu = async (name: string, chatBarText: string, areas: unknown[], pngB64: string): Promise<string> => {
+    const createMenu = async (name: string, chatBarText: string, areas: unknown[], b64: string): Promise<string> => {
       const cr = await fetch('https://api.line.me/v2/bot/richmenu', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...auth },
@@ -200,12 +198,15 @@ export class LineService {
       const id = ((await cr.json()) as { richMenuId: string }).richMenuId;
       const up = await fetch(`https://api-data.line.me/v2/bot/richmenu/${id}/content`, {
         method: 'POST',
-        headers: { 'content-type': 'image/png', ...auth },
-        body: Buffer.from(pngB64, 'base64'),
+        headers: { 'content-type': 'image/jpeg', ...auth },
+        body: Buffer.from(b64, 'base64'),
       });
       if (!up.ok) throw new Error(`อัปโหลดรูป "${name}" ไม่สำเร็จ (${up.status}): ${await up.text()}`);
       return id;
     };
+
+    const CBT: Record<string, string> = { th: 'เมนู', en: 'Menu', my: 'မီနူး', lo: 'ເມນູ' };
+    const START: Record<string, string> = { th: 'เริ่มใช้งาน', en: 'Start', my: 'စတင်ရန်', lo: 'ເລີ່ມ' };
 
     try {
       // remove old menus so re-provisioning doesn't pile up
@@ -215,48 +216,52 @@ export class LineService {
         await Promise.all(olds.map((m) => fetch(`https://api.line.me/v2/bot/richmenu/${m.richMenuId}`, { method: 'DELETE', headers: auth })));
       }
 
-      const onboardId = await createMenu('TimeLine เริ่มใช้งาน', 'เริ่มใช้งาน', [area(0, W, `${liffBase}?onboard=start`)], RICH_MENU_ONBOARD_PNG_BASE64);
-      const memberId = await createMenu('TimeLine เมนูสมาชิก', 'เมนู', [
-        area(0, third, `${liffBase}?tab=home`),
-        area(third, third, `${liffBase}?tab=payslip`),
-        area(third * 2, W - third * 2, `${liffBase}?tab=leave`),
-      ], RICH_MENU_PNG_BASE64);
-
-      // onboarding menu is the default everyone sees first
-      const sr = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${onboardId}`, { method: 'POST', headers: auth });
+      const onboard: Record<string, string> = {};
+      const member: Record<string, string> = {};
+      for (const loc of RICH_MENU_LOCALES) {
+        onboard[loc] = await createMenu(`TL onboard ${loc}`, START[loc], [area(0, W, `${liffBase}?onboard=start`)], RICH_MENU_IMAGES[`onboard_${loc}`]);
+        member[loc] = await createMenu(`TL member ${loc}`, CBT[loc], [
+          area(0, third, `${liffBase}?tab=home`),
+          area(third, third, `${liffBase}?tab=payslip`),
+          area(third * 2, W - third * 2, `${liffBase}?tab=leave`),
+        ], RICH_MENU_IMAGES[`member_${loc}`]);
+      }
+      const def = onboard.th;
+      const sr = await fetch(`https://api.line.me/v2/bot/user/all/richmenu/${def}`, { method: 'POST', headers: auth });
       if (!sr.ok) return { ok: false, reason: `ตั้ง default rich menu ไม่สำเร็จ (${sr.status}): ${await sr.text()}` };
 
-      await db.update(tenantLineChannels).set({ richMenuIds: { default: onboardId, member: memberId } }).where(eq(tenantLineChannels.tenantId, tenantId));
+      await db.update(tenantLineChannels).set({ richMenuIds: { default: def, onboard, member } }).where(eq(tenantLineChannels.tenantId, tenantId));
 
-      // re-assign the (new) member menu to already-linked employees so a re-provision
-      // doesn't drop them back to the onboarding menu
+      // re-assign linked employees to the member menu in their language
       const linked = await db
-        .select({ lineUserId: users.lineUserId })
+        .select({ lineUserId: users.lineUserId, locale: users.locale })
         .from(users)
         .where(and(eq(users.tenantId, tenantId), isNotNull(users.lineUserId)));
       let reassigned = 0;
       for (const u of linked) {
         if (!u.lineUserId) continue;
-        const rr = await fetch(`https://api.line.me/v2/bot/user/${u.lineUserId}/richmenu/${memberId}`, { method: 'POST', headers: auth });
+        const rid = member[u.locale] ?? member.th;
+        const rr = await fetch(`https://api.line.me/v2/bot/user/${u.lineUserId}/richmenu/${rid}`, { method: 'POST', headers: auth });
         if (rr.ok) reassigned++;
       }
-      return { ok: true, defaultRichMenuId: onboardId, memberRichMenuId: memberId, reassigned };
+      return { ok: true, count: RICH_MENU_LOCALES.length * 2, reassigned };
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : String(e) };
     }
   }
 
-  /** Assign a specific user the member rich menu (called after HR links them). */
-  async assignMemberRichMenu(tenantId: string, lineUserId: string): Promise<void> {
+  /** Switch a user to the onboard/member menu in their language. */
+  async assignRichMenu(tenantId: string, lineUserId: string, kind: 'onboard' | 'member', locale = 'th'): Promise<void> {
     const ch = await this.getChannel(tenantId);
-    const memberId = ch?.richMenuIds?.member;
-    if (!ch?.accessTokenEnc || !memberId) return;
+    const group = ch?.richMenuIds?.[kind];
+    const id = group?.[locale] ?? group?.th;
+    if (!ch?.accessTokenEnc || !id) return;
     const token = this.crypto.decrypt(ch.accessTokenEnc);
-    const res = await fetch(`https://api.line.me/v2/bot/user/${lineUserId}/richmenu/${memberId}`, {
+    const res = await fetch(`https://api.line.me/v2/bot/user/${lineUserId}/richmenu/${id}`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}` },
     });
-    if (!res.ok) this.log.warn(`assign member rich menu failed ${res.status}: ${await res.text()}`);
+    if (!res.ok) this.log.warn(`assign ${kind}/${locale} menu failed ${res.status}: ${await res.text()}`);
   }
 
   /** Remove a user's per-user rich menu so they fall back to the default (onboarding). */

@@ -6,11 +6,21 @@ import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { TenantId } from '../../common/tenant/tenant.decorator';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { LineModule } from '../line/line.module';
+import { LineService } from '../line/line.service';
 import { PDPA_CONSENT_VERSION, type AuthPrincipal } from '@poszee/shared';
 
 @Injectable()
 export class MeService {
-  constructor(private readonly crypto: CryptoService) {}
+  constructor(private readonly crypto: CryptoService, private readonly line: LineService) {}
+
+  async setLocale(userId: string, locale: string) {
+    const loc = ['th', 'en', 'my', 'lo'].includes(locale) ? locale : 'th';
+    const [u] = await db.update(users).set({ locale: loc }).where(eq(users.id, userId)).returning();
+    // switch the employee's rich menu to the new language
+    if (u?.lineUserId && u.tenantId) await this.line.assignRichMenu(u.tenantId, u.lineUserId, 'member', loc).catch(() => undefined);
+    return { ok: true, locale: loc };
+  }
 
   private dec(v: string | null): string {
     return v ? this.crypto.decrypt(v) : '';
@@ -32,6 +42,7 @@ export class MeService {
       hasPin: !!u.payslipPasswordHash,
       hasPassword: !!u.passwordHash,
       hasConsent: await this.hasConsent(userId),
+      locale: u.locale ?? 'th',
     };
   }
 
@@ -127,6 +138,9 @@ class ChangePasswordDto {
 class PinDto {
   @IsString() @MinLength(4) pin!: string;
 }
+class LocaleDto {
+  @IsString() locale!: string;
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller('me')
@@ -145,6 +159,9 @@ class MeController {
   @Patch('pin') pin(@CurrentUser() u: AuthPrincipal, @Body() dto: PinDto) {
     return this.me.setPin(u.userId, dto.pin);
   }
+  @Patch('locale') locale(@CurrentUser() u: AuthPrincipal, @Body() dto: LocaleDto) {
+    return this.me.setLocale(u.userId, dto.locale);
+  }
   @Post('verify-pin') verifyPin(@CurrentUser() u: AuthPrincipal, @Body() dto: PinDto) {
     return this.me.verifyPin(u.userId, dto.pin);
   }
@@ -159,5 +176,5 @@ class MeController {
   }
 }
 
-@Module({ providers: [MeService], controllers: [MeController] })
+@Module({ imports: [LineModule], providers: [MeService], controllers: [MeController] })
 export class MeModule {}

@@ -57,8 +57,8 @@ export const tenantLineChannels = pgTable('tenant_line_channels', {
   channelSecretEnc: text('channel_secret_enc'),
   accessTokenEnc: text('access_token_enc'),
   liffId: text('liff_id'),
-  // { default: <onboarding menu id>, member: <full menu id> } for per-user switching
-  richMenuIds: jsonb('rich_menu_ids').$type<{ default?: string; member?: string }>(),
+  // per-language menu ids: { default, onboard: {th,en,my,lo}, member: {th,en,my,lo} }
+  richMenuIds: jsonb('rich_menu_ids').$type<{ default?: string; onboard?: Record<string, string>; member?: Record<string, string> }>(),
   connected: boolean('connected').notNull().default(false),
   features: jsonb('features').$type<{ richMenu: boolean; notifyPush: boolean; sendSlip: boolean }>()
     .notNull()
@@ -91,6 +91,7 @@ export const users = pgTable(
     baseSalary: numeric('base_salary', { precision: 12, scale: 2 }),
     // payslip open password (hashed) — employee-set, NOT derived from PII
     payslipPasswordHash: text('payslip_password_hash'),
+    locale: varchar('locale', { length: 5 }).notNull().default('th'),
     active: boolean('active').notNull().default(true),
     createdAt: createdAt(),
   },
@@ -245,6 +246,7 @@ export const lineOnboarding = pgTable(
     lineUserId: text('line_user_id').notNull(),
     displayName: text('display_name'),
     pictureUrl: text('picture_url'),
+    locale: varchar('locale', { length: 5 }).notNull().default('th'),
     status: onboardingStatusEnum('status').notNull().default('incoming'),
     // employee record (created by HR) this LINE user is matched to
     linkedUserId: uuid('linked_user_id').references(() => users.id, { onDelete: 'set null' }),
