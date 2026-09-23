@@ -414,6 +414,8 @@ export function App() {
   const [consented, setConsented] = useState<boolean | null>(null); // PDPA gate: null=checking
   const [locale, setLocaleState] = useState<Locale | null>(readLocale());
   const [needOnboard, setNeedOnboard] = useState<false | 'pending' | 'confirmed'>(false);
+  const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
+  const [officeId, setOfficeId] = useState<string>('');
   const flash = (text: string, ok = false, ms = 4000) => { setToast({ text, ok }); setTimeout(() => setToast(null), ms); };
   _t = makeT(locale ?? 'th'); // keep the module translator in sync every render
 
@@ -434,8 +436,8 @@ export function App() {
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
         setToken(r.token); setMe(r.user); setAuthed(true);
-        const prof = await api<{ hasConsent: boolean; locale: Locale }>('/me/profile').catch(() => null);
-        if (prof) { setConsented(!!prof.hasConsent); if (prof.locale) { setLocaleState(prof.locale); storeLocale(prof.locale); } }
+        const prof = await api<{ hasConsent: boolean; locale: Locale; officeId: string | null }>('/me/profile').catch(() => null);
+        if (prof) { setConsented(!!prof.hasConsent); setOfficeId(prof.officeId ?? ''); if (prof.locale) { setLocaleState(prof.locale); storeLocale(prof.locale); } }
         setToday(await api<Attendance>('/attendance/today'));
       } catch (e) {
         const msg = String(e);
@@ -463,7 +465,12 @@ export function App() {
   useEffect(() => {
     if (!authed) return;
     api<Summary>('/attendance/summary').then(setSummary).catch(() => {});
+    api<{ id: string; name: string }[]>('/me/offices').then(setOffices).catch(() => {});
   }, [authed]);
+  async function changeOffice(v: string) {
+    setOfficeId(v);
+    try { await api('/me/office', { method: 'PATCH', body: JSON.stringify({ officeId: v || undefined }) }); flash(tr('worksite_changed'), true); } catch { /* ignore */ }
+  }
   useEffect(() => {
     if (!authed) return;
     if (view === 'history') api<AttRow[]>('/attendance/history').then(setHistory).catch(() => {});
@@ -604,6 +611,16 @@ export function App() {
                 <div style={{ height: 1, background: 'var(--line)' }} />
                 <button onClick={() => setView('register')} style={rowBtn}><span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Icon n="shield_person" color="var(--brand-700)" /> {tr('pf_pdpa')}</span><span style={{ color: 'var(--ink-3)' }}>›</span></button>
               </div>
+              {/* work site selector */}
+              {offices.length > 0 && (
+                <div style={{ background: 'var(--surface)', borderRadius: 18, boxShadow: '0 8px 24px rgba(17,24,39,0.06)', marginTop: 14, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}><Icon n="location_on" color="var(--brand-700)" /> <span style={{ fontSize: 14, fontWeight: 600 }}>{tr('pf_worksite')}</span></div>
+                  <select value={officeId} onChange={(e) => changeOffice(e.target.value)} style={{ width: '100%', height: 44, border: '1px solid var(--line)', borderRadius: 10, padding: '0 12px', fontSize: 14, background: 'var(--surface)' }}>
+                    <option value="">{tr('worksite_any')}</option>
+                    {offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                </div>
+              )}
               {/* language switcher */}
               <div style={{ background: 'var(--surface)', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(17,24,39,0.06)', marginTop: 14, padding: '14px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}><Icon n="translate" color="var(--brand-700)" /> <span style={{ fontSize: 14, fontWeight: 600 }}>{tr('pf_language')}</span></div>

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
-import { db, attendanceRecords, officeLocations } from '@poszee/db';
+import { db, attendanceRecords, officeLocations, users } from '@poszee/db';
 
 const LATE_CUTOFF_MIN = 9 * 60; // 09:00 — TODO: per-tenant shift config
 
@@ -19,7 +19,11 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 @Injectable()
 export class AttendanceService {
   async checkIn(tenantId: string, userId: string, lat: number, lng: number) {
-    const offices = await db.select().from(officeLocations).where(eq(officeLocations.tenantId, tenantId));
+    let offices = await db.select().from(officeLocations).where(eq(officeLocations.tenantId, tenantId));
+    // if the employee is assigned to a specific site, only that site's geofence applies
+    const [u] = await db.select({ officeId: users.officeId }).from(users).where(eq(users.id, userId)).limit(1);
+    if (u?.officeId) offices = offices.filter((o) => o.id === u.officeId);
+    if (offices.length === 0) throw new BadRequestException('ยังไม่ได้ตั้งค่าสถานที่ปฏิบัติงาน กรุณาติดต่อฝ่ายบุคคล');
     const office = offices.find((o) => haversineMeters(lat, lng, o.lat, o.lng) <= o.radiusM);
     if (!office) throw new BadRequestException('อยู่นอกพื้นที่ทำงาน');
 
@@ -90,25 +94,30 @@ export class AttendanceService {
   }
 
   listOffices(tenantId: string) {
-    return db.select().from(officeLocations).where(eq(officeLocations.tenantId, tenantId));
+    return db.select().from(officeLocations).where(eq(officeLocations.tenantId, tenantId)).orderBy(officeLocations.createdAt);
   }
 
-  /** Upsert the tenant's (single) office geofence — used by HR/testing. */
-  async upsertOffice(tenantId: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {
-    const [existing] = await this.listOffices(tenantId);
-    if (existing) {
-      const [o] = await db
-        .update(officeLocations)
-        .set({ name: dto.name ?? existing.name, lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
-        .where(eq(officeLocations.id, existing.id))
-        .returning();
-      return o;
-    }
+  async createOffice(tenantId: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {
     const [o] = await db
       .insert(officeLocations)
-      .values({ tenantId, name: dto.name ?? 'สำนักงานใหญ่', lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
+      .values({ tenantId, name: dto.name || 'สาขา', lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
       .returning();
     return o;
+  }
+
+  async updateOffice(tenantId: string, id: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {
+    const [o] = await db
+      .update(officeLocations)
+      .set({ name: dto.name || undefined, lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
+      .where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.id, id)))
+      .returning();
+    if (!o) throw new BadRequestException('ไม่พบสถานที่');
+    return o;
+  }
+
+  async removeOffice(tenantId: string, id: string) {
+    await db.delete(officeLocations).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.id, id)));
+    return { ok: true };
   }
 
   async today(tenantId: string, userId: string) {

@@ -13,6 +13,7 @@ import {
   jsonb,
   uniqueIndex,
   index,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 // ---------- enums ----------
@@ -92,6 +93,8 @@ export const users = pgTable(
     // payslip open password (hashed) — employee-set, NOT derived from PII
     payslipPasswordHash: text('payslip_password_hash'),
     locale: varchar('locale', { length: 5 }).notNull().default('th'),
+    // assigned work site; null = may check in at any of the tenant's sites
+    officeId: uuid('office_id').references((): AnyPgColumn => officeLocations.id, { onDelete: 'set null' }),
     active: boolean('active').notNull().default(true),
     createdAt: createdAt(),
   },

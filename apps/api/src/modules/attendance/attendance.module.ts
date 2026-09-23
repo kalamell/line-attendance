@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Module, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Module, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { IsLatitude, IsLongitude, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
@@ -63,8 +63,18 @@ class OfficeController {
   }
 
   @Post()
-  upsert(@TenantId() tenantId: string, @Body() dto: OfficeDto) {
-    return this.attendance.upsertOffice(tenantId, dto);
+  create(@TenantId() tenantId: string, @Body() dto: OfficeDto) {
+    return this.attendance.createOffice(tenantId, dto);
+  }
+
+  @Patch(':id')
+  update(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: OfficeDto) {
+    return this.attendance.updateOffice(tenantId, id, dto);
+  }
+
+  @Delete(':id')
+  remove(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.attendance.removeOffice(tenantId, id);
   }
 }
 

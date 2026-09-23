@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { IsArray, IsIn, IsNumberString, IsOptional, IsString, MinLength } from 'class-validator';
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { db, users, pdpaConsents, lineOnboarding } from '@poszee/db';
+import { db, users, pdpaConsents, lineOnboarding, officeLocations } from '@poszee/db';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { Roles } from '../../common/auth/roles.decorator';
@@ -36,6 +36,7 @@ interface EmployeeInput {
   phone?: string;
   baseSalary?: string;
   role?: EmpRole;
+  officeId?: string;
 }
 
 @Injectable()
@@ -67,8 +68,11 @@ export class EmployeesService {
         baseSalary: users.baseSalary,
         active: users.active,
         lineUserId: users.lineUserId,
+        officeId: users.officeId,
+        officeName: officeLocations.name,
       })
       .from(users)
+      .leftJoin(officeLocations, eq(officeLocations.id, users.officeId))
       .where(and(eq(users.tenantId, tenantId), inArray(users.role, ['employee', 'supervisor', 'org_admin'])));
     const consents = await db
       .select({ userId: pdpaConsents.userId, consented: pdpaConsents.consented })
@@ -89,6 +93,7 @@ export class EmployeesService {
     if (dto.email !== undefined) row.email = dto.email || null;
     if (dto.baseSalary !== undefined) row.baseSalary = dto.baseSalary || null;
     if (dto.role !== undefined) row.role = dto.role;
+    if (dto.officeId !== undefined) row.officeId = dto.officeId || null;
     if (dto.phone !== undefined) row.phoneEnc = dto.phone ? this.crypto.encrypt(dto.phone) : null;
     return row;
   }
@@ -155,6 +160,7 @@ class EmployeeDto {
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsNumberString() baseSalary?: string;
   @IsOptional() @IsIn(EMP_ROLES as unknown as string[]) role?: EmpRole;
+  @IsOptional() @IsString() officeId?: string;
 }
 class ImportDto {
   @IsArray() rows!: EmployeeInput[];

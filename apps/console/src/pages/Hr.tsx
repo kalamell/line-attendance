@@ -60,8 +60,9 @@ function DashboardView() {
 }
 
 /* ---------- staff ---------- */
-type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null; hasConsent?: boolean };
-type EmpForm = { name: string; employeeCode: string; department: string; position: string; email: string; phone: string; baseSalary: string; role: string };
+type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null; hasConsent?: boolean; officeId?: string | null; officeName?: string | null };
+type EmpForm = { name: string; employeeCode: string; department: string; position: string; email: string; phone: string; baseSalary: string; role: string; officeId: string };
+type OfficeOpt = { id: string; name: string };
 const EMP_FIELDS: { key: keyof EmpForm; label: string; req?: boolean }[] = [
   { key: 'name', label: 'ชื่อ-นามสกุล', req: true },
   { key: 'employeeCode', label: 'รหัสพนักงาน' },
@@ -72,7 +73,7 @@ const EMP_FIELDS: { key: keyof EmpForm; label: string; req?: boolean }[] = [
   { key: 'baseSalary', label: 'เงินเดือน' },
   { key: 'role', label: 'บทบาท' },
 ];
-const emptyEmp: EmpForm = { name: '', employeeCode: '', department: '', position: '', email: '', phone: '', baseSalary: '', role: 'employee' };
+const emptyEmp: EmpForm = { name: '', employeeCode: '', department: '', position: '', email: '', phone: '', baseSalary: '', role: 'employee', officeId: '' };
 
 function parseCSV(text: string): string[][] {
   const rows: string[][] = []; let row: string[] = []; let cur = ''; let q = false;
@@ -89,13 +90,13 @@ function parseCSV(text: string): string[][] {
 }
 
 /* Add/edit modal */
-function EmployeeModal({ initial, id, onClose, onDone }: { initial: EmpForm; id?: string; onClose: () => void; onDone: (m: string) => void }) {
+function EmployeeModal({ initial, id, offices, onClose, onDone }: { initial: EmpForm; id?: string; offices: OfficeOpt[]; onClose: () => void; onDone: (m: string) => void }) {
   const [f, setF] = useState<EmpForm>(initial);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr(null);
-    const body: Record<string, unknown> = { name: f.name, employeeCode: f.employeeCode, department: f.department, position: f.position, email: f.email, phone: f.phone, role: f.role };
+    const body: Record<string, unknown> = { name: f.name, employeeCode: f.employeeCode, department: f.department, position: f.position, email: f.email, phone: f.phone, role: f.role, officeId: f.officeId };
     if (f.baseSalary) body.baseSalary = f.baseSalary;
     try {
       if (id) await api(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
@@ -119,7 +120,8 @@ function EmployeeModal({ initial, id, onClose, onDone }: { initial: EmpForm; id?
           {inp('email', 'อีเมล', 'email')}
           {inp('phone', 'เบอร์โทร')}
           {inp('baseSalary', 'เงินเดือน (บาท)')}
-          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
+          <div><label style={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
+          <div><label style={lbl}>สถานที่ปฏิบัติงาน</label><select value={f.officeId} onChange={(e) => setF({ ...f, officeId: e.target.value })} style={field}><option value="">ทุกสถานที่</option>{offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="submit" disabled={busy} style={{ ...btn('primary'), flex: 1, height: 44 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
@@ -226,15 +228,16 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (m: str
 
 function StaffView() {
   const [rows, setRows] = useState<Employee[]>([]);
+  const [offices, setOffices] = useState<OfficeOpt[]>([]);
   const [edit, setEdit] = useState<{ form: EmpForm; id?: string } | null>(null);
   const [importing, setImporting] = useState(false);
   const [del, setDel] = useState<Employee | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const load = () => api<Employee[]>('/employees').then(setRows).catch(() => {});
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); api<OfficeOpt[]>('/attendance/office').then(setOffices).catch(() => {}); }, []);
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
   function openEdit(r: Employee) {
-    setEdit({ id: r.id, form: { ...emptyEmp, name: r.name, employeeCode: r.employeeCode ?? '', department: r.department ?? '', position: r.position ?? '', email: r.email ?? '', baseSalary: r.baseSalary ?? '', role: r.role === 'supervisor' ? 'supervisor' : 'employee' } });
+    setEdit({ id: r.id, form: { ...emptyEmp, name: r.name, employeeCode: r.employeeCode ?? '', department: r.department ?? '', position: r.position ?? '', email: r.email ?? '', baseSalary: r.baseSalary ?? '', role: r.role === 'supervisor' ? 'supervisor' : 'employee', officeId: r.officeId ?? '' } });
   }
   async function remove(r: Employee) {
     try { await api(`/employees/${r.id}`, { method: 'DELETE' }); flash(`ลบ ${r.name} แล้ว`); }
@@ -257,12 +260,13 @@ function StaffView() {
       <div style={{ ...card, padding: '8px 20px 12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>PDPA</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>สถานที่</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>PDPA</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
                 <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
                 <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
+                <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.officeName ?? <span style={{ color: 'var(--ink-3)' }}>ทุกที่</span>}</td>
                 <td style={{ padding: 12, fontSize: 13 }}>{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
                 <td style={{ padding: 12 }}>{r.lineUserId
                   ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /><button onClick={() => unlinkLine(r)} title="ยกเลิกการผูก LINE" style={{ border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}>ยกเลิกผูก</button></span>
@@ -277,11 +281,11 @@ function StaffView() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
           </tbody>
         </table>
       </div>
-      {edit && <EmployeeModal initial={edit.form} id={edit.id} onClose={() => setEdit(null)} onDone={(m) => { flash(m); load(); }} />}
+      {edit && <EmployeeModal initial={edit.form} id={edit.id} offices={offices} onClose={() => setEdit(null)} onDone={(m) => { flash(m); load(); }} />}
       {importing && <ImportModal onClose={() => setImporting(false)} onDone={(m) => { flash(m); load(); }} />}
       {del && (
         <div onClick={() => setDel(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
@@ -602,25 +606,19 @@ function OnboardingView() {
   );
 }
 
-/* ---------- office geofence picker ---------- */
-function OfficeView() {
-  const [f, setF] = useState({ name: 'สำนักงานใหญ่', lat: 13.7563, lng: 100.5018, radiusM: 150 });
+/* ---------- office geofence (multi-site) ---------- */
+type Office = { id: string; name: string; lat: number; lng: number; radiusM: number };
+
+function OfficeEditor({ initial, onClose, onSaved }: { initial: Office | null; onClose: () => void; onSaved: (m: string) => void }) {
+  const [f, setF] = useState({ name: initial?.name ?? '', lat: initial ? Number(initial.lat) : 13.7563, lng: initial ? Number(initial.lng) : 100.5018, radiusM: initial?.radiusM ?? 150 });
   const [ready, setReady] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const boxRef = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const refs = useRef<{ map?: any; marker?: any; circle?: any }>({});
-  const fRef = useRef(f);
-  fRef.current = f;
+  const fRef = useRef(f); fRef.current = f;
 
-  useEffect(() => {
-    api<{ name: string; lat: number; lng: number; radiusM: number }[]>('/attendance/office')
-      .then((list) => { if (list[0]) setF({ name: list[0].name, lat: Number(list[0].lat), lng: Number(list[0].lng), radiusM: list[0].radiusM }); })
-      .catch(() => {});
-    loadLeaflet().then(() => setReady(true));
-  }, []);
-
-  // init the map once Leaflet + the initial point are ready
+  useEffect(() => { loadLeaflet().then(() => setReady(true)); }, []);
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const L = (window as any).L;
@@ -630,50 +628,106 @@ function OfficeView() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     const marker = L.marker([c.lat, c.lng], { draggable: true }).addTo(map);
     const circle = L.circle([c.lat, c.lng], { radius: c.radiusM, color: '#06C755', fillColor: '#06C755', fillOpacity: 0.12 }).addTo(map);
-    const set = (lat: number, lng: number) => { setF((p) => ({ ...p, lat, lng })); };
+    const set = (lat: number, lng: number) => setF((p) => ({ ...p, lat, lng }));
     map.on('click', (e: { latlng: { lat: number; lng: number } }) => set(e.latlng.lat, e.latlng.lng));
     marker.on('dragend', () => { const ll = marker.getLatLng(); set(ll.lat, ll.lng); });
     refs.current = { map, marker, circle };
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 120);
   }, [ready]);
-
-  // keep marker + circle in sync with state
   useEffect(() => {
     const { marker, circle, map } = refs.current;
     if (!marker || !circle) return;
-    marker.setLatLng([f.lat, f.lng]);
-    circle.setLatLng([f.lat, f.lng]);
-    circle.setRadius(f.radiusM);
+    marker.setLatLng([f.lat, f.lng]); circle.setLatLng([f.lat, f.lng]); circle.setRadius(f.radiusM);
     if (map) map.panTo([f.lat, f.lng]);
   }, [f.lat, f.lng, f.radiusM]);
 
   function useMyLocation() {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setF((p) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude })),
-      () => { setMsg('อ่านตำแหน่งไม่สำเร็จ — อนุญาตการเข้าถึงตำแหน่งก่อน'); setTimeout(() => setMsg(null), 3500); },
-      { enableHighAccuracy: true },
-    );
+    navigator.geolocation.getCurrentPosition((pos) => setF((p) => ({ ...p, lat: pos.coords.latitude, lng: pos.coords.longitude })), () => {}, { enableHighAccuracy: true });
   }
   async function save() {
-    await api('/attendance/office', { method: 'POST', body: JSON.stringify({ name: f.name, lat: f.lat, lng: f.lng, radiusM: f.radiusM }) });
-    setMsg('บันทึกจุดออฟฟิศแล้ว'); setTimeout(() => setMsg(null), 3000);
+    if (!f.name.trim()) return;
+    setBusy(true);
+    try {
+      const body = JSON.stringify({ name: f.name, lat: f.lat, lng: f.lng, radiusM: f.radiusM });
+      if (initial) await api(`/attendance/office/${initial.id}`, { method: 'PATCH', body });
+      else await api('/attendance/office', { method: 'POST', body });
+      onSaved(initial ? 'บันทึกสถานที่แล้ว' : 'เพิ่มสถานที่แล้ว'); onClose();
+    } finally { setBusy(false); }
   }
-
   return (
-    <div style={{ maxWidth: 760 }}>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14, lineHeight: 1.6 }}>คลิกบนแผนที่หรือลากหมุดเพื่อกำหนดจุดออฟฟิศ พนักงานจะเช็คอินได้เมื่ออยู่ในรัศมีที่กำหนด</div>
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 14, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      <div ref={boxRef} style={{ height: 340, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 16, background: '#e9edf0' }} />
-      <div style={{ ...card, padding: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อสถานที่</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 560, maxWidth: '94vw', maxHeight: '92vh', overflowY: 'auto', padding: 22 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>{initial ? 'แก้ไขสถานที่ปฏิบัติงาน' : 'เพิ่มสถานที่ปฏิบัติงาน'}</div>
+        <div ref={boxRef} style={{ height: 280, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 14, background: '#e9edf0' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อสถานที่ *</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น สาขาลาดพร้าว, ไซต์ก่อสร้าง A" style={field} /></div>
           <div><label style={lbl}>ละติจูด</label><input value={f.lat} onChange={(e) => setF({ ...f, lat: Number(e.target.value) })} type="number" step="any" style={field} /></div>
           <div><label style={lbl}>ลองจิจูด</label><input value={f.lng} onChange={(e) => setF({ ...f, lng: Number(e.target.value) })} type="number" step="any" style={field} /></div>
           <div><label style={lbl}>รัศมี (เมตร)</label><input value={f.radiusM} onChange={(e) => setF({ ...f, radiusM: Number(e.target.value) })} type="number" min={10} style={field} /></div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg> ใช้ตำแหน่งปัจจุบัน</button></div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg> ตำแหน่งปัจจุบัน</button></div>
         </div>
-        <button onClick={save} style={{ ...btn('primary'), height: 46, padding: '0 22px' }}>บันทึกจุดออฟฟิศ</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={save} disabled={busy || !f.name.trim()} style={{ ...btn('primary'), flex: 1, height: 46 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+          <button onClick={onClose} style={{ ...btn('ghost'), height: 46, padding: '0 20px' }}>ยกเลิก</button>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function OfficeView() {
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [edit, setEdit] = useState<{ office: Office | null } | null>(null);
+  const [del, setDel] = useState<Office | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => api<Office[]>('/attendance/office').then(setOffices).catch(() => {});
+  useEffect(() => { load(); }, []);
+  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3000); }
+  async function remove(o: Office) {
+    try { await api(`/attendance/office/${o.id}`, { method: 'DELETE' }); flash(`ลบ ${o.name} แล้ว`); } catch { flash('ลบไม่สำเร็จ'); }
+    setDel(null); load();
+  }
+  return (
+    <div style={{ maxWidth: 820 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
+        <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>เพิ่มได้หลายสถานที่ (สำนักงาน/สาขา/ไซต์งาน) · กำหนดให้พนักงานแต่ละคนที่หน้า "พนักงาน" · เช็คอินจะจับ geofence ตามสถานที่ที่กำหนด</div>
+        <button onClick={() => setEdit({ office: null })} style={{ ...btn('primary'), height: 42 }}>+ เพิ่มสถานที่</button>
+      </div>
+      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      <div style={{ ...card, padding: '8px 20px 12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}><th style={{ padding: 10 }}>สถานที่</th><th style={{ padding: 10 }}>พิกัด</th><th style={{ padding: 10 }}>รัศมี</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+          <tbody>
+            {offices.map((o) => (
+              <tr key={o.id} style={{ borderTop: '1px solid var(--line)' }}>
+                <td style={{ padding: 12, fontSize: 14, fontWeight: 600 }}>{o.name}</td>
+                <td style={{ padding: 12, fontSize: 12, color: 'var(--ink-3)' }}>{Number(o.lat).toFixed(5)}, {Number(o.lng).toFixed(5)}</td>
+                <td style={{ padding: 12, fontSize: 13 }}>{o.radiusM} ม.</td>
+                <td style={{ padding: 12, textAlign: 'right' }}>
+                  <div style={{ display: 'inline-flex', gap: 6 }}>
+                    <button onClick={() => setEdit({ office: o })} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>แก้ไข</button>
+                    <button onClick={() => setDel(o)} style={{ ...btn('danger'), height: 32, padding: '0 12px', fontSize: 12 }}>ลบ</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {offices.length === 0 && <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีสถานที่ปฏิบัติงาน</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {edit && <OfficeEditor initial={edit.office} onClose={() => setEdit(null)} onSaved={(m) => { flash(m); load(); }} />}
+      {del && (
+        <div onClick={() => setDel(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 380, padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--danger)', marginBottom: 10 }}>ลบสถานที่</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 18, lineHeight: 1.6 }}>ลบ "{del.name}"? พนักงานที่ผูกกับสถานที่นี้จะกลับเป็น "เช็คอินได้ทุกที่"</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => remove(del)} style={{ ...btn('danger'), flex: 1, height: 44, background: 'var(--danger)', color: '#fff', border: 'none' }}>ลบ</button>
+              <button onClick={() => setDel(null)} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Injectable, Module, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { and, desc, eq } from 'drizzle-orm';
-import { db, users, payslips, payrollRuns, salaryComponents, pdpaConsents } from '@poszee/db';
+import { db, users, payslips, payrollRuns, salaryComponents, pdpaConsents, officeLocations } from '@poszee/db';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { TenantId } from '../../common/tenant/tenant.decorator';
@@ -43,7 +43,21 @@ export class MeService {
       hasPassword: !!u.passwordHash,
       hasConsent: await this.hasConsent(userId),
       locale: u.locale ?? 'th',
+      officeId: u.officeId,
     };
+  }
+
+  offices(tenantId: string) {
+    return db.select({ id: officeLocations.id, name: officeLocations.name }).from(officeLocations).where(eq(officeLocations.tenantId, tenantId)).orderBy(officeLocations.createdAt);
+  }
+
+  async setOffice(tenantId: string, userId: string, officeId: string | null) {
+    if (officeId) {
+      const [o] = await db.select({ id: officeLocations.id }).from(officeLocations).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.id, officeId))).limit(1);
+      if (!o) throw new UnauthorizedException('ไม่พบสถานที่');
+    }
+    await db.update(users).set({ officeId: officeId || null }).where(eq(users.id, userId));
+    return { ok: true };
   }
 
   /** Latest PDPA decision for the user (true only if the most recent record consented). */
@@ -141,6 +155,9 @@ class PinDto {
 class LocaleDto {
   @IsString() locale!: string;
 }
+class OfficeSelDto {
+  @IsOptional() @IsString() officeId?: string;
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller('me')
@@ -161,6 +178,12 @@ class MeController {
   }
   @Patch('locale') locale(@CurrentUser() u: AuthPrincipal, @Body() dto: LocaleDto) {
     return this.me.setLocale(u.userId, dto.locale);
+  }
+  @Get('offices') offices(@TenantId() tenantId: string) {
+    return this.me.offices(tenantId);
+  }
+  @Patch('office') office(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal, @Body() dto: OfficeSelDto) {
+    return this.me.setOffice(tenantId, u.userId, dto.officeId ?? null);
   }
   @Post('verify-pin') verifyPin(@CurrentUser() u: AuthPrincipal, @Body() dto: PinDto) {
     return this.me.verifyPin(u.userId, dto.pin);
