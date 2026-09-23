@@ -693,12 +693,20 @@ function OfficeView() {
   async function setDefault(o: Office) {
     try { await api(`/attendance/office/${o.id}/default`, { method: 'POST' }); flash(`ตั้ง ${o.name} เป็นค่าเริ่มต้นแล้ว`); load(); } catch { flash('ตั้งค่าเริ่มต้นไม่สำเร็จ'); }
   }
+  async function assignDefaultToAll() {
+    try { const r = await api<{ assigned: number }>('/employees/assign-default-office', { method: 'POST' }); flash(`กำหนดสถานที่เริ่มต้นให้พนักงาน ${r.assigned} คนแล้ว`); }
+    catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'ไม่สำเร็จ'); }
+  }
+  const hasDefault = offices.some((o) => o.isDefault);
   return (
     <div style={{ maxWidth: 820 }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
-        <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>เพิ่มได้หลายสถานที่ (สำนักงาน/สาขา/ไซต์งาน) · กำหนดให้พนักงานแต่ละคนที่หน้า "พนักงาน" · เช็คอินจะจับ geofence ตามสถานที่ที่กำหนด</div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 10 }}>
+        <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>เพิ่มได้หลายสถานที่ (สำนักงาน/สาขา/ไซต์งาน) · กด <b>"ตั้งเริ่มต้น"</b> เพื่อเลือกสถานที่ค่าเริ่มต้น (พนักงานใหม่จะได้อันนี้อัตโนมัติ) · กำหนดรายคนได้ที่หน้า "พนักงาน"</div>
         <button onClick={() => setEdit({ office: null })} style={{ ...btn('primary'), height: 42 }}>+ เพิ่มสถานที่</button>
       </div>
+      {hasDefault && (
+        <div style={{ marginBottom: 16 }}><button onClick={assignDefaultToAll} style={{ ...btn('ghost'), height: 38, fontSize: 13 }}>กำหนดพนักงานที่ยังไม่มีสถานที่ → ใช้ค่าเริ่มต้น</button></div>
+      )}
       {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
       <div style={{ ...card, padding: '8px 20px 12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>

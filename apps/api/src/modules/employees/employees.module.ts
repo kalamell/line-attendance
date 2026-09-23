@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { IsArray, IsIn, IsNumberString, IsOptional, IsString, MinLength } from 'class-validator';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db, users, pdpaConsents, lineOnboarding, officeLocations } from '@poszee/db';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
@@ -102,6 +102,18 @@ export class EmployeesService {
   private async defaultOfficeId(tenantId: string): Promise<string | null> {
     const [d] = await db.select({ id: officeLocations.id }).from(officeLocations).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.isDefault, true))).limit(1);
     return d?.id ?? null;
+  }
+
+  /** Assign the tenant default site to everyone who has no site yet. */
+  async assignDefaultToUnset(tenantId: string) {
+    const d = await this.defaultOfficeId(tenantId);
+    if (!d) throw new BadRequestException('ยังไม่ได้ตั้งสถานที่เริ่มต้น');
+    const res = await db
+      .update(users)
+      .set({ officeId: d })
+      .where(and(eq(users.tenantId, tenantId), isNull(users.officeId), inArray(users.role, ['employee', 'supervisor', 'org_admin'])))
+      .returning({ id: users.id });
+    return { assigned: res.length };
   }
 
   async create(tenantId: string, dto: EmployeeInput) {
@@ -195,6 +207,11 @@ class EmployeesController {
   @Post('import')
   bulkImport(@TenantId() tenantId: string, @Body() dto: ImportDto) {
     return this.employees.bulkImport(tenantId, dto.rows ?? []);
+  }
+
+  @Post('assign-default-office')
+  assignDefault(@TenantId() tenantId: string) {
+    return this.employees.assignDefaultToUnset(tenantId);
   }
 
   @Patch(':id')
