@@ -1,0 +1,1 @@
+ALTER TABLE "office_locations" ADD COLUMN "is_default" boolean DEFAULT false NOT NULL;

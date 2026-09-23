@@ -123,6 +123,7 @@ export const officeLocations = pgTable('office_locations', {
   lat: doublePrecision('lat').notNull(),
   lng: doublePrecision('lng').notNull(),
   radiusM: integer('radius_m').notNull().default(150),
+  isDefault: boolean('is_default').notNull().default(false),
   createdAt: createdAt(),
 });
 

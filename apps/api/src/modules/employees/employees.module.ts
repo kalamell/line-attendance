@@ -98,11 +98,19 @@ export class EmployeesService {
     return row;
   }
 
+  /** the tenant's default work site (new employees inherit it when none is chosen) */
+  private async defaultOfficeId(tenantId: string): Promise<string | null> {
+    const [d] = await db.select({ id: officeLocations.id }).from(officeLocations).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.isDefault, true))).limit(1);
+    return d?.id ?? null;
+  }
+
   async create(tenantId: string, dto: EmployeeInput) {
     if (!dto.name) throw new BadRequestException('ต้องระบุชื่อ');
+    const name = dto.name;
+    const withDef = dto.officeId === undefined ? { ...dto, officeId: (await this.defaultOfficeId(tenantId)) ?? undefined } : dto;
     const [u] = await db
       .insert(users)
-      .values({ tenantId, role: dto.role ?? 'employee', active: true, ...this.toRow(tenantId, dto), name: dto.name })
+      .values({ tenantId, role: dto.role ?? 'employee', active: true, ...this.toRow(tenantId, withDef), name })
       .returning({ id: users.id });
     return { id: u.id };
   }
@@ -137,11 +145,13 @@ export class EmployeesService {
   async bulkImport(tenantId: string, rows: EmployeeInput[]) {
     let created = 0;
     const errors: { row: number; reason: string }[] = [];
+    const defOffice = await this.defaultOfficeId(tenantId);
     for (let i = 0; i < rows.length; i++) {
       const dto = rows[i];
       if (!dto.name) { errors.push({ row: i + 1, reason: 'ไม่มีชื่อ' }); continue; }
+      const withDef = dto.officeId === undefined && defOffice ? { ...dto, officeId: defOffice } : dto;
       try {
-        await db.insert(users).values({ tenantId, role: dto.role ?? 'employee', active: true, ...this.toRow(tenantId, dto), name: dto.name });
+        await db.insert(users).values({ tenantId, role: dto.role ?? 'employee', active: true, ...this.toRow(tenantId, withDef), name: dto.name });
         created++;
       } catch (e) {
         errors.push({ row: i + 1, reason: e instanceof Error ? e.message.slice(0, 120) : 'insert failed' });

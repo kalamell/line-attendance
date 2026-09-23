@@ -72,6 +72,11 @@ class OfficeController {
     return this.attendance.updateOffice(tenantId, id, dto);
   }
 
+  @Post(':id/default')
+  setDefault(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.attendance.setDefaultOffice(tenantId, id);
+  }
+
   @Delete(':id')
   remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.attendance.removeOffice(tenantId, id);

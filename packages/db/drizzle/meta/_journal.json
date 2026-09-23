@@ -57,6 +57,13 @@
       "when": 1790131390631,
       "tag": "0007_simple_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790132582576,
+      "tag": "0008_eminent_shatterstar",
+      "breakpoints": true
     }
   ]
 }

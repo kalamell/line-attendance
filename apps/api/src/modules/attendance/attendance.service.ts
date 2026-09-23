@@ -98,11 +98,25 @@ export class AttendanceService {
   }
 
   async createOffice(tenantId: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {
+    const existing = await this.listOffices(tenantId);
     const [o] = await db
       .insert(officeLocations)
-      .values({ tenantId, name: dto.name || 'สาขา', lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM })
+      .values({ tenantId, name: dto.name || 'สาขา', lat: dto.lat, lng: dto.lng, radiusM: dto.radiusM, isDefault: existing.length === 0 })
       .returning();
     return o;
+  }
+
+  /** Mark one site as the tenant default (new employees inherit it). */
+  async setDefaultOffice(tenantId: string, id: string) {
+    await db.update(officeLocations).set({ isDefault: false }).where(eq(officeLocations.tenantId, tenantId));
+    const [o] = await db.update(officeLocations).set({ isDefault: true }).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.id, id))).returning();
+    if (!o) throw new BadRequestException('ไม่พบสถานที่');
+    return { ok: true };
+  }
+
+  async defaultOfficeId(tenantId: string): Promise<string | null> {
+    const [d] = await db.select({ id: officeLocations.id }).from(officeLocations).where(and(eq(officeLocations.tenantId, tenantId), eq(officeLocations.isDefault, true))).limit(1);
+    return d?.id ?? null;
   }
 
   async updateOffice(tenantId: string, id: string, dto: { name?: string; lat: number; lng: number; radiusM: number }) {

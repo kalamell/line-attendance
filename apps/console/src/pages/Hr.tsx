@@ -62,7 +62,7 @@ function DashboardView() {
 /* ---------- staff ---------- */
 type Employee = { id: string; name: string; department?: string | null; position?: string | null; role: string; employeeCode?: string | null; email?: string | null; baseSalary?: string | null; active: boolean; lineUserId?: string | null; hasConsent?: boolean; officeId?: string | null; officeName?: string | null };
 type EmpForm = { name: string; employeeCode: string; department: string; position: string; email: string; phone: string; baseSalary: string; role: string; officeId: string };
-type OfficeOpt = { id: string; name: string };
+type OfficeOpt = { id: string; name: string; isDefault?: boolean };
 const EMP_FIELDS: { key: keyof EmpForm; label: string; req?: boolean }[] = [
   { key: 'name', label: 'ชื่อ-นามสกุล', req: true },
   { key: 'employeeCode', label: 'รหัสพนักงาน' },
@@ -121,7 +121,7 @@ function EmployeeModal({ initial, id, offices, onClose, onDone }: { initial: Emp
           {inp('phone', 'เบอร์โทร')}
           {inp('baseSalary', 'เงินเดือน (บาท)')}
           <div><label style={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
-          <div><label style={lbl}>สถานที่ปฏิบัติงาน</label><select value={f.officeId} onChange={(e) => setF({ ...f, officeId: e.target.value })} style={field}><option value="">ทุกสถานที่</option>{offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
+          <div><label style={lbl}>สถานที่ปฏิบัติงาน</label><select value={f.officeId} onChange={(e) => setF({ ...f, officeId: e.target.value })} style={field}><option value="">ทุกสถานที่</option>{offices.map((o) => <option key={o.id} value={o.id}>{o.name}{o.isDefault ? ' (ค่าเริ่มต้น)' : ''}</option>)}</select></div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="submit" disabled={busy} style={{ ...btn('primary'), flex: 1, height: 44 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
@@ -236,6 +236,9 @@ function StaffView() {
   const load = () => api<Employee[]>('/employees').then(setRows).catch(() => {});
   useEffect(() => { load(); api<OfficeOpt[]>('/attendance/office').then(setOffices).catch(() => {}); }, []);
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
+  function openAdd() {
+    setEdit({ form: { ...emptyEmp, officeId: offices.find((o) => o.isDefault)?.id ?? '' } });
+  }
   function openEdit(r: Employee) {
     setEdit({ id: r.id, form: { ...emptyEmp, name: r.name, employeeCode: r.employeeCode ?? '', department: r.department ?? '', position: r.position ?? '', email: r.email ?? '', baseSalary: r.baseSalary ?? '', role: r.role === 'supervisor' ? 'supervisor' : 'employee', officeId: r.officeId ?? '' } });
   }
@@ -254,7 +257,7 @@ function StaffView() {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
         <div style={{ flex: 1, fontSize: 14, color: 'var(--ink-2)' }}>ทั้งหมด {rows.length} คน</div>
         <button onClick={() => setImporting(true)} style={{ ...btn('ghost'), height: 40 }}>นำเข้า CSV</button>
-        <button onClick={() => setEdit({ form: { ...emptyEmp } })} style={{ ...btn('primary'), height: 40 }}>+ เพิ่มพนักงาน</button>
+        <button onClick={openAdd} style={{ ...btn('primary'), height: 40 }}>+ เพิ่มพนักงาน</button>
       </div>
       {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
       <div style={{ ...card, padding: '8px 20px 12px' }}>
@@ -607,7 +610,7 @@ function OnboardingView() {
 }
 
 /* ---------- office geofence (multi-site) ---------- */
-type Office = { id: string; name: string; lat: number; lng: number; radiusM: number };
+type Office = { id: string; name: string; lat: number; lng: number; radiusM: number; isDefault?: boolean };
 
 function OfficeEditor({ initial, onClose, onSaved }: { initial: Office | null; onClose: () => void; onSaved: (m: string) => void }) {
   const [f, setF] = useState({ name: initial?.name ?? '', lat: initial ? Number(initial.lat) : 13.7563, lng: initial ? Number(initial.lng) : 100.5018, radiusM: initial?.radiusM ?? 150 });
@@ -687,6 +690,9 @@ function OfficeView() {
     try { await api(`/attendance/office/${o.id}`, { method: 'DELETE' }); flash(`ลบ ${o.name} แล้ว`); } catch { flash('ลบไม่สำเร็จ'); }
     setDel(null); load();
   }
+  async function setDefault(o: Office) {
+    try { await api(`/attendance/office/${o.id}/default`, { method: 'POST' }); flash(`ตั้ง ${o.name} เป็นค่าเริ่มต้นแล้ว`); load(); } catch { flash('ตั้งค่าเริ่มต้นไม่สำเร็จ'); }
+  }
   return (
     <div style={{ maxWidth: 820 }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
@@ -700,11 +706,14 @@ function OfficeView() {
           <tbody>
             {offices.map((o) => (
               <tr key={o.id} style={{ borderTop: '1px solid var(--line)' }}>
-                <td style={{ padding: 12, fontSize: 14, fontWeight: 600 }}>{o.name}</td>
+                <td style={{ padding: 12, fontSize: 14, fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{o.name}{o.isDefault && <Badge text="ค่าเริ่มต้น" c="var(--brand-700)" bg="var(--brand-tint)" />}</div>
+                </td>
                 <td style={{ padding: 12, fontSize: 12, color: 'var(--ink-3)' }}>{Number(o.lat).toFixed(5)}, {Number(o.lng).toFixed(5)}</td>
                 <td style={{ padding: 12, fontSize: 13 }}>{o.radiusM} ม.</td>
                 <td style={{ padding: 12, textAlign: 'right' }}>
                   <div style={{ display: 'inline-flex', gap: 6 }}>
+                    {!o.isDefault && <button onClick={() => setDefault(o)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>ตั้งเริ่มต้น</button>}
                     <button onClick={() => setEdit({ office: o })} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>แก้ไข</button>
                     <button onClick={() => setDel(o)} style={{ ...btn('danger'), height: 32, padding: '0 12px', fontSize: 12 }}>ลบ</button>
                   </div>
