@@ -357,42 +357,128 @@ function HireView() {
 }
 
 /* ---------- payroll ---------- */
-function PayrollView() {
-  const [run, setRun] = useState<{ id: string; period: string; totalNet: string } | null>(null);
-  const [rows, setRows] = useState<{ id: string; name: string; department?: string; gross: string; deductions: string; net: string; sentAt: string | null }[]>([]);
-  async function load() {
-    const runs = await api<{ id: string; period: string; totalNet: string }[]>('/payroll/runs').catch(() => []);
-    if (!runs.length) return;
-    setRun(runs[0]);
-    setRows(await api<typeof rows>(`/payroll/runs/${runs[0].id}/payslips`).catch(() => []));
-  }
+type Run = { id: string; period: string; status: string; totalNet: string };
+type Slip = { id: string; userId: string; name: string; department?: string; gross: string; deductions: string; net: string; sentAt: string | null };
+type Comp = { id: string; kind: 'earning' | 'deduction'; label: string; amount: string };
+
+function ComponentsModal({ slip, editable, onClose, onChanged }: { slip: Slip; editable: boolean; onClose: () => void; onChanged: () => void }) {
+  const [comps, setComps] = useState<Comp[]>([]);
+  const [f, setF] = useState({ kind: 'earning', label: '', amount: '' });
+  const load = () => api<Comp[]>(`/payroll/payslips/${slip.id}/components`).then(setComps).catch(() => {});
   useEffect(() => { load(); }, []);
-  const send = async (id: string) => { await api(`/payroll/payslips/${id}/send`, { method: 'POST' }); load(); };
+  async function add() {
+    if (!f.label.trim() || !f.amount) return;
+    await api(`/payroll/payslips/${slip.id}/components`, { method: 'POST', body: JSON.stringify(f) });
+    setF({ kind: f.kind, label: '', amount: '' }); load(); onChanged();
+  }
+  async function rm(id: string) { await api(`/payroll/components/${id}`, { method: 'DELETE' }); load(); onChanged(); }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 460, maxHeight: '90vh', overflowY: 'auto', padding: 22 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>รายการเงินเดือน — {slip.name}</div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 14 }}>สุทธิ ฿{slip.net}</div>
+        {comps.map((c) => (
+          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
+            <span style={{ flex: 1, fontSize: 13 }}>{c.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: c.kind === 'earning' ? 'var(--brand-700)' : 'var(--danger)' }}>{c.kind === 'earning' ? '+' : '−'}{c.amount}</span>
+            {editable && <button onClick={() => rm(c.id)} style={{ border: 'none', background: 'none', color: 'var(--ink-3)', cursor: 'pointer', fontSize: 16 }}>×</button>}
+          </div>
+        ))}
+        {comps.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-3)', padding: 12, textAlign: 'center' }}>ยังไม่มีรายการ</div>}
+        {editable && (
+          <div style={{ marginTop: 16, background: 'var(--bg)', borderRadius: 12, padding: 12 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} style={{ ...field, width: 120 }}><option value="earning">รายได้</option><option value="deduction">รายการหัก</option></select>
+              <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder="เช่น OT, เบี้ยขยัน, หักลา" style={{ ...field, flex: 1 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} type="number" placeholder="จำนวนเงิน" style={{ ...field, flex: 1 }} />
+              <button onClick={add} style={{ ...btn('primary'), height: 42, padding: '0 20px' }}>เพิ่ม</button>
+            </div>
+          </div>
+        )}
+        <button onClick={onClose} style={{ ...btn('ghost'), height: 42, width: '100%', marginTop: 16 }}>ปิด</button>
+      </div>
+    </div>
+  );
+}
+
+function PayrollView() {
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [run, setRun] = useState<Run | null>(null);
+  const [rows, setRows] = useState<Slip[]>([]);
+  const [stats, setStats] = useState<Record<string, { present: number; late: number }>>({});
+  const [editSlip, setEditSlip] = useState<Slip | null>(null);
+  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
+  async function loadRuns(selectId?: string) {
+    const r = await api<Run[]>('/payroll/runs').catch(() => []);
+    setRuns(r);
+    const sel = r.find((x) => x.id === selectId) ?? r.find((x) => x.id === run?.id) ?? r[0] ?? null;
+    if (sel) openRun(sel);
+  }
+  async function openRun(r: Run) {
+    setRun(r);
+    setRows(await api<Slip[]>(`/payroll/runs/${r.id}/payslips`).catch(() => []));
+    setStats(await api<Record<string, { present: number; late: number }>>(`/payroll/stats?period=${r.period}`).catch(() => ({})));
+  }
+  useEffect(() => { loadRuns(); }, []);
+  async function generate() {
+    setBusy(true);
+    try { const r = await api<Run>('/payroll/runs', { method: 'POST', body: JSON.stringify({ period }) }); flash(`คำนวณงวด ${period} แล้ว`); await loadRuns(r.id); }
+    catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'คำนวณไม่สำเร็จ'); }
+    finally { setBusy(false); }
+  }
+  async function approve() { if (!run) return; await api(`/payroll/runs/${run.id}/approve`, { method: 'POST' }); flash('อนุมัติงวดแล้ว'); loadRuns(run.id); }
+  const send = async (id: string) => { await api(`/payroll/payslips/${id}/send`, { method: 'POST' }); openRun(run!); };
+  const draft = run?.status === 'draft';
   const sent = rows.filter((r) => r.sentAt).length;
   return (
     <div>
-      <div style={{ ...card, padding: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>งวด {run?.period ?? '—'}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>สุทธิรวม ฿{run?.totalNet ?? '0'} · ส่งสลิปแล้ว {sent}/{rows.length}</div></div>
+      <div style={{ ...card, padding: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ ...field, width: 160 }} />
+        <button onClick={generate} disabled={busy} style={{ ...btn('primary'), height: 42 }}>{busy ? 'กำลังคำนวณ…' : 'สร้าง / คำนวณรอบ'}</button>
+        {runs.length > 0 && (
+          <select value={run?.id ?? ''} onChange={(e) => { const r = runs.find((x) => x.id === e.target.value); if (r) openRun(r); }} style={{ ...field, width: 220, marginLeft: 'auto' }}>
+            {runs.map((r) => <option key={r.id} value={r.id}>งวด {r.period} · {r.status === 'draft' ? 'ร่าง' : r.status === 'approved' ? 'อนุมัติแล้ว' : 'จ่ายแล้ว'}</option>)}
+          </select>
+        )}
       </div>
+      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      {run && (
+        <div style={{ ...card, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>งวด {run.period} {draft ? <Badge text="ร่าง" c="var(--warn)" bg="var(--warn-tint)" /> : <Badge text="อนุมัติแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" />}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>สุทธิรวม ฿{run.totalNet} · พนักงาน {rows.length} คน · ส่งสลิป {sent}/{rows.length}</div></div>
+          {draft && <button onClick={approve} style={{ ...btn('primary'), height: 40 }}>อนุมัติงวด</button>}
+        </div>
+      )}
       <div style={{ ...card, padding: '8px 20px 12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10, textAlign: 'right' }}>รายได้</th><th style={{ padding: 10, textAlign: 'right' }}>หัก</th><th style={{ padding: 10, textAlign: 'right' }}>สุทธิ</th><th style={{ padding: 10, textAlign: 'right' }}>สลิป</th></tr></thead>
+            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>มา/สาย</th><th style={{ padding: 10, textAlign: 'right' }}>รายได้</th><th style={{ padding: 10, textAlign: 'right' }}>หัก</th><th style={{ padding: 10, textAlign: 'right' }}>สุทธิ</th><th style={{ padding: 10, textAlign: 'right' }}>จัดการ</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
                 <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.department ?? ''}</div></td>
+                <td style={{ padding: 12, fontSize: 12, color: 'var(--ink-2)' }}>{stats[r.userId]?.present ?? 0}/<span style={{ color: 'var(--warn)' }}>{stats[r.userId]?.late ?? 0}</span></td>
                 <td style={{ padding: 12, textAlign: 'right', fontSize: 13, color: 'var(--brand-700)' }}>{r.gross}</td>
                 <td style={{ padding: 12, textAlign: 'right', fontSize: 13, color: 'var(--danger)' }}>−{r.deductions}</td>
                 <td style={{ padding: 12, textAlign: 'right', fontSize: 14, fontWeight: 700 }}>{r.net}</td>
-                <td style={{ padding: 12, textAlign: 'right' }}>{r.sentAt ? <Badge text="✓ ส่งแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <button onClick={() => send(r.id)} style={{ ...btn('ghost'), height: 32, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ส่งสลิป</button>}</td>
+                <td style={{ padding: 12, textAlign: 'right' }}>
+                  <div style={{ display: 'inline-flex', gap: 6 }}>
+                    <button onClick={() => setEditSlip(r)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>{draft ? 'จัดการ' : 'ดู'}</button>
+                    {r.sentAt ? <Badge text="ส่งแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <button onClick={() => send(r.id)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ส่งสลิป</button>}
+                  </div>
+                </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีรอบเงินเดือน</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีรอบเงินเดือน — เลือกงวดแล้วกด "สร้าง / คำนวณรอบ"</td></tr>}
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 12 }}>สลิปส่งเป็น PDF เข้ารหัสด้วยรหัสส่วนตัวของพนักงาน (PDPA)</div>
+      <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 12 }}>เงินเดือนฐานดึงจากข้อมูลพนักงาน · เพิ่ม OT/เบี้ยขยัน/รายการหักได้ที่ "จัดการ" · คอลัมน์ มา/สาย = จำนวนวันในงวด (อ้างอิง) · ภาษี/ประกันสังคมจะเพิ่มในเฟสถัดไป</div>
+      {editSlip && <ComponentsModal slip={editSlip} editable={draft} onClose={() => setEditSlip(null)} onChanged={() => run && openRun(run)} />}
     </div>
   );
 }
