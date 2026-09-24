@@ -41,6 +41,7 @@ const th: Dict = {
   pay_no_slip: 'ยังไม่มีสลิปเงินเดือนสำหรับคุณ', pay_send_pdf: 'ส่งเป็น PDF (เข้ารหัส) ทาง LINE', pay_sent: 'ส่งสลิป PDF เข้ารหัสทาง LINE แล้ว',
   lang_changed: 'เปลี่ยนภาษาแล้ว',
   pf_worksite: 'สถานที่ปฏิบัติงาน', worksite_any: 'ทุกสถานที่', worksite_changed: 'บันทึกสถานที่แล้ว',
+  lv_remaining: 'คงเหลือ', lv_days: 'วัน',
 };
 const en: Dict = {
   back: 'Back', loading: 'Loading…', save: 'Save', cancel: 'Cancel', done: 'Done', close: 'Close',
@@ -74,6 +75,7 @@ const en: Dict = {
   pay_no_slip: 'No payslip available yet', pay_send_pdf: 'Send as encrypted PDF via LINE', pay_sent: 'Encrypted payslip PDF sent via LINE',
   lang_changed: 'Language changed',
   pf_worksite: 'Work site', worksite_any: 'Any site', worksite_changed: 'Work site saved',
+  lv_remaining: 'Remaining', lv_days: 'days',
 };
 const my: Dict = {
   back: 'နောက်သို့', loading: 'ဖွင့်နေသည်…', save: 'သိမ်းမည်', cancel: 'ပယ်ဖျက်', done: 'ပြီးပါပြီ', close: 'ပိတ်မည်',
@@ -107,6 +109,7 @@ const my: Dict = {
   pay_no_slip: 'သင့်အတွက် လစာစလစ် မရှိသေးပါ', pay_send_pdf: 'LINE မှ ကုဒ်ဝှက် PDF အဖြစ် ပို့မည်', pay_sent: 'ကုဒ်ဝှက် လစာစလစ် PDF ကို LINE မှ ပို့ပြီးပါပြီ',
   lang_changed: 'ဘာသာစကား ပြောင်းပြီးပါပြီ',
   pf_worksite: 'အလုပ်တည်နေရာ', worksite_any: 'နေရာအားလုံး', worksite_changed: 'တည်နေရာ သိမ်းပြီးပါပြီ',
+  lv_remaining: 'ကျန်ရှိ', lv_days: 'ရက်',
 };
 const lo: Dict = {
   back: 'ກັບຄືນ', loading: 'ກຳລັງໂຫຼດ…', save: 'ບັນທຶກ', cancel: 'ຍົກເລີກ', done: 'ສຳເລັດ', close: 'ປິດ',
@@ -140,6 +143,7 @@ const lo: Dict = {
   pay_no_slip: 'ຍັງບໍ່ມີສະລິບເງິນເດືອນສຳລັບທ່ານ', pay_send_pdf: 'ສົ່ງເປັນ PDF (ເຂົ້າລະຫັດ) ທາງ LINE', pay_sent: 'ສົ່ງສະລິບ PDF ເຂົ້າລະຫັດທາງ LINE ແລ້ວ',
   lang_changed: 'ປ່ຽນພາສາແລ້ວ',
   pf_worksite: 'ສະຖານທີ່ປະຕິບັດງານ', worksite_any: 'ທຸກສະຖານທີ່', worksite_changed: 'ບັນທຶກສະຖານທີ່ແລ້ວ',
+  lv_remaining: 'ຄົງເຫຼືອ', lv_days: 'ວັນ',
 };
 
 const DICTS: Record<Locale, Dict> = { th, en, my, lo };

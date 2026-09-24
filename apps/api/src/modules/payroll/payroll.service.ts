@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { db, payrollRuns, payslips, salaryComponents, users, attendanceRecords } from '@poszee/db';
+import { db, payrollRuns, payslips, salaryComponents, users, attendanceRecords, leaveRequests } from '@poszee/db';
 import { LineService } from '../line/line.service';
 
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
@@ -74,10 +74,28 @@ export class PayrollService {
       const base = Number(s.baseSalary ?? 0);
       const [slip] = await db.insert(payslips).values({ tenantId, runId: run.id, userId: s.id, gross: money(base), deductions: '0.00', net: money(base) }).returning();
       if (base > 0) await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'earning', label: 'เงินเดือน', amount: money(base), system: true });
+      // unpaid leave in this period -> deduction (daily rate = base/30)
+      if (base > 0) {
+        const unpaid = await this.unpaidLeaveDays(tenantId, s.id, period);
+        if (unpaid > 0) {
+          await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'deduction', label: `หักลาไม่รับค่าจ้าง (${unpaid} วัน)`, amount: money((base / 30) * unpaid), system: true });
+        }
+      }
       await this.recomputePayslip(slip.id);
     }
     await this.recomputeRun(tenantId, run.id);
     return db.select().from(payrollRuns).where(eq(payrollRuns.id, run.id)).limit(1).then((r) => r[0]);
+  }
+
+  /** Sum unpaid leave days whose leave starts within the given YYYY-MM period. */
+  private async unpaidLeaveDays(tenantId: string, userId: string, period: string): Promise<number> {
+    const rows = await db
+      .select({ startDate: leaveRequests.startDate, unpaidDays: leaveRequests.unpaidDays, status: leaveRequests.status })
+      .from(leaveRequests)
+      .where(and(eq(leaveRequests.tenantId, tenantId), eq(leaveRequests.userId, userId)));
+    return rows
+      .filter((r) => r.status === 'approved' && (r.startDate ?? '').startsWith(period))
+      .reduce((s, r) => s + Number(r.unpaidDays ?? 0), 0);
   }
 
   private async recomputePayslip(payslipId: string) {

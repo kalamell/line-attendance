@@ -1,0 +1,2 @@
+ALTER TABLE "leave_requests" ADD COLUMN "paid_days" numeric(4, 1) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "leave_requests" ADD COLUMN "unpaid_days" numeric(4, 1) DEFAULT '0' NOT NULL;

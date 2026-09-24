@@ -409,7 +409,7 @@ export function App() {
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [history, setHistory] = useState<AttRow[]>([]);
-  const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number> } | null>(null);
+  const [leaveData, setLeaveData] = useState<{ requests: LeaveRow[]; used: Record<string, number>; balances?: { type: string; quota: number; remaining: number }[] } | null>(null);
   const [punching, setPunching] = useState<null | 'locating' | 'saving'>(null);
   const [consented, setConsented] = useState<boolean | null>(null); // PDPA gate: null=checking
   const [locale, setLocaleState] = useState<Locale | null>(readLocale());
@@ -474,7 +474,7 @@ export function App() {
   useEffect(() => {
     if (!authed) return;
     if (view === 'history') api<AttRow[]>('/attendance/history').then(setHistory).catch(() => {});
-    if (view === 'leave') api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {});
+    if (view === 'leave') api<{ requests: LeaveRow[]; used: Record<string, number>; balances?: { type: string; quota: number; remaining: number }[] }>('/leave/mine').then(setLeaveData).catch(() => {});
   }, [view, authed]);
 
   if (booting) return <SplashScreen />;
@@ -577,11 +577,17 @@ export function App() {
           <div style={{ padding: 16 }}>
             <h2 style={{ fontSize: 20, margin: '6px 4px 16px' }}>{tr('leave_title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
-              {([['sick', 'var(--danger)', '#FDECEC'], ['personal', 'var(--info)', '#EAF1FE'], ['vacation', 'var(--brand-700)', 'var(--brand-tint)']] as const).map(([k, col, bg]) => (
-                <div key={k} style={{ background: bg, borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}><div style={{ fontSize: 22, fontWeight: 700, color: col }}>{leaveData?.used[k] ?? 0}</div><div style={{ fontSize: 11, color: col, fontWeight: 500 }}>{leaveLabel(k)} · {tr('used_suffix')}</div></div>
-              ))}
+              {([['sick', 'var(--danger)', '#FDECEC'], ['personal', 'var(--info)', '#EAF1FE'], ['vacation', 'var(--brand-700)', 'var(--brand-tint)']] as const).map(([k, col, bg]) => {
+                const b = leaveData?.balances?.find((x) => x.type === k);
+                return (
+                  <div key={k} style={{ background: bg, borderRadius: 16, padding: '14px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: col }}>{b ? b.remaining : 0}<span style={{ fontSize: 12, fontWeight: 500 }}>/{b?.quota ?? 0}</span></div>
+                    <div style={{ fontSize: 11, color: col, fontWeight: 500 }}>{leaveLabel(k)} · {tr('lv_remaining')}</div>
+                  </div>
+                );
+              })}
             </div>
-            <LeaveForm onSubmitted={() => { flash(tr('leave_submitted'), true); api<{ requests: LeaveRow[]; used: Record<string, number> }>('/leave/mine').then(setLeaveData).catch(() => {}); }} onError={(m) => flash(m)} />
+            <LeaveForm onSubmitted={() => { flash(tr('leave_submitted'), true); api<{ requests: LeaveRow[]; used: Record<string, number>; balances?: { type: string; quota: number; remaining: number }[] }>('/leave/mine').then(setLeaveData).catch(() => {}); }} onError={(m) => flash(m)} />
             <div style={{ fontSize: 13, fontWeight: 700, margin: '20px 4px 10px' }}>{tr('my_requests')}</div>
             {(leaveData?.requests ?? []).map((r) => (
               <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>

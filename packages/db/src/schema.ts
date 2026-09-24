@@ -160,6 +160,9 @@ export const leaveRequests = pgTable(
     startDate: date('start_date').notNull(),
     endDate: date('end_date').notNull(),
     days: numeric('days', { precision: 4, scale: 1 }).notNull(),
+    // split computed on approval against the yearly statutory quota
+    paidDays: numeric('paid_days', { precision: 4, scale: 1 }).notNull().default('0'),
+    unpaidDays: numeric('unpaid_days', { precision: 4, scale: 1 }).notNull().default('0'),
     reason: text('reason'),
     status: requestStatusEnum('status').notNull().default('pending'),
     approverId: uuid('approver_id').references(() => users.id),

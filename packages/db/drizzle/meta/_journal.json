@@ -71,6 +71,13 @@
       "when": 1790281431969,
       "tag": "0009_solid_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790282050941,
+      "tag": "0010_young_colleen_wing",
+      "breakpoints": true
     }
   ]
 }
