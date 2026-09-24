@@ -227,6 +227,8 @@ export const salaryComponents = pgTable('salary_components', {
   kind: salaryKindEnum('kind').notNull(),
   label: text('label').notNull(),
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  // system-computed rows (base salary, SSO, withholding tax) — auto-managed, not manually removable
+  system: boolean('system').notNull().default(false),
 });
 
 // ---------- invitations (super_admin invites org_admin; org_admin invites staff) ----------

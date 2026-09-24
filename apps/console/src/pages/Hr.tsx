@@ -359,7 +359,7 @@ function HireView() {
 /* ---------- payroll ---------- */
 type Run = { id: string; period: string; status: string; totalNet: string };
 type Slip = { id: string; userId: string; name: string; department?: string; gross: string; deductions: string; net: string; sentAt: string | null };
-type Comp = { id: string; kind: 'earning' | 'deduction'; label: string; amount: string };
+type Comp = { id: string; kind: 'earning' | 'deduction'; label: string; amount: string; system?: boolean };
 
 function ComponentsModal({ slip, editable, onClose, onChanged }: { slip: Slip; editable: boolean; onClose: () => void; onChanged: () => void }) {
   const [comps, setComps] = useState<Comp[]>([]);
@@ -379,9 +379,9 @@ function ComponentsModal({ slip, editable, onClose, onChanged }: { slip: Slip; e
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 14 }}>สุทธิ ฿{slip.net}</div>
         {comps.map((c) => (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
-            <span style={{ flex: 1, fontSize: 13 }}>{c.label}</span>
+            <span style={{ flex: 1, fontSize: 13 }}>{c.label}{c.system && <span style={{ fontSize: 10, color: 'var(--ink-3)', marginLeft: 6 }}>(อัตโนมัติ)</span>}</span>
             <span style={{ fontSize: 13, fontWeight: 600, color: c.kind === 'earning' ? 'var(--brand-700)' : 'var(--danger)' }}>{c.kind === 'earning' ? '+' : '−'}{c.amount}</span>
-            {editable && <button onClick={() => rm(c.id)} style={{ border: 'none', background: 'none', color: 'var(--ink-3)', cursor: 'pointer', fontSize: 16 }}>×</button>}
+            {editable && !c.system ? <button onClick={() => rm(c.id)} style={{ border: 'none', background: 'none', color: 'var(--ink-3)', cursor: 'pointer', fontSize: 16 }}>×</button> : <span style={{ width: 16 }} />}
           </div>
         ))}
         {comps.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-3)', padding: 12, textAlign: 'center' }}>ยังไม่มีรายการ</div>}

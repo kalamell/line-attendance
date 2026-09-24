@@ -5,6 +5,43 @@ import { LineService } from '../line/line.service';
 
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
 
+// --- Thai statutory calculations (rates as of 2024; verify with an accountant) ---
+const SSO_LABEL = 'ประกันสังคม';
+const WHT_LABEL = 'ภาษีหัก ณ ที่จ่าย';
+
+/** Social security: 5% of monthly wage, base clamped to ฿1,650–฿15,000 (max ฿750). */
+function computeSSO(monthlyWage: number): number {
+  if (monthlyWage <= 0) return 0;
+  const base = Math.min(Math.max(monthlyWage, 1650), 15000);
+  return Math.round(base * 0.05);
+}
+
+function progressiveTax(taxable: number): number {
+  const brackets: [number, number][] = [
+    [150000, 0], [300000, 0.05], [500000, 0.1], [750000, 0.15],
+    [1000000, 0.2], [2000000, 0.25], [5000000, 0.3], [Infinity, 0.35],
+  ];
+  let tax = 0, prev = 0;
+  for (const [upTo, rate] of brackets) {
+    if (taxable <= prev) break;
+    tax += (Math.min(taxable, upTo) - prev) * rate;
+    prev = upTo;
+  }
+  return tax;
+}
+
+/** Monthly withholding tax: annualize gross, apply baseline deductions (expense 50%/100k,
+ *  personal 60k, SSO), progressive brackets, /12. Employee-specific allowances not included. */
+function computeWHT(monthlyGross: number): number {
+  if (monthlyGross <= 0) return 0;
+  const annual = monthlyGross * 12;
+  const expense = Math.min(annual * 0.5, 100000);
+  const personal = 60000;
+  const ssoAnnual = Math.min(computeSSO(monthlyGross) * 12, 9000);
+  const taxable = Math.max(0, annual - expense - personal - ssoAnnual);
+  return Math.round(progressiveTax(taxable) / 12);
+}
+
 @Injectable()
 export class PayrollService {
   constructor(private readonly line: LineService) {}
@@ -36,17 +73,38 @@ export class PayrollService {
     for (const s of staff) {
       const base = Number(s.baseSalary ?? 0);
       const [slip] = await db.insert(payslips).values({ tenantId, runId: run.id, userId: s.id, gross: money(base), deductions: '0.00', net: money(base) }).returning();
-      if (base > 0) await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'earning', label: 'เงินเดือน', amount: money(base) });
+      if (base > 0) await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'earning', label: 'เงินเดือน', amount: money(base), system: true });
+      await this.recomputePayslip(slip.id);
     }
     await this.recomputeRun(tenantId, run.id);
     return db.select().from(payrollRuns).where(eq(payrollRuns.id, run.id)).limit(1).then((r) => r[0]);
   }
 
   private async recomputePayslip(payslipId: string) {
+    const [slip] = await db.select({ tenantId: payslips.tenantId }).from(payslips).where(eq(payslips.id, payslipId)).limit(1);
+    if (!slip) return;
     const comps = await db.select().from(salaryComponents).where(eq(salaryComponents.payslipId, payslipId));
+    const grossEarnings = comps.filter((c) => c.kind === 'earning').reduce((s, c) => s + Number(c.amount), 0);
+    const baseWage = Number(comps.find((c) => c.kind === 'earning' && c.label === 'เงินเดือน')?.amount ?? grossEarnings);
+
+    // auto-manage statutory deductions (SSO on base wage, WHT on gross earnings)
+    await this.upsertSystemDeduction(slip.tenantId, payslipId, comps, SSO_LABEL, computeSSO(baseWage));
+    await this.upsertSystemDeduction(slip.tenantId, payslipId, comps, WHT_LABEL, computeWHT(grossEarnings));
+
+    const fresh = await db.select().from(salaryComponents).where(eq(salaryComponents.payslipId, payslipId));
     let earn = 0, ded = 0;
-    for (const c of comps) { if (c.kind === 'earning') earn += Number(c.amount); else ded += Number(c.amount); }
+    for (const c of fresh) { if (c.kind === 'earning') earn += Number(c.amount); else ded += Number(c.amount); }
     await db.update(payslips).set({ gross: money(earn), deductions: money(ded), net: money(earn - ded) }).where(eq(payslips.id, payslipId));
+  }
+
+  private async upsertSystemDeduction(tenantId: string, payslipId: string, comps: { id: string; label: string }[], label: string, amount: number) {
+    const existing = comps.find((c) => c.label === label);
+    if (amount <= 0) {
+      if (existing) await db.delete(salaryComponents).where(eq(salaryComponents.id, existing.id));
+      return;
+    }
+    if (existing) await db.update(salaryComponents).set({ amount: money(amount) }).where(eq(salaryComponents.id, existing.id));
+    else await db.insert(salaryComponents).values({ tenantId, payslipId, kind: 'deduction', label, amount: money(amount), system: true });
   }
 
   private async recomputeRun(tenantId: string, runId: string) {
@@ -68,6 +126,7 @@ export class PayrollService {
   async removeComponent(tenantId: string, componentId: string) {
     const [c] = await db.select().from(salaryComponents).where(and(eq(salaryComponents.tenantId, tenantId), eq(salaryComponents.id, componentId))).limit(1);
     if (!c) throw new NotFoundException('ไม่พบรายการ');
+    if (c.system) throw new BadRequestException('รายการนี้ระบบคำนวณอัตโนมัติ ลบไม่ได้');
     const [slip] = await db.select({ runId: payslips.runId }).from(payslips).where(eq(payslips.id, c.payslipId)).limit(1);
     if (slip) await this.assertDraft(tenantId, slip.runId);
     await db.delete(salaryComponents).where(eq(salaryComponents.id, componentId));
@@ -88,7 +147,7 @@ export class PayrollService {
   }
 
   components(tenantId: string, payslipId: string) {
-    return db.select({ id: salaryComponents.id, kind: salaryComponents.kind, label: salaryComponents.label, amount: salaryComponents.amount })
+    return db.select({ id: salaryComponents.id, kind: salaryComponents.kind, label: salaryComponents.label, amount: salaryComponents.amount, system: salaryComponents.system })
       .from(salaryComponents).where(and(eq(salaryComponents.tenantId, tenantId), eq(salaryComponents.payslipId, payslipId)));
   }
 

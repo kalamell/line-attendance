@@ -1,0 +1,1 @@
+ALTER TABLE "salary_components" ADD COLUMN "system" boolean DEFAULT false NOT NULL;
