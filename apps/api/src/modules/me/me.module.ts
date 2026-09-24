@@ -105,7 +105,8 @@ export class MeService {
   }
 
   async setPin(userId: string, pin: string) {
-    await db.update(users).set({ payslipPasswordHash: this.crypto.hashPassword(pin) }).where(eq(users.id, userId));
+    // hash for verification + reversible copy so the server can encrypt the payslip PDF with it
+    await db.update(users).set({ payslipPasswordHash: this.crypto.hashPassword(pin), payslipPinEnc: this.crypto.encrypt(pin) }).where(eq(users.id, userId));
     return { ok: true };
   }
 

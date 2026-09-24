@@ -209,12 +209,25 @@ export class PayrollService {
       .limit(1);
     if (!slip) throw new NotFoundException('ไม่พบสลิป');
 
-    // TODO: render the payslip PDF, encrypt it with the employee's payslip password,
-    // upload, and push it as a file message. For now push a text notice.
+    // LINE push can't attach a generated file, so notify with a Flex button that opens
+    // the LIFF payslip page where the employee unlocks with their PIN and downloads the PDF.
     if (slip.lineUserId) {
-      await this.line.push(tenantId, slip.lineUserId, [
-        { type: 'text', text: `สลิปเงินเดือนของคุณพร้อมแล้ว (สุทธิ ฿${slip.net}) — เปิดไฟล์ PDF ด้วยรหัสส่วนตัวของคุณ` },
-      ]);
+      const ch = await this.line.getChannel(tenantId);
+      const uri = ch?.liffId ? `https://liff.line.me/${ch.liffId}?tab=payslip` : 'https://hr.poszee.com/liff/?tab=payslip';
+      await this.line.push(tenantId, slip.lineUserId, [{
+        type: 'flex', altText: 'สลิปเงินเดือนของคุณพร้อมแล้ว',
+        contents: {
+          type: 'bubble',
+          body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
+            { type: 'text', text: 'สลิปเงินเดือน', weight: 'bold', size: 'lg', color: '#06C755' },
+            { type: 'text', text: `เงินได้สุทธิ ฿${slip.net}`, size: 'md', margin: 'sm' },
+            { type: 'text', text: 'เปิดด้วยรหัส PIN ส่วนตัวของคุณ แล้วดาวน์โหลด PDF', size: 'xs', color: '#888888', wrap: true, margin: 'sm' },
+          ] },
+          footer: { type: 'box', layout: 'vertical', contents: [
+            { type: 'button', style: 'primary', color: '#06C755', action: { type: 'uri', label: 'เปิดสลิป', uri } },
+          ] },
+        },
+      }]);
     }
 
     const [updated] = await db

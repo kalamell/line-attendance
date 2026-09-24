@@ -92,6 +92,8 @@ export const users = pgTable(
     baseSalary: numeric('base_salary', { precision: 12, scale: 2 }),
     // payslip open password (hashed) — employee-set, NOT derived from PII
     payslipPasswordHash: text('payslip_password_hash'),
+    // reversible copy of the payslip PIN (AES) — used only to password-protect the payslip PDF
+    payslipPinEnc: text('payslip_pin_enc'),
     locale: varchar('locale', { length: 5 }).notNull().default('th'),
     // assigned work site; null = may check in at any of the tenant's sites
     officeId: uuid('office_id').references((): AnyPgColumn => officeLocations.id, { onDelete: 'set null' }),

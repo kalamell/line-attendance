@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { initLiff, getIdToken, getProfile, isInClient, liff } from './lib/liff';
-import { api, setToken, loginPassword, errorMessage } from './lib/api';
+import { api, setToken, loginPassword, errorMessage, downloadFile } from './lib/api';
 import { makeT, LOCALES, type Locale } from './i18n';
 
 type Me = { id: string; name: string; role: string; active: boolean };
@@ -35,7 +35,6 @@ function PayslipScreen({ back }: { back: () => void }) {
   const [pin, setPin] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [slip, setSlip] = useState<{ period: string; gross: string; deductions: string; net: string; items: { kind: string; label: string; amount: string }[] } | null>(null);
-  const [sent, setSent] = useState(false);
 
   // decide upfront: no PIN yet -> ask to SET one; otherwise ask to enter it
   useEffect(() => {
@@ -123,11 +122,12 @@ function PayslipScreen({ back }: { back: () => void }) {
             </>
           )}
         </div>
-        {slip && (sent ? (
-          <div style={{ marginTop: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', borderRadius: 14, padding: 16, textAlign: 'center', color: 'var(--brand-700)', fontWeight: 700, fontSize: 14 }}>{tr('pay_sent')}</div>
-        ) : (
-          <button onClick={() => setSent(true)} style={{ width: '100%', height: 52, marginTop: 16, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)' }}>{tr('pay_send_pdf')}</button>
-        ))}
+        {slip && (
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button onClick={async () => { downloadFile('/me/payslip/pdf', `payslip-${slip.period}.pdf`).catch(() => {}) }} style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Icon n="picture_as_pdf" size={20} color="#fff" /> {tr('pay_download')}</button>
+            <button onClick={() => downloadFile(`/me/tax-certificate?year=${new Date().getFullYear()}`, `50tawi-${new Date().getFullYear()}.pdf`).catch(() => {})} style={{ width: '100%', height: 48, border: '1px solid var(--line)', borderRadius: 14, background: '#fff', color: 'var(--ink)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Icon n="description" size={18} color="var(--brand-700)" /> {tr('tax_cert')}</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -436,6 +436,8 @@ export function App() {
       try {
         const r = await api<{ token: string; user: Me }>('/auth/line/login', { method: 'POST', body: JSON.stringify({ idToken }) });
         setToken(r.token); setMe(r.user); setAuthed(true);
+        const tab = new URLSearchParams(location.search).get('tab');
+        if (tab === 'payslip' || tab === 'leave' || tab === 'history') setView(tab);
         const prof = await api<{ hasConsent: boolean; locale: Locale; officeId: string | null }>('/me/profile').catch(() => null);
         if (prof) { setConsented(!!prof.hasConsent); setOfficeId(prof.officeId ?? ''); if (prof.locale) { setLocaleState(prof.locale); storeLocale(prof.locale); } }
         setToday(await api<Attendance>('/attendance/today'));

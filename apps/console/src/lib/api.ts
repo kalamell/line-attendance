@@ -38,6 +38,21 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/** Fetch a file (PDF) with auth and trigger a download. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const headers = new Headers();
+  const t = localStorage.getItem(TOKEN_KEY);
+  if (t) headers.set('authorization', `Bearer ${t}`);
+  const res = await fetch(`/api${path}`, { headers });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
 export async function login(email: string, password: string) {
   const r = await api<{ token: string; user: { name: string; role: string } }>('/auth/login', {
     method: 'POST',

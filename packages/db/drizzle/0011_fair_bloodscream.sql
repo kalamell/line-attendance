@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "payslip_pin_enc" text;

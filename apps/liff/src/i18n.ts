@@ -42,6 +42,7 @@ const th: Dict = {
   lang_changed: 'เปลี่ยนภาษาแล้ว',
   pf_worksite: 'สถานที่ปฏิบัติงาน', worksite_any: 'ทุกสถานที่', worksite_changed: 'บันทึกสถานที่แล้ว',
   lv_remaining: 'คงเหลือ', lv_days: 'วัน',
+  pay_download: 'ดาวน์โหลดสลิป (PDF)', tax_cert: 'ใบรับรองภาษี 50 ทวิ', downloading: 'กำลังเตรียมไฟล์…',
 };
 const en: Dict = {
   back: 'Back', loading: 'Loading…', save: 'Save', cancel: 'Cancel', done: 'Done', close: 'Close',
@@ -76,6 +77,7 @@ const en: Dict = {
   lang_changed: 'Language changed',
   pf_worksite: 'Work site', worksite_any: 'Any site', worksite_changed: 'Work site saved',
   lv_remaining: 'Remaining', lv_days: 'days',
+  pay_download: 'Download payslip (PDF)', tax_cert: 'Tax certificate (50 Tawi)', downloading: 'Preparing file…',
 };
 const my: Dict = {
   back: 'နောက်သို့', loading: 'ဖွင့်နေသည်…', save: 'သိမ်းမည်', cancel: 'ပယ်ဖျက်', done: 'ပြီးပါပြီ', close: 'ပိတ်မည်',
@@ -110,6 +112,7 @@ const my: Dict = {
   lang_changed: 'ဘာသာစကား ပြောင်းပြီးပါပြီ',
   pf_worksite: 'အလုပ်တည်နေရာ', worksite_any: 'နေရာအားလုံး', worksite_changed: 'တည်နေရာ သိမ်းပြီးပါပြီ',
   lv_remaining: 'ကျန်ရှိ', lv_days: 'ရက်',
+  pay_download: 'စလစ် ဒေါင်းလုဒ် (PDF)', tax_cert: 'အခွန်လက်မှတ် (50 ทวิ)', downloading: 'ဖိုင် ပြင်ဆင်နေသည်…',
 };
 const lo: Dict = {
   back: 'ກັບຄືນ', loading: 'ກຳລັງໂຫຼດ…', save: 'ບັນທຶກ', cancel: 'ຍົກເລີກ', done: 'ສຳເລັດ', close: 'ປິດ',
@@ -144,6 +147,7 @@ const lo: Dict = {
   lang_changed: 'ປ່ຽນພາສາແລ້ວ',
   pf_worksite: 'ສະຖານທີ່ປະຕິບັດງານ', worksite_any: 'ທຸກສະຖານທີ່', worksite_changed: 'ບັນທຶກສະຖານທີ່ແລ້ວ',
   lv_remaining: 'ຄົງເຫຼືອ', lv_days: 'ວັນ',
+  pay_download: 'ດາວໂຫຼດສະລິບ (PDF)', tax_cert: 'ໃບຮັບຮອງພາສີ 50 ทวิ', downloading: 'ກຳລັງກຽມໄຟລ໌…',
 };
 
 const DICTS: Record<Locale, Dict> = { th, en, my, lo };

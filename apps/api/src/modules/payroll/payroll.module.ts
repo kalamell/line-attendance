@@ -1,11 +1,21 @@
-import { Body, Controller, Delete, Get, Module, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Module, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { IsIn, IsNumberString, IsString, Matches, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { Roles } from '../../common/auth/roles.decorator';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { TenantId } from '../../common/tenant/tenant.decorator';
+import type { AuthPrincipal } from '@poszee/shared';
 import { LineModule } from '../line/line.module';
 import { PayrollService } from './payroll.service';
+import { PdfService } from './pdf.service';
+
+function sendPdf(res: Response, buf: Buffer, filename: string) {
+  res.set({ 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="${filename}"`, 'content-length': String(buf.length) });
+  res.end(buf);
+}
+const thisYear = () => new Date().getFullYear();
 
 class GenerateDto {
   @Matches(/^\d{4}-\d{2}$/, { message: 'period ต้องเป็น YYYY-MM' }) period!: string;
@@ -20,7 +30,19 @@ class ComponentDto {
 @Roles('org_admin')
 @Controller('payroll')
 class PayrollController {
-  constructor(private readonly payroll: PayrollService) {}
+  constructor(private readonly payroll: PayrollService, private readonly pdf: PdfService) {}
+
+  @Get('payslips/:id/pdf')
+  async payslipPdf(@TenantId() tenantId: string, @Param('id') id: string, @Res() res: Response) {
+    const { buf, filename } = await this.pdf.payslip(tenantId, id);
+    sendPdf(res, buf, filename);
+  }
+
+  @Get('tax-certificate/:userId')
+  async taxCert(@TenantId() tenantId: string, @Param('userId') userId: string, @Query('year') year: string, @Res() res: Response) {
+    const { buf, filename } = await this.pdf.taxCertificate(tenantId, userId, Number(year) || thisYear());
+    sendPdf(res, buf, filename);
+  }
 
   @Get('runs')
   runs(@TenantId() tenantId: string) {
@@ -68,9 +90,28 @@ class PayrollController {
   }
 }
 
+// employee-facing PDF downloads (their own slip + 50 ทวิ), already PIN-gated in the LIFF
+@UseGuards(JwtAuthGuard)
+@Controller('me')
+class MePdfController {
+  constructor(private readonly pdf: PdfService) {}
+
+  @Get('payslip/pdf')
+  async myPayslip(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal, @Res() res: Response) {
+    const { buf, filename } = await this.pdf.payslipForUser(tenantId, u.userId);
+    sendPdf(res, buf, filename);
+  }
+
+  @Get('tax-certificate')
+  async myTaxCert(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal, @Query('year') year: string, @Res() res: Response) {
+    const { buf, filename } = await this.pdf.taxCertificate(tenantId, u.userId, Number(year) || thisYear());
+    sendPdf(res, buf, filename);
+  }
+}
+
 @Module({
   imports: [LineModule],
-  providers: [PayrollService],
-  controllers: [PayrollController],
+  providers: [PayrollService, PdfService],
+  controllers: [PayrollController, MePdfController],
 })
 export class PayrollModule {}

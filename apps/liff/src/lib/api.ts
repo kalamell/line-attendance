@@ -21,6 +21,21 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/** Fetch a file (PDF) with auth and trigger a download. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const headers = new Headers();
+  if (token) headers.set('authorization', `Bearer ${token}`);
+  if (TENANT) headers.set(TENANT_HEADER, TENANT);
+  const res = await fetch(`/api${path}`, { headers });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.target = '_blank';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
 /** Turn an api() error (`"<status> <json>"`) into a clean Thai message for the UI. */
 export function errorMessage(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e);
