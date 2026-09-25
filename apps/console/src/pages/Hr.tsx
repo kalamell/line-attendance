@@ -480,7 +480,6 @@ function PayrollView() {
                   <div style={{ display: 'inline-flex', gap: 6 }}>
                     <button onClick={() => setEditSlip(r)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>{draft ? 'จัดการ' : 'ดู'}</button>
                     <button onClick={() => downloadFile(`/payroll/payslips/${r.id}/pdf`, `payslip-${run?.period}-${r.name}.pdf`).catch(() => {})} title="ดาวน์โหลดสลิป PDF" style={{ ...btn('ghost'), height: 32, padding: '0 10px', fontSize: 12 }}>PDF</button>
-                    <button onClick={() => downloadFile(`/payroll/tax-certificate/${r.userId}?year=${run?.period.slice(0, 4)}`, `50tawi-${r.name}.pdf`).catch(() => {})} title="ใบรับรองภาษี 50 ทวิ" style={{ ...btn('ghost'), height: 32, padding: '0 10px', fontSize: 12 }}>50ทวิ</button>
                     {r.sentAt ? <Badge text="ส่งแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <button onClick={() => send(r.id)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ส่งสลิป</button>}
                   </div>
                 </td>

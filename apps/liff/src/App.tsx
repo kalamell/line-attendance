@@ -125,7 +125,6 @@ function PayslipScreen({ back }: { back: () => void }) {
         {slip && (
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <button onClick={async () => { downloadFile('/me/payslip/pdf', `payslip-${slip.period}.pdf`).catch(() => {}) }} style={{ width: '100%', height: 52, border: 'none', borderRadius: 14, background: 'var(--brand)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(6,199,85,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Icon n="picture_as_pdf" size={20} color="#fff" /> {tr('pay_download')}</button>
-            <button onClick={() => downloadFile(`/me/tax-certificate?year=${new Date().getFullYear()}`, `50tawi-${new Date().getFullYear()}.pdf`).catch(() => {})} style={{ width: '100%', height: 48, border: '1px solid var(--line)', borderRadius: 14, background: '#fff', color: 'var(--ink)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Icon n="description" size={18} color="var(--brand-700)" /> {tr('tax_cert')}</button>
           </div>
         )}
       </div>

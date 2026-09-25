@@ -15,7 +15,6 @@ function sendPdf(res: Response, buf: Buffer, filename: string) {
   res.set({ 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="${filename}"`, 'content-length': String(buf.length) });
   res.end(buf);
 }
-const thisYear = () => new Date().getFullYear();
 
 class GenerateDto {
   @Matches(/^\d{4}-\d{2}$/, { message: 'period ต้องเป็น YYYY-MM' }) period!: string;
@@ -35,12 +34,6 @@ class PayrollController {
   @Get('payslips/:id/pdf')
   async payslipPdf(@TenantId() tenantId: string, @Param('id') id: string, @Res() res: Response) {
     const { buf, filename } = await this.pdf.payslip(tenantId, id);
-    sendPdf(res, buf, filename);
-  }
-
-  @Get('tax-certificate/:userId')
-  async taxCert(@TenantId() tenantId: string, @Param('userId') userId: string, @Query('year') year: string, @Res() res: Response) {
-    const { buf, filename } = await this.pdf.taxCertificate(tenantId, userId, Number(year) || thisYear());
     sendPdf(res, buf, filename);
   }
 
@@ -99,12 +92,6 @@ class MePdfController {
   @Get('payslip/pdf')
   async myPayslip(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal, @Res() res: Response) {
     const { buf, filename } = await this.pdf.payslipForUser(tenantId, u.userId);
-    sendPdf(res, buf, filename);
-  }
-
-  @Get('tax-certificate')
-  async myTaxCert(@TenantId() tenantId: string, @CurrentUser() u: AuthPrincipal, @Query('year') year: string, @Res() res: Response) {
-    const { buf, filename } = await this.pdf.taxCertificate(tenantId, u.userId, Number(year) || thisYear());
     sendPdf(res, buf, filename);
   }
 }
