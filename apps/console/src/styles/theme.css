@@ -1,26 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
 
-:root {
-  --brand: #06C755;
-  --brand-700: #04933D;
-  --brand-tint: #E8F9EF;
-  --ink: #1B1D1F;
-  --ink-2: #5B6167;
-  --ink-3: #9AA0A6;
-  --line: #ECEEF1;
-  --bg: #F5F6F8;
-  --surface: #FFFFFF;
-  --warn: #C77700;
-  --warn-tint: #FEF3E2;
-  --danger: #D93838;
-  --danger-tint: #FDECEC;
-  --info: #1D6FE0;
-  --info-tint: #EAF1FE;
-  --sidebar: #0F1720;
+/* Design tokens exposed to Tailwind v4 → generates bg-brand, text-ink-2, etc. */
+@theme {
+  --color-brand: #06c755;
+  --color-brand-700: #04933d;
+  --color-brand-tint: #e8f9ef;
+  --color-ink: #1b1d1f;
+  --color-ink-2: #5b6167;
+  --color-ink-3: #9aa0a6;
+  --color-line: #eceef1;
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-warn: #c77700;
+  --color-warn-tint: #fef3e2;
+  --color-danger: #d93838;
+  --color-danger-tint: #fdecec;
+  --color-info: #1d6fe0;
+  --color-info-tint: #eaf1fe;
+  --color-sidebar: #0f1720;
+  --font-sans: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+/* Legacy CSS variables kept so any remaining inline var(--x) still resolves. */
+:root {
+  --brand: #06c755;
+  --brand-700: #04933d;
+  --brand-tint: #e8f9ef;
+  --ink: #1b1d1f;
+  --ink-2: #5b6167;
+  --ink-3: #9aa0a6;
+  --line: #eceef1;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --warn: #c77700;
+  --warn-tint: #fef3e2;
+  --danger: #d93838;
+  --danger-tint: #fdecec;
+  --info: #1d6fe0;
+  --info-tint: #eaf1fe;
+  --sidebar: #0f1720;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -28,5 +57,12 @@ body {
   font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-button, input, select, textarea { font-family: inherit; }
-a { color: var(--brand-700); }
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+a {
+  color: var(--brand-700);
+}
