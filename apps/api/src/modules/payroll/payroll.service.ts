@@ -67,24 +67,29 @@ export class PayrollService {
       await db.delete(payslips).where(eq(payslips.runId, run.id));
     }
     const staff = await db
-      .select({ id: users.id, baseSalary: users.baseSalary })
+      .select({ id: users.id, name: users.name, baseSalary: users.baseSalary })
       .from(users)
       .where(and(eq(users.tenantId, tenantId), eq(users.active, true), inArray(users.role, ['employee', 'supervisor', 'org_admin'])));
+    // Employees with no base salary would produce an empty ฿0 slip that confuses staff;
+    // skip them and report back so HR knows to set a salary before regenerating.
+    const skipped: { id: string; name: string }[] = [];
+    let generated = 0;
     for (const s of staff) {
       const base = Number(s.baseSalary ?? 0);
+      if (base <= 0) { skipped.push({ id: s.id, name: s.name }); continue; }
       const [slip] = await db.insert(payslips).values({ tenantId, runId: run.id, userId: s.id, gross: money(base), deductions: '0.00', net: money(base) }).returning();
-      if (base > 0) await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'earning', label: 'เงินเดือน', amount: money(base), system: true });
+      await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'earning', label: 'เงินเดือน', amount: money(base), system: true });
       // unpaid leave in this period -> deduction (daily rate = base/30)
-      if (base > 0) {
-        const unpaid = await this.unpaidLeaveDays(tenantId, s.id, period);
-        if (unpaid > 0) {
-          await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'deduction', label: `หักลาไม่รับค่าจ้าง (${unpaid} วัน)`, amount: money((base / 30) * unpaid), system: true });
-        }
+      const unpaid = await this.unpaidLeaveDays(tenantId, s.id, period);
+      if (unpaid > 0) {
+        await db.insert(salaryComponents).values({ tenantId, payslipId: slip.id, kind: 'deduction', label: `หักลาไม่รับค่าจ้าง (${unpaid} วัน)`, amount: money((base / 30) * unpaid), system: true });
       }
       await this.recomputePayslip(slip.id);
+      generated++;
     }
     await this.recomputeRun(tenantId, run.id);
-    return db.select().from(payrollRuns).where(eq(payrollRuns.id, run.id)).limit(1).then((r) => r[0]);
+    const [fresh] = await db.select().from(payrollRuns).where(eq(payrollRuns.id, run.id)).limit(1);
+    return { ...fresh, generated, skipped };
   }
 
   /** Sum unpaid leave days whose leave starts within the given YYYY-MM period. */
@@ -202,12 +207,13 @@ export class PayrollService {
   /** Mark a payslip sent and push an encrypted-PDF notice via the tenant's LINE OA. */
   async sendSlip(tenantId: string, id: string) {
     const [slip] = await db
-      .select({ id: payslips.id, net: payslips.net, lineUserId: users.lineUserId })
+      .select({ id: payslips.id, gross: payslips.gross, net: payslips.net, lineUserId: users.lineUserId })
       .from(payslips)
       .innerJoin(users, eq(users.id, payslips.userId))
       .where(and(eq(payslips.tenantId, tenantId), eq(payslips.id, id)))
       .limit(1);
     if (!slip) throw new NotFoundException('ไม่พบสลิป');
+    if (Number(slip.gross) <= 0) throw new BadRequestException('สลิปนี้ยังไม่มีรายได้ (ยังไม่ได้ตั้งเงินเดือนพนักงาน) — ตั้งเงินเดือนแล้วสร้างรอบใหม่ก่อนส่ง');
 
     // LINE push can't attach a generated file, so notify with a Flex button that opens
     // the LIFF payslip page where the employee unlocks with their PIN and downloads the PDF.

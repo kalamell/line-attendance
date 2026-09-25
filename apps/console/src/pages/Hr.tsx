@@ -357,7 +357,7 @@ function HireView() {
 }
 
 /* ---------- payroll ---------- */
-type Run = { id: string; period: string; status: string; totalNet: string };
+type Run = { id: string; period: string; status: string; totalNet: string; generated?: number; skipped?: { id: string; name: string }[] };
 type Slip = { id: string; userId: string; name: string; department?: string; gross: string; deductions: string; net: string; sentAt: string | null };
 type Comp = { id: string; kind: 'earning' | 'deduction'; label: string; amount: string; system?: boolean };
 
@@ -412,6 +412,7 @@ function PayrollView() {
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [warn, setWarn] = useState<string | null>(null);
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(null), 3500); }
   async function loadRuns(selectId?: string) {
     const r = await api<Run[]>('/payroll/runs').catch(() => []);
@@ -427,12 +428,21 @@ function PayrollView() {
   useEffect(() => { loadRuns(); }, []);
   async function generate() {
     setBusy(true);
-    try { const r = await api<Run>('/payroll/runs', { method: 'POST', body: JSON.stringify({ period }) }); flash(`คำนวณงวด ${period} แล้ว`); await loadRuns(r.id); }
+    try {
+      const r = await api<Run>('/payroll/runs', { method: 'POST', body: JSON.stringify({ period }) });
+      flash(`คำนวณงวด ${period} แล้ว — สร้างสลิป ${r.generated ?? 0} คน`);
+      const sk = r.skipped ?? [];
+      setWarn(sk.length ? `ข้ามพนักงาน ${sk.length} คนที่ยังไม่ได้ตั้งเงินเดือน (ไม่มีสลิป): ${sk.map((x) => x.name).join(', ')} — ตั้งเงินเดือนในหน้า "พนักงาน" แล้วกดสร้างรอบใหม่` : null);
+      await loadRuns(r.id);
+    }
     catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'คำนวณไม่สำเร็จ'); }
     finally { setBusy(false); }
   }
   async function approve() { if (!run) return; await api(`/payroll/runs/${run.id}/approve`, { method: 'POST' }); flash('อนุมัติงวดแล้ว'); loadRuns(run.id); }
-  const send = async (id: string) => { await api(`/payroll/payslips/${id}/send`, { method: 'POST' }); openRun(run!); };
+  const send = async (id: string) => {
+    try { await api(`/payroll/payslips/${id}/send`, { method: 'POST' }); openRun(run!); }
+    catch (e) { flash(e instanceof Error ? e.message.replace(/^\d+\s*/, '').replace(/^\{.*"message":"([^"]+)".*\}$/, '$1') : 'ส่งสลิปไม่สำเร็จ'); }
+  };
   const draft = run?.status === 'draft';
   const sent = rows.filter((r) => r.sentAt).length;
   return (
@@ -447,6 +457,7 @@ function PayrollView() {
         )}
       </div>
       {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
+      {warn && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: '#8a5a00', fontWeight: 600, fontSize: 13, background: 'var(--warn-tint)', border: '1px solid #F3E1C0', display: 'flex', gap: 10, alignItems: 'flex-start' }}><span>⚠️</span><span style={{ flex: 1, lineHeight: 1.5 }}>{warn}</span><button onClick={() => setWarn(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#8a5a00', fontSize: 16 }}>×</button></div>}
       {run && (
         <div style={{ ...card, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>งวด {run.period} {draft ? <Badge text="ร่าง" c="var(--warn)" bg="var(--warn-tint)" /> : <Badge text="อนุมัติแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" />}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>สุทธิรวม ฿{run.totalNet} · พนักงาน {rows.length} คน · ส่งสลิป {sent}/{rows.length}</div></div>
