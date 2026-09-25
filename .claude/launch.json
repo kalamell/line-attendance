@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "console",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@poszee/console", "dev", "--port", "5274"],
+      "port": 5274
+    },
+    {
+      "name": "liff",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@poszee/liff", "dev", "--port", "5273"],
+      "port": 5273
+    }
+  ]
+}

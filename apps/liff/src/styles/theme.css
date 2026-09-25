@@ -15,6 +15,7 @@
   --color-warn: #c77700;
   --color-warn-tint: #fef3e2;
   --color-danger: #d93838;
+  --color-danger-tint: #fdecec;
   --color-info: #1d6fe0;
   --font-sans: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
 }
@@ -33,6 +34,7 @@
   --warn: #c77700;
   --warn-tint: #fef3e2;
   --danger: #d93838;
+  --danger-tint: #fdecec;
   --info: #1d6fe0;
 }
 

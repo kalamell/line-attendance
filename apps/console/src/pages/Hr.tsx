@@ -20,17 +20,17 @@ function loadLeaflet(): Promise<void> {
 }
 
 /* ---------- shared bits ---------- */
-const card: React.CSSProperties = { background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--line)' };
-const field: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 10, padding: '11px 13px', fontSize: 14, width: '100%' };
-const lbl: React.CSSProperties = { fontSize: 12, color: 'var(--ink-2)', marginBottom: 6, display: 'block' };
+const card = 'bg-surface rounded-2xl border border-line';
+const field = 'border border-line rounded-[10px] px-[13px] py-[11px] text-sm w-full';
+const lbl = 'text-xs text-ink-2 mb-1.5 block';
 function Badge({ text, c, bg }: { text: string; c: string; bg: string }) {
-  return <span style={{ fontSize: 12, fontWeight: 600, color: c, background: bg, padding: '4px 10px', borderRadius: 999 }}>{text}</span>;
+  return <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ color: c, background: bg }}>{text}</span>;
 }
-function btn(kind: 'primary' | 'ghost' | 'danger'): React.CSSProperties {
-  const base: React.CSSProperties = { height: 40, padding: '0 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' };
-  if (kind === 'primary') return { ...base, border: 'none', background: 'var(--brand)', color: '#fff' };
-  if (kind === 'danger') return { ...base, border: '1px solid #FADBDB', background: '#fff', color: 'var(--danger)' };
-  return { ...base, border: '1px solid var(--line)', background: '#fff', color: 'var(--ink)' };
+function btn(kind: 'primary' | 'ghost' | 'danger'): string {
+  const base = 'rounded-[10px] font-semibold cursor-pointer';
+  if (kind === 'primary') return `${base} bg-brand text-white`;
+  if (kind === 'danger') return `${base} border border-[#FADBDB] bg-white text-danger`;
+  return `${base} border border-line bg-white text-ink`;
 }
 const LEAVE_LABEL: Record<string, string> = { sick: 'ลาป่วย', personal: 'ลากิจ', vacation: 'พักร้อน' };
 
@@ -43,16 +43,16 @@ function DashboardView() {
     api<unknown[]>('/hire/pending').then((r) => setHire(r.length)).catch(() => {});
   }, []);
   const stat = (label: string, val: number, color: string) => (
-    <div style={{ ...card, padding: 18 }}><div style={{ fontSize: 12, color: 'var(--ink-2)', marginBottom: 8 }}>{label}</div><div style={{ fontSize: 26, fontWeight: 700, color }}>{val}</div></div>
+    <div className={`${card} p-[18px]`}><div className="text-xs text-ink-2 mb-2">{label}</div><div className="text-[26px] font-bold" style={{ color }}>{val}</div></div>
   );
   return (
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 16 }}>
+      <div className="grid grid-cols-3 gap-4">
         {stat('รออนุมัติการลา', leave, 'var(--warn)')}
         {stat('รออนุมัติเริ่มงาน', hire, 'var(--info)')}
         {stat('งานค้างรวม', leave + hire, 'var(--ink)')}
       </div>
-      <div style={{ ...card, padding: 20, marginTop: 16, color: 'var(--ink-2)', fontSize: 14 }}>
+      <div className={`${card} p-5 mt-4 text-ink-2 text-sm`}>
         ยินดีต้อนรับสู่คอนโซล HR — เลือกเมนูด้านซ้ายเพื่อจัดการพนักงาน อนุมัติคำขอ เงินเดือน และการเชื่อมต่อ LINE ของหน่วยงาน
       </div>
     </div>
@@ -105,27 +105,27 @@ function EmployeeModal({ initial, id, offices, onClose, onDone }: { initial: Emp
     } catch { setErr('บันทึกไม่สำเร็จ'); } finally { setBusy(false); }
   }
   const inp = (k: keyof EmpForm, label: string, type = 'text') => (
-    <div><label style={lbl}>{label}</label><input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} style={field} /></div>
+    <div><label className={lbl}>{label}</label><input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className={field} /></div>
   );
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-      <form onClick={(e) => e.stopPropagation()} onSubmit={submit} style={{ ...card, width: 460, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>{id ? 'แก้ไขพนักงาน' : 'เพิ่มพนักงาน'}</div>
-        {err && <div style={{ background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 13px', fontSize: 13, marginBottom: 14 }}>{err}</div>}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อ-นามสกุล *</label><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={field} /></div>
+    <div onClick={onClose} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-50">
+      <form onClick={(e) => e.stopPropagation()} onSubmit={submit} className={`${card} w-[460px] p-6 max-h-[90vh] overflow-y-auto`}>
+        <div className="text-base font-bold mb-4">{id ? 'แก้ไขพนักงาน' : 'เพิ่มพนักงาน'}</div>
+        {err && <div className="bg-danger-tint text-danger rounded-[10px] px-[13px] py-[9px] text-[13px] mb-[14px]">{err}</div>}
+        <div className="grid grid-cols-2 gap-[14px] mb-4">
+          <div className="col-[1/-1]"><label className={lbl}>ชื่อ-นามสกุล *</label><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={field} /></div>
           {inp('employeeCode', 'รหัสพนักงาน')}
           {inp('department', 'แผนก')}
           {inp('position', 'ตำแหน่ง')}
           {inp('email', 'อีเมล', 'email')}
           {inp('phone', 'เบอร์โทร')}
           {inp('baseSalary', 'เงินเดือน (บาท)')}
-          <div><label style={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} style={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
-          <div><label style={lbl}>สถานที่ปฏิบัติงาน</label><select value={f.officeId} onChange={(e) => setF({ ...f, officeId: e.target.value })} style={field}><option value="">ทุกสถานที่</option>{offices.map((o) => <option key={o.id} value={o.id}>{o.name}{o.isDefault ? ' (ค่าเริ่มต้น)' : ''}</option>)}</select></div>
+          <div><label className={lbl}>บทบาท</label><select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} className={field}><option value="employee">พนักงาน</option><option value="supervisor">หัวหน้างาน</option></select></div>
+          <div><label className={lbl}>สถานที่ปฏิบัติงาน</label><select value={f.officeId} onChange={(e) => setF({ ...f, officeId: e.target.value })} className={field}><option value="">ทุกสถานที่</option>{offices.map((o) => <option key={o.id} value={o.id}>{o.name}{o.isDefault ? ' (ค่าเริ่มต้น)' : ''}</option>)}</select></div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button type="submit" disabled={busy} style={{ ...btn('primary'), flex: 1, height: 44 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
-          <button type="button" onClick={onClose} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+        <div className="flex gap-2.5">
+          <button type="submit" disabled={busy} className={`${btn('primary')} flex-1 h-11 px-4 text-[13px]`}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+          <button type="button" onClick={onClose} className={`${btn('ghost')} h-11 px-4 text-[13px]`}>ยกเลิก</button>
         </div>
       </form>
     </div>
@@ -183,41 +183,41 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: (m: str
 
   const mappedName = map.name != null && map.name >= 0;
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 560, padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>นำเข้าพนักงานจาก CSV</div>
+    <div onClick={onClose} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-50">
+      <div onClick={(e) => e.stopPropagation()} className={`${card} w-[560px] p-6 max-h-[90vh] overflow-y-auto`}>
+        <div className="text-base font-bold mb-1.5">นำเข้าพนักงานจาก CSV</div>
         {result ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ ...card, background: 'var(--brand-tint)', border: '1px solid #C9F0DA', padding: 16, marginBottom: 16 }}>
-              <div style={{ fontWeight: 700, color: 'var(--brand-700)' }}>นำเข้าเสร็จสิ้น</div>
-              <div style={{ fontSize: 14, marginTop: 6 }}>สำเร็จ {result.created} รายการ{result.failed ? ` · ล้มเหลว ${result.failed} รายการ` : ''}</div>
+          <div className="mt-3">
+            <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] p-4 mb-4">
+              <div className="font-bold text-brand-700">นำเข้าเสร็จสิ้น</div>
+              <div className="text-sm mt-1.5">สำเร็จ {result.created} รายการ{result.failed ? ` · ล้มเหลว ${result.failed} รายการ` : ''}</div>
             </div>
-            <button onClick={onClose} style={{ ...btn('primary'), width: '100%', height: 44 }}>เสร็จสิ้น</button>
+            <button onClick={onClose} className={`${btn('primary')} w-full h-11 px-4 text-[13px]`}>เสร็จสิ้น</button>
           </div>
         ) : headers.length === 0 ? (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14, lineHeight: 1.6 }}>เลือกไฟล์ CSV (แถวแรกเป็นหัวคอลัมน์) แล้วจับคู่คอลัมน์กับข้อมูลพนักงานในขั้นถัดไป</div>
-            <input type="file" accept=".csv,text/csv" onChange={onFile} style={{ ...field, padding: 10 }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}><button onClick={onClose} style={{ ...btn('ghost'), height: 40 }}>ยกเลิก</button></div>
+          <div className="mt-[14px]">
+            <div className="text-[13px] text-ink-2 mb-[14px] leading-[1.6]">เลือกไฟล์ CSV (แถวแรกเป็นหัวคอลัมน์) แล้วจับคู่คอลัมน์กับข้อมูลพนักงานในขั้นถัดไป</div>
+            <input type="file" accept=".csv,text/csv" onChange={onFile} className="border border-line rounded-[10px] text-sm w-full p-2.5" />
+            <div className="flex justify-end mt-[18px]"><button onClick={onClose} className={`${btn('ghost')} h-10 px-4 text-[13px]`}>ยกเลิก</button></div>
           </div>
         ) : (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 14 }}>พบ {data.length} แถว · จับคู่คอลัมน์ (ระบบเดาให้แล้ว ปรับได้)</div>
-            <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+          <div className="mt-[14px]">
+            <div className="text-[13px] text-ink-2 mb-[14px]">พบ {data.length} แถว · จับคู่คอลัมน์ (ระบบเดาให้แล้ว ปรับได้)</div>
+            <div className="grid gap-2.5 mb-4">
               {EMP_FIELDS.map((fld) => (
-                <div key={fld.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 130, fontSize: 13, fontWeight: 600 }}>{fld.label}{fld.req && <span style={{ color: 'var(--danger)' }}> *</span>}</div>
-                  <select value={map[fld.key] ?? -1} onChange={(e) => setMap({ ...map, [fld.key]: Number(e.target.value) })} style={{ ...field, flex: 1 }}>
+                <div key={fld.key} className="flex items-center gap-3">
+                  <div className="w-[130px] text-[13px] font-semibold">{fld.label}{fld.req && <span className="text-danger"> *</span>}</div>
+                  <select value={map[fld.key] ?? -1} onChange={(e) => setMap({ ...map, [fld.key]: Number(e.target.value) })} className={`${field} flex-1`}>
                     <option value={-1}>— ไม่ใช้ —</option>
                     {headers.map((h, i) => <option key={i} value={i}>{h || `คอลัมน์ ${i + 1}`}</option>)}
                   </select>
                 </div>
               ))}
             </div>
-            {!mappedName && <div style={{ background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 13px', fontSize: 13, marginBottom: 12 }}>ต้องจับคู่คอลัมน์ "ชื่อ-นามสกุล" ก่อน</div>}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button disabled={!mappedName || busy} onClick={doImport} style={{ ...btn('primary'), flex: 1, height: 44, opacity: mappedName ? 1 : 0.5 }}>{busy ? 'กำลังนำเข้า…' : `นำเข้า ${data.length} รายการ`}</button>
-              <button onClick={() => { setHeaders([]); setData([]); }} style={{ ...btn('ghost'), height: 44 }}>เลือกไฟล์ใหม่</button>
+            {!mappedName && <div className="bg-danger-tint text-danger rounded-[10px] px-[13px] py-[9px] text-[13px] mb-3">ต้องจับคู่คอลัมน์ "ชื่อ-นามสกุล" ก่อน</div>}
+            <div className="flex gap-2.5">
+              <button disabled={!mappedName || busy} onClick={doImport} className={`${btn('primary')} flex-1 h-11 px-4 text-[13px]`} style={{ opacity: mappedName ? 1 : 0.5 }}>{busy ? 'กำลังนำเข้า…' : `นำเข้า ${data.length} รายการ`}</button>
+              <button onClick={() => { setHeaders([]); setData([]); }} className={`${btn('ghost')} h-11 px-4 text-[13px]`}>เลือกไฟล์ใหม่</button>
             </div>
           </div>
         )}
@@ -254,50 +254,50 @@ function StaffView() {
   }
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 10 }}>
-        <div style={{ flex: 1, fontSize: 14, color: 'var(--ink-2)' }}>ทั้งหมด {rows.length} คน</div>
-        <button onClick={() => setImporting(true)} style={{ ...btn('ghost'), height: 40 }}>นำเข้า CSV</button>
-        <button onClick={openAdd} style={{ ...btn('primary'), height: 40 }}>+ เพิ่มพนักงาน</button>
+      <div className="flex items-center mb-4 gap-2.5">
+        <div className="flex-1 text-sm text-ink-2">ทั้งหมด {rows.length} คน</div>
+        <button onClick={() => setImporting(true)} className={`${btn('ghost')} h-10 px-4 text-[13px]`}>นำเข้า CSV</button>
+        <button onClick={openAdd} className={`${btn('primary')} h-10 px-4 text-[13px]`}>+ เพิ่มพนักงาน</button>
       </div>
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      <div style={{ ...card, padding: '8px 20px 12px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>แผนก</th><th style={{ padding: 10 }}>สถานที่</th><th style={{ padding: 10 }}>บทบาท</th><th style={{ padding: 10 }}>LINE</th><th style={{ padding: 10 }}>PDPA</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+      {msg && <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-4 py-3 mb-4 text-brand-700 font-semibold text-[13px]">{msg}</div>}
+      <div className={`${card} px-5 pt-2 pb-3`}>
+        <table className="w-full border-collapse">
+          <thead><tr className="text-left text-ink-3 text-xs">
+            <th className="p-2.5">พนักงาน</th><th className="p-2.5">แผนก</th><th className="p-2.5">สถานที่</th><th className="p-2.5">บทบาท</th><th className="p-2.5">LINE</th><th className="p-2.5">PDPA</th><th className="p-2.5">สถานะ</th><th className="p-2.5 text-right"></th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
-                <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
-                <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.department ?? '—'}</td>
-                <td style={{ padding: 12, fontSize: 13, color: 'var(--ink-2)' }}>{r.officeName ?? <span style={{ color: 'var(--ink-3)' }}>ทุกที่</span>}</td>
-                <td style={{ padding: 12, fontSize: 13 }}>{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
-                <td style={{ padding: 12 }}>{r.lineUserId
-                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /><button onClick={() => unlinkLine(r)} title="ยกเลิกการผูก LINE" style={{ border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}>ยกเลิกผูก</button></span>
+              <tr key={r.id} className="border-t border-[#F2F3F5]">
+                <td className="p-3"><div className="text-sm font-semibold">{r.name}</div><div className="text-xs text-ink-3">{r.employeeCode ?? '—'} · {r.position ?? ''}</div></td>
+                <td className="p-3 text-[13px] text-ink-2">{r.department ?? '—'}</td>
+                <td className="p-3 text-[13px] text-ink-2">{r.officeName ?? <span className="text-ink-3">ทุกที่</span>}</td>
+                <td className="p-3 text-[13px]">{r.role === 'supervisor' ? 'หัวหน้างาน' : r.role === 'org_admin' ? 'ผู้ดูแล' : 'พนักงาน'}</td>
+                <td className="p-3">{r.lineUserId
+                  ? <span className="inline-flex items-center gap-2"><Badge text="เชื่อมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /><button onClick={() => unlinkLine(r)} title="ยกเลิกการผูก LINE" className="bg-transparent text-ink-3 text-[11px] cursor-pointer underline">ยกเลิกผูก</button></span>
                   : <Badge text="ยังไม่เชื่อม" c="var(--ink-3)" bg="#F0F2F4" />}</td>
-                <td style={{ padding: 12 }}>{r.hasConsent ? <Badge text="ยินยอมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="รอยินยอม" c="var(--warn)" bg="var(--warn-tint)" />}</td>
-                <td style={{ padding: 12 }}>{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ปิดใช้งาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
-                <td style={{ padding: 12, textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: 6 }}>
-                    <button onClick={() => openEdit(r)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>แก้ไข</button>
-                    <button onClick={() => setDel(r)} style={{ ...btn('danger'), height: 32, padding: '0 12px', fontSize: 12 }}>ลบ</button>
+                <td className="p-3">{r.hasConsent ? <Badge text="ยินยอมแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="รอยินยอม" c="var(--warn)" bg="var(--warn-tint)" />}</td>
+                <td className="p-3">{r.active ? <Badge text="ทำงาน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ปิดใช้งาน" c="var(--ink-3)" bg="#F0F2F4" />}</td>
+                <td className="p-3 text-right">
+                  <div className="inline-flex gap-1.5">
+                    <button onClick={() => openEdit(r)} className={`${btn('ghost')} h-8 px-3 text-xs`}>แก้ไข</button>
+                    <button onClick={() => setDel(r)} className={`${btn('danger')} h-8 px-3 text-xs`}>ลบ</button>
                   </div>
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีพนักงาน</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-ink-3">ยังไม่มีพนักงาน</td></tr>}
           </tbody>
         </table>
       </div>
       {edit && <EmployeeModal initial={edit.form} id={edit.id} offices={offices} onClose={() => setEdit(null)} onDone={(m) => { flash(m); load(); }} />}
       {importing && <ImportModal onClose={() => setImporting(false)} onDone={(m) => { flash(m); load(); }} />}
       {del && (
-        <div onClick={() => setDel(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 380, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--danger)', marginBottom: 10 }}>ลบพนักงาน</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 18, lineHeight: 1.6 }}>ลบ "{del.name}"? หากมีประวัติในระบบ (ลงเวลา/ลา/เงินเดือน) ระบบจะปิดการใช้งานแทน</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => remove(del)} style={{ ...btn('danger'), flex: 1, height: 44, background: 'var(--danger)', color: '#fff', border: 'none' }}>ลบ</button>
-              <button onClick={() => setDel(null)} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+        <div onClick={() => setDel(null)} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-[60]">
+          <div onClick={(e) => e.stopPropagation()} className={`${card} w-[380px] p-6`}>
+            <div className="text-base font-bold text-danger mb-2.5">ลบพนักงาน</div>
+            <div className="text-[13px] text-ink-2 mb-[18px] leading-[1.6]">ลบ "{del.name}"? หากมีประวัติในระบบ (ลงเวลา/ลา/เงินเดือน) ระบบจะปิดการใช้งานแทน</div>
+            <div className="flex gap-2.5">
+              <button onClick={() => remove(del)} className="rounded-[10px] font-semibold cursor-pointer bg-danger text-white flex-1 h-11 px-4 text-[13px]">ลบ</button>
+              <button onClick={() => setDel(null)} className={`${btn('ghost')} h-11 px-4 text-[13px]`}>ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -314,19 +314,19 @@ function LeaveView() {
   const decide = async (id: string, approve: boolean) => { await api(`/leave/${id}/decision`, { method: 'POST', body: JSON.stringify({ approve }) }); load(); };
   return (
     <div>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 12 }}>เส้นทางอนุมัติ: <b>หัวหน้างาน</b></div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="text-[13px] text-ink-2 mb-3">เส้นทางอนุมัติ: <b>หัวหน้างาน</b></div>
+      <div className="flex flex-col gap-3">
         {rows.map((r) => (
-          <div key={r.id} style={{ ...card, padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{LEAVE_LABEL[r.type] ?? r.type} · {r.days} วัน</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.startDate} → {r.endDate} · {r.reason ?? ''}</div>
+          <div key={r.id} className={`${card} p-4 flex items-center gap-4`}>
+            <div className="flex-1">
+              <div className="text-sm font-semibold">{LEAVE_LABEL[r.type] ?? r.type} · {r.days} วัน</div>
+              <div className="text-xs text-ink-3">{r.startDate} → {r.endDate} · {r.reason ?? ''}</div>
             </div>
-            <button onClick={() => decide(r.id, true)} style={btn('primary')}>อนุมัติ</button>
-            <button onClick={() => decide(r.id, false)} style={btn('danger')}>ปฏิเสธ</button>
+            <button onClick={() => decide(r.id, true)} className={`${btn('primary')} h-10 px-4 text-[13px]`}>อนุมัติ</button>
+            <button onClick={() => decide(r.id, false)} className={`${btn('danger')} h-10 px-4 text-[13px]`}>ปฏิเสธ</button>
           </div>
         ))}
-        {rows.length === 0 && <div style={{ ...card, padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ไม่มีคำขอลาค้างอนุมัติ</div>}
+        {rows.length === 0 && <div className={`${card} p-6 text-center text-ink-3`}>ไม่มีคำขอลาค้างอนุมัติ</div>}
       </div>
     </div>
   );
@@ -338,19 +338,19 @@ function HireView() {
   const decide = async (id: string, approve: boolean) => { await api(`/hire/${id}/decision`, { method: 'POST', body: JSON.stringify({ approve }) }); load(); };
   return (
     <div>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 12 }}>ผู้อนุมัติ: <b>ฝ่ายบุคคล (HR)</b> · ตรวจเอกสาร/PII ก่อนกำหนดวันเริ่มงาน</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="text-[13px] text-ink-2 mb-3">ผู้อนุมัติ: <b>ฝ่ายบุคคล (HR)</b> · ตรวจเอกสาร/PII ก่อนกำหนดวันเริ่มงาน</div>
+      <div className="flex flex-col gap-3">
         {rows.map((r) => (
-          <div key={r.id} style={{ ...card, padding: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.position ?? ''} · {r.department ?? ''} · ยื่นเมื่อ {r.appliedAt} · {r.docsComplete ? 'เอกสารครบ' : 'เอกสารไม่ครบ'}</div>
+          <div key={r.id} className={`${card} p-4 flex items-center gap-4`}>
+            <div className="flex-1">
+              <div className="text-sm font-semibold">{r.name}</div>
+              <div className="text-xs text-ink-3">{r.position ?? ''} · {r.department ?? ''} · ยื่นเมื่อ {r.appliedAt} · {r.docsComplete ? 'เอกสารครบ' : 'เอกสารไม่ครบ'}</div>
             </div>
-            <button onClick={() => decide(r.id, true)} style={btn('primary')}>อนุมัติเริ่มงาน</button>
-            <button onClick={() => decide(r.id, false)} style={btn('danger')}>ปฏิเสธ</button>
+            <button onClick={() => decide(r.id, true)} className={`${btn('primary')} h-10 px-4 text-[13px]`}>อนุมัติเริ่มงาน</button>
+            <button onClick={() => decide(r.id, false)} className={`${btn('danger')} h-10 px-4 text-[13px]`}>ปฏิเสธ</button>
           </div>
         ))}
-        {rows.length === 0 && <div style={{ ...card, padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ไม่มีคำขอเริ่มงานค้างอนุมัติ</div>}
+        {rows.length === 0 && <div className={`${card} p-6 text-center text-ink-3`}>ไม่มีคำขอเริ่มงานค้างอนุมัติ</div>}
       </div>
     </div>
   );
@@ -373,31 +373,31 @@ function ComponentsModal({ slip, editable, onClose, onChanged }: { slip: Slip; e
   }
   async function rm(id: string) { await api(`/payroll/components/${id}`, { method: 'DELETE' }); load(); onChanged(); }
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 460, maxHeight: '90vh', overflowY: 'auto', padding: 22 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>รายการเงินเดือน — {slip.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 14 }}>สุทธิ ฿{slip.net}</div>
+    <div onClick={onClose} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-[60]">
+      <div onClick={(e) => e.stopPropagation()} className={`${card} w-[460px] max-h-[90vh] overflow-y-auto p-[22px]`}>
+        <div className="text-base font-bold mb-1">รายการเงินเดือน — {slip.name}</div>
+        <div className="text-xs text-ink-3 mb-[14px]">สุทธิ ฿{slip.net}</div>
         {comps.map((c) => (
-          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
-            <span style={{ flex: 1, fontSize: 13 }}>{c.label}{c.system && <span style={{ fontSize: 10, color: 'var(--ink-3)', marginLeft: 6 }}>(อัตโนมัติ)</span>}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: c.kind === 'earning' ? 'var(--brand-700)' : 'var(--danger)' }}>{c.kind === 'earning' ? '+' : '−'}{c.amount}</span>
-            {editable && !c.system ? <button onClick={() => rm(c.id)} style={{ border: 'none', background: 'none', color: 'var(--ink-3)', cursor: 'pointer', fontSize: 16 }}>×</button> : <span style={{ width: 16 }} />}
+          <div key={c.id} className="flex items-center gap-2.5 py-[9px] border-b border-line">
+            <span className="flex-1 text-[13px]">{c.label}{c.system && <span className="text-[10px] text-ink-3 ml-1.5">(อัตโนมัติ)</span>}</span>
+            <span className="text-[13px] font-semibold" style={{ color: c.kind === 'earning' ? 'var(--brand-700)' : 'var(--danger)' }}>{c.kind === 'earning' ? '+' : '−'}{c.amount}</span>
+            {editable && !c.system ? <button onClick={() => rm(c.id)} className="bg-transparent text-ink-3 cursor-pointer text-base">×</button> : <span className="w-4" />}
           </div>
         ))}
-        {comps.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-3)', padding: 12, textAlign: 'center' }}>ยังไม่มีรายการ</div>}
+        {comps.length === 0 && <div className="text-[13px] text-ink-3 p-3 text-center">ยังไม่มีรายการ</div>}
         {editable && (
-          <div style={{ marginTop: 16, background: 'var(--bg)', borderRadius: 12, padding: 12 }}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} style={{ ...field, width: 120 }}><option value="earning">รายได้</option><option value="deduction">รายการหัก</option></select>
-              <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder="เช่น OT, เบี้ยขยัน, หักลา" style={{ ...field, flex: 1 }} />
+          <div className="mt-4 bg-bg rounded-xl p-3">
+            <div className="flex gap-2 mb-2">
+              <select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })} className={`${field} w-[120px]`}><option value="earning">รายได้</option><option value="deduction">รายการหัก</option></select>
+              <input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder="เช่น OT, เบี้ยขยัน, หักลา" className={`${field} flex-1`} />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} type="number" placeholder="จำนวนเงิน" style={{ ...field, flex: 1 }} />
-              <button onClick={add} style={{ ...btn('primary'), height: 42, padding: '0 20px' }}>เพิ่ม</button>
+            <div className="flex gap-2">
+              <input value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} type="number" placeholder="จำนวนเงิน" className={`${field} flex-1`} />
+              <button onClick={add} className={`${btn('primary')} h-[42px] px-[20px] text-[13px]`}>เพิ่ม</button>
             </div>
           </div>
         )}
-        <button onClick={onClose} style={{ ...btn('ghost'), height: 42, width: '100%', marginTop: 16 }}>ปิด</button>
+        <button onClick={onClose} className={`${btn('ghost')} h-[42px] w-full mt-4 px-4 text-[13px]`}>ปิด</button>
       </div>
     </div>
   );
@@ -447,49 +447,49 @@ function PayrollView() {
   const sent = rows.filter((r) => r.sentAt).length;
   return (
     <div>
-      <div style={{ ...card, padding: 18, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} style={{ ...field, width: 160 }} />
-        <button onClick={generate} disabled={busy} style={{ ...btn('primary'), height: 42 }}>{busy ? 'กำลังคำนวณ…' : 'สร้าง / คำนวณรอบ'}</button>
+      <div className={`${card} p-[18px] mb-4 flex items-center gap-3 flex-wrap`}>
+        <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className={`${field} w-[160px]`} />
+        <button onClick={generate} disabled={busy} className={`${btn('primary')} h-[42px] px-4 text-[13px]`}>{busy ? 'กำลังคำนวณ…' : 'สร้าง / คำนวณรอบ'}</button>
         {runs.length > 0 && (
-          <select value={run?.id ?? ''} onChange={(e) => { const r = runs.find((x) => x.id === e.target.value); if (r) openRun(r); }} style={{ ...field, width: 220, marginLeft: 'auto' }}>
+          <select value={run?.id ?? ''} onChange={(e) => { const r = runs.find((x) => x.id === e.target.value); if (r) openRun(r); }} className={`${field} w-[220px] ml-auto`}>
             {runs.map((r) => <option key={r.id} value={r.id}>งวด {r.period} · {r.status === 'draft' ? 'ร่าง' : r.status === 'approved' ? 'อนุมัติแล้ว' : 'จ่ายแล้ว'}</option>)}
           </select>
         )}
       </div>
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      {warn && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: '#8a5a00', fontWeight: 600, fontSize: 13, background: 'var(--warn-tint)', border: '1px solid #F3E1C0', display: 'flex', gap: 10, alignItems: 'flex-start' }}><span>⚠️</span><span style={{ flex: 1, lineHeight: 1.5 }}>{warn}</span><button onClick={() => setWarn(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#8a5a00', fontSize: 16 }}>×</button></div>}
+      {msg && <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-4 py-3 mb-4 text-brand-700 font-semibold text-[13px]">{msg}</div>}
+      {warn && <div className="bg-warn-tint rounded-2xl border border-[#F3E1C0] px-4 py-3 mb-4 text-[#8a5a00] font-semibold text-[13px] flex gap-2.5 items-start"><span>⚠️</span><span className="flex-1 leading-[1.5]">{warn}</span><button onClick={() => setWarn(null)} className="bg-transparent cursor-pointer text-[#8a5a00] text-base">×</button></div>}
       {run && (
-        <div style={{ ...card, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>งวด {run.period} {draft ? <Badge text="ร่าง" c="var(--warn)" bg="var(--warn-tint)" /> : <Badge text="อนุมัติแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" />}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>สุทธิรวม ฿{run.totalNet} · พนักงาน {rows.length} คน · ส่งสลิป {sent}/{rows.length}</div></div>
-          {draft && <button onClick={approve} style={{ ...btn('primary'), height: 40 }}>อนุมัติงวด</button>}
+        <div className={`${card} p-4 mb-4 flex items-center gap-3`}>
+          <div className="flex-1"><div className="text-[15px] font-bold">งวด {run.period} {draft ? <Badge text="ร่าง" c="var(--warn)" bg="var(--warn-tint)" /> : <Badge text="อนุมัติแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" />}</div><div className="text-xs text-ink-3">สุทธิรวม ฿{run.totalNet} · พนักงาน {rows.length} คน · ส่งสลิป {sent}/{rows.length}</div></div>
+          {draft && <button onClick={approve} className={`${btn('primary')} h-10 px-4 text-[13px]`}>อนุมัติงวด</button>}
         </div>
       )}
-      <div style={{ ...card, padding: '8px 20px 12px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}>
-            <th style={{ padding: 10 }}>พนักงาน</th><th style={{ padding: 10 }}>มา/สาย</th><th style={{ padding: 10, textAlign: 'right' }}>รายได้</th><th style={{ padding: 10, textAlign: 'right' }}>หัก</th><th style={{ padding: 10, textAlign: 'right' }}>สุทธิ</th><th style={{ padding: 10, textAlign: 'right' }}>จัดการ</th></tr></thead>
+      <div className={`${card} px-5 pt-2 pb-3`}>
+        <table className="w-full border-collapse">
+          <thead><tr className="text-left text-ink-3 text-xs">
+            <th className="p-2.5">พนักงาน</th><th className="p-2.5">มา/สาย</th><th className="p-2.5 text-right">รายได้</th><th className="p-2.5 text-right">หัก</th><th className="p-2.5 text-right">สุทธิ</th><th className="p-2.5 text-right">จัดการ</th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ borderTop: '1px solid #F2F3F5' }}>
-                <td style={{ padding: 12 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</div><div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{r.department ?? ''}</div></td>
-                <td style={{ padding: 12, fontSize: 12, color: 'var(--ink-2)' }}>{stats[r.userId]?.present ?? 0}/<span style={{ color: 'var(--warn)' }}>{stats[r.userId]?.late ?? 0}</span></td>
-                <td style={{ padding: 12, textAlign: 'right', fontSize: 13, color: 'var(--brand-700)' }}>{r.gross}</td>
-                <td style={{ padding: 12, textAlign: 'right', fontSize: 13, color: 'var(--danger)' }}>−{r.deductions}</td>
-                <td style={{ padding: 12, textAlign: 'right', fontSize: 14, fontWeight: 700 }}>{r.net}</td>
-                <td style={{ padding: 12, textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: 6 }}>
-                    <button onClick={() => setEditSlip(r)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>{draft ? 'จัดการ' : 'ดู'}</button>
-                    <button onClick={() => downloadFile(`/payroll/payslips/${r.id}/pdf`, `payslip-${run?.period}-${r.name}.pdf`).catch(() => {})} title="ดาวน์โหลดสลิป PDF" style={{ ...btn('ghost'), height: 32, padding: '0 10px', fontSize: 12 }}>PDF</button>
-                    {r.sentAt ? <Badge text="ส่งแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <button onClick={() => send(r.id)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ส่งสลิป</button>}
+              <tr key={r.id} className="border-t border-[#F2F3F5]">
+                <td className="p-3"><div className="text-sm font-semibold">{r.name}</div><div className="text-xs text-ink-3">{r.department ?? ''}</div></td>
+                <td className="p-3 text-xs text-ink-2">{stats[r.userId]?.present ?? 0}/<span className="text-warn">{stats[r.userId]?.late ?? 0}</span></td>
+                <td className="p-3 text-right text-[13px] text-brand-700">{r.gross}</td>
+                <td className="p-3 text-right text-[13px] text-danger">−{r.deductions}</td>
+                <td className="p-3 text-right text-sm font-bold">{r.net}</td>
+                <td className="p-3 text-right">
+                  <div className="inline-flex gap-1.5">
+                    <button onClick={() => setEditSlip(r)} className={`${btn('ghost')} h-8 px-3 text-xs`}>{draft ? 'จัดการ' : 'ดู'}</button>
+                    <button onClick={() => downloadFile(`/payroll/payslips/${r.id}/pdf`, `payslip-${run?.period}-${r.name}.pdf`).catch(() => {})} title="ดาวน์โหลดสลิป PDF" className={`${btn('ghost')} h-8 px-[10px] text-xs`}>PDF</button>
+                    {r.sentAt ? <Badge text="ส่งแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <button onClick={() => send(r.id)} className="rounded-[10px] font-semibold cursor-pointer border bg-white border-brand text-brand-700 h-8 px-3 text-xs">ส่งสลิป</button>}
                   </div>
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีรอบเงินเดือน — เลือกงวดแล้วกด "สร้าง / คำนวณรอบ"</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-3">ยังไม่มีรอบเงินเดือน — เลือกงวดแล้วกด "สร้าง / คำนวณรอบ"</td></tr>}
           </tbody>
         </table>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 12 }}>เงินเดือนฐานดึงจากข้อมูลพนักงาน · เพิ่ม OT/เบี้ยขยัน/รายการหักได้ที่ "จัดการ" · คอลัมน์ มา/สาย = จำนวนวันในงวด (อ้างอิง) · ภาษี/ประกันสังคมจะเพิ่มในเฟสถัดไป</div>
+      <div className="text-xs text-ink-3 mt-3">เงินเดือนฐานดึงจากข้อมูลพนักงาน · เพิ่ม OT/เบี้ยขยัน/รายการหักได้ที่ "จัดการ" · คอลัมน์ มา/สาย = จำนวนวันในงวด (อ้างอิง) · ภาษี/ประกันสังคมจะเพิ่มในเฟสถัดไป</div>
       {editSlip && <ComponentsModal slip={editSlip} editable={draft} onClose={() => setEditSlip(null)} onChanged={() => run && openRun(run)} />}
     </div>
   );
@@ -547,83 +547,83 @@ function LineView() {
     flash(r.ok ? `เชื่อมต่อสำเร็จ · OA: ${r.botName}` : `ทดสอบไม่ผ่าน: ${r.reason}`, 4000);
   }
   const Toggle = ({ k, label }: { k: 'richMenu' | 'notifyPush' | 'sendSlip'; label: string }) => (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer' }}>
+    <label className="flex items-center gap-2.5 py-2.5 cursor-pointer">
       <input type="checkbox" checked={f.features[k]} onChange={(e) => setF({ ...f, features: { ...f.features, [k]: e.target.checked } })} />
-      <span style={{ fontSize: 14 }}>{label}</span>
+      <span className="text-sm">{label}</span>
     </label>
   );
-  const hint = (t: React.ReactNode) => <div style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 5, lineHeight: 1.5 }}>{t}</div>;
+  const hint = (t: React.ReactNode) => <div className="text-[11.5px] text-ink-3 mt-[5px] leading-[1.5]">{t}</div>;
   return (
-    <div style={{ maxWidth: 760 }}>
-      <div style={{ ...card, padding: '14px 18px', marginBottom: 16, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>
-        <div style={{ fontSize: 13, color: 'var(--brand-700)', lineHeight: 1.6 }}>
+    <div className="max-w-[760px]">
+      <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-[18px] py-[14px] mb-4">
+        <div className="text-[13px] text-brand-700 leading-[1.6]">
           เปิด <b>LINE Developers Console</b> (developers.line.biz) → เลือก <b>Provider</b> ของคุณ จะเห็น 2 แชนแนล: <b>LINE Login</b> (สำหรับให้พนักงานล็อกอิน/LIFF) และ <b>Messaging API</b> (บอตสำหรับส่งแจ้งเตือน/สลิป/rich menu) — คัดลอกค่าจากแต่ละแชนแนลมาตามช่องด้านล่าง
         </div>
       </div>
 
       {/* ---- LINE Login channel ---- */}
-      <div style={{ ...card, padding: 22, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>1) LINE Login channel <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 13 }}>— สำหรับล็อกอิน + LIFF</span></div>
+      <div className={`${card} p-[22px] mb-4`}>
+        <div className="flex items-center mb-1">
+          <div className="text-[15px] font-bold flex-1">1) LINE Login channel <span className="font-normal text-ink-3 text-[13px]">— สำหรับล็อกอิน + LIFF</span></div>
           {f.liffId && f.liffId.indexOf('abcdWXYZ') === -1 ? <Badge text="● พร้อมล็อกอิน" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่พร้อม" c="var(--warn)" bg="var(--warn-tint)" />}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 16 }}>ต้องเป็นแชนแนลชนิด LINE Login ที่เปิด <b>Web app</b> ไว้ (แท็บ LINE Login → App types)</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 14 }}>
+        <div className="text-xs text-ink-3 mb-4">ต้องเป็นแชนแนลชนิด LINE Login ที่เปิด <b>Web app</b> ไว้ (แท็บ LINE Login → App types)</div>
+        <div className="grid grid-cols-2 gap-4 mb-[14px]">
           <div>
-            <label style={lbl}>LINE Login Channel ID</label>
-            <input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} placeholder="เช่น 2001234567" style={field} />
+            <label className={lbl}>LINE Login Channel ID</label>
+            <input value={f.loginChannelId} onChange={(e) => setF({ ...f, loginChannelId: e.target.value })} placeholder="เช่น 2001234567" className={field} />
             {hint(<>แชนแนล LINE Login → แท็บ <b>Basic settings</b> → หัวข้อ <b>Channel ID</b> (ตัวเลขล้วน)</>)}
           </div>
           <div>
-            <label style={lbl}>LINE Login Channel Secret {hasLoginSecret && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
-            <input type="password" value={f.loginChannelSecret} onChange={(e) => setF({ ...f, loginChannelSecret: e.target.value })} placeholder="••••••••" style={field} />
+            <label className={lbl}>LINE Login Channel Secret {hasLoginSecret && <span className="text-ink-3">(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.loginChannelSecret} onChange={(e) => setF({ ...f, loginChannelSecret: e.target.value })} placeholder="••••••••" className={field} />
             {hint(<>แชนแนลเดียวกัน → <b>Basic settings</b> → <b>Channel secret</b> · ใช้ให้ระบบสร้าง LIFF อัตโนมัติ</>)}
           </div>
         </div>
-        <label style={lbl}>LIFF ID <span style={{ color: 'var(--ink-3)' }}>(ระบบสร้าง/เชื่อมให้อัตโนมัติ)</span></label>
-        <input value={f.liffId} readOnly placeholder="— ระบบจะสร้างให้เมื่อกรอก Login Channel ID + Secret แล้วบันทึก —" style={{ ...field, marginBottom: 6, background: 'var(--bg)', color: 'var(--ink-2)' }} />
+        <label className={lbl}>LIFF ID <span className="text-ink-3">(ระบบสร้าง/เชื่อมให้อัตโนมัติ)</span></label>
+        <input value={f.liffId} readOnly placeholder="— ระบบจะสร้างให้เมื่อกรอก Login Channel ID + Secret แล้วบันทึก —" className={`${field} mb-1.5 bg-bg text-ink-2`} />
         {hint(<>ไม่ต้องสร้าง LIFF ใน LINE เอง — ระบบสร้างให้ที่ endpoint <b>https://hr.poszee.com/liff/</b> (scope openid+profile) และตั้ง Channel ID ให้เอง</>)}
       </div>
 
       {/* ---- Messaging API channel ---- */}
-      <div style={{ ...card, padding: 22, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, flex: 1 }}>2) Messaging API channel <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 13 }}>— บอต: แจ้งเตือน/สลิป/rich menu</span></div>
+      <div className={`${card} p-[22px] mb-4`}>
+        <div className="flex items-center mb-4">
+          <div className="text-[15px] font-bold flex-1">2) Messaging API channel <span className="font-normal text-ink-3 text-[13px]">— บอต: แจ้งเตือน/สลิป/rich menu</span></div>
           {connected ? <Badge text="● เชื่อมต่อแล้ว" c="var(--brand-700)" bg="var(--brand-tint)" /> : <Badge text="ยังไม่เชื่อมต่อ" c="var(--ink-3)" bg="#F0F2F4" />}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 4 }}>
+        <div className="grid grid-cols-2 gap-4 mb-1">
           <div>
-            <label style={lbl}>Messaging Channel ID</label>
-            <input value={f.channelId} onChange={(e) => setF({ ...f, channelId: e.target.value })} placeholder="เช่น 2001234567" style={field} />
+            <label className={lbl}>Messaging Channel ID</label>
+            <input value={f.channelId} onChange={(e) => setF({ ...f, channelId: e.target.value })} placeholder="เช่น 2001234567" className={field} />
             {hint(<>แชนแนล Messaging API → <b>Basic settings</b> → <b>Channel ID</b></>)}
           </div>
           <div>
-            <label style={lbl}>Channel Secret {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
-            <input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" style={field} />
+            <label className={lbl}>Channel Secret {connected && <span className="text-ink-3">(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.channelSecret} onChange={(e) => setF({ ...f, channelSecret: e.target.value })} placeholder="••••••••" className={field} />
             {hint(<>Messaging API → <b>Basic settings</b> → <b>Channel secret</b> (ใช้ตรวจ webhook)</>)}
           </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={lbl}>Channel Access Token {connected && <span style={{ color: 'var(--ink-3)' }}>(เว้นว่าง = คงเดิม)</span>}</label>
-            <input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" style={field} />
+          <div className="col-[1/-1]">
+            <label className={lbl}>Channel Access Token {connected && <span className="text-ink-3">(เว้นว่าง = คงเดิม)</span>}</label>
+            <input type="password" value={f.accessToken} onChange={(e) => setF({ ...f, accessToken: e.target.value })} placeholder="••••••••" className={field} />
             {hint(<>Messaging API → แท็บ <b>Messaging API</b> → <b>Channel access token (long-lived)</b> → กด Issue · ใช้ส่งข้อความ/สร้าง rich menu</>)}
           </div>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 12 }}>Webhook URL (ตั้งใน Messaging API → Webhook): <b>https://hr.poszee.com/api/line/webhook</b> · credential ทั้งหมดถูกเข้ารหัสก่อนจัดเก็บ</div>
+        <div className="text-xs text-ink-3 mt-3">Webhook URL (ตั้งใน Messaging API → Webhook): <b>https://hr.poszee.com/api/line/webhook</b> · credential ทั้งหมดถูกเข้ารหัสก่อนจัดเก็บ</div>
       </div>
 
-      <div style={{ ...card, padding: '4px 22px 16px', marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, padding: '16px 0 4px' }}>ฟีเจอร์ LINE</div>
+      <div className={`${card} pt-1 px-[22px] pb-4 mb-4`}>
+        <div className="text-[15px] font-bold pt-4 pb-1">ฟีเจอร์ LINE</div>
         <Toggle k="richMenu" label="Rich Menu (เมนูลัดในแชท)" />
         <Toggle k="notifyPush" label="แจ้งเตือนผ่าน LINE (เช็คอิน/อนุมัติ)" />
         <Toggle k="sendSlip" label="ส่งสลิปเงินเดือนทาง LINE (PDF เข้ารหัส)" />
       </div>
 
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={save} disabled={busy} style={{ ...btn('primary'), height: 46, padding: '0 22px', fontSize: 14 }}>บันทึกการเชื่อมต่อ</button>
-        <button onClick={test} disabled={busy} style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14, borderColor: 'var(--brand)', color: 'var(--brand-700)' }}>ทดสอบการเชื่อมต่อ</button>
-        <button onClick={provision} disabled={busy} title="สร้าง/เชื่อม LIFF จาก Access Token ที่บันทึกไว้" style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14 }}>สร้าง LIFF อัตโนมัติ</button>
-        <button onClick={provisionMenu} disabled={busy} title="สร้าง Rich menu และตั้งเป็นค่าเริ่มต้น" style={{ ...btn('ghost'), height: 46, padding: '0 22px', fontSize: 14 }}>สร้าง Rich menu</button>
+      {msg && <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-4 py-3 mb-4 text-brand-700 font-semibold text-[13px]">{msg}</div>}
+      <div className="flex gap-2.5">
+        <button onClick={save} disabled={busy} className={`${btn('primary')} h-[46px] px-[22px] text-sm`}>บันทึกการเชื่อมต่อ</button>
+        <button onClick={test} disabled={busy} className="rounded-[10px] font-semibold cursor-pointer border bg-white border-brand text-brand-700 h-[46px] px-[22px] text-sm">ทดสอบการเชื่อมต่อ</button>
+        <button onClick={provision} disabled={busy} title="สร้าง/เชื่อม LIFF จาก Access Token ที่บันทึกไว้" className={`${btn('ghost')} h-[46px] px-[22px] text-sm`}>สร้าง LIFF อัตโนมัติ</button>
+        <button onClick={provisionMenu} disabled={busy} title="สร้าง Rich menu และตั้งเป็นค่าเริ่มต้น" className={`${btn('ghost')} h-[46px] px-[22px] text-sm`}>สร้าง Rich menu</button>
       </div>
     </div>
   );
@@ -661,45 +661,45 @@ function OnboardingView() {
   const visible = rows.filter((r) => r.status !== 'linked'); // matched ones move to the staff list
   return (
     <div>
-      <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 16, lineHeight: 1.6 }}>
+      <div className="text-[13px] text-ink-2 mb-4 leading-[1.6]">
         พนักงานใหม่กดเมนู "เริ่มใช้งาน" ใน LINE → รายชื่อจะขึ้นที่นี่ → กด "ส่งยืนยันตัวตน" → เมื่อพนักงานกดยืนยัน → เลือกว่าเป็นพนักงานคนไหนแล้วกด "จับคู่" (จับคู่แล้วจะย้ายไปหน้าพนักงาน)
       </div>
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      <div style={{ ...card, padding: '8px 18px 12px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}><th style={{ padding: 10 }}>ผู้ใช้ LINE</th><th style={{ padding: 10 }}>สถานะ</th><th style={{ padding: 10 }}>จับคู่กับพนักงาน</th><th style={{ padding: 10, textAlign: 'right' }}>การจัดการ</th></tr></thead>
+      {msg && <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-4 py-3 mb-4 text-brand-700 font-semibold text-[13px]">{msg}</div>}
+      <div className={`${card} px-[18px] pt-2 pb-3`}>
+        <table className="w-full border-collapse">
+          <thead><tr className="text-left text-ink-3 text-xs"><th className="p-2.5">ผู้ใช้ LINE</th><th className="p-2.5">สถานะ</th><th className="p-2.5">จับคู่กับพนักงาน</th><th className="p-2.5 text-right">การจัดการ</th></tr></thead>
           <tbody>
             {visible.map((r) => (
-              <tr key={r.id} style={{ borderTop: '1px solid var(--line)' }}>
-                <td style={{ padding: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {r.pictureUrl ? <img src={r.pictureUrl} alt="" style={{ width: 34, height: 34, borderRadius: '50%' }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--brand-tint)', color: 'var(--brand-700)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>{(r.displayName ?? '?')[0]}</div>}
-                    <div><div style={{ fontSize: 14, fontWeight: 600 }}>{r.displayName ?? '(ไม่มีชื่อ)'}</div><div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{r.lineUserId.slice(0, 12)}…</div></div>
+              <tr key={r.id} className="border-t border-line">
+                <td className="p-3">
+                  <div className="flex items-center gap-2.5">
+                    {r.pictureUrl ? <img src={r.pictureUrl} alt="" className="w-[34px] h-[34px] rounded-full" /> : <div className="w-[34px] h-[34px] rounded-full bg-brand-tint text-brand-700 flex items-center justify-center font-bold text-sm">{(r.displayName ?? '?')[0]}</div>}
+                    <div><div className="text-sm font-semibold">{r.displayName ?? '(ไม่มีชื่อ)'}</div><div className="text-[11px] text-ink-3">{r.lineUserId.slice(0, 12)}…</div></div>
                   </div>
                 </td>
-                <td style={{ padding: 12 }}><Badge text={ONB_STATUS[r.status].label} c={ONB_STATUS[r.status].c} bg={ONB_STATUS[r.status].bg} /></td>
-                <td style={{ padding: 12 }}>
-                  {r.status === 'linked' ? <span style={{ fontSize: 13, fontWeight: 600 }}>{r.linkedUserName ?? <span style={{ color: 'var(--danger)' }}>(พนักงานถูกลบ)</span>}</span> : (
-                    <select value={pick[r.id] ?? ''} onChange={(e) => setPick({ ...pick, [r.id]: e.target.value })} style={{ ...field, width: 210, padding: '8px 10px' }}>
+                <td className="p-3"><Badge text={ONB_STATUS[r.status].label} c={ONB_STATUS[r.status].c} bg={ONB_STATUS[r.status].bg} /></td>
+                <td className="p-3">
+                  {r.status === 'linked' ? <span className="text-[13px] font-semibold">{r.linkedUserName ?? <span className="text-danger">(พนักงานถูกลบ)</span>}</span> : (
+                    <select value={pick[r.id] ?? ''} onChange={(e) => setPick({ ...pick, [r.id]: e.target.value })} className="border border-line rounded-[10px] text-sm w-[210px] px-2.5 py-2">
                       <option value="">— เลือกพนักงาน —</option>
                       {unlinked.map((e) => <option key={e.id} value={e.id}>{e.name}{e.department ? ` · ${e.department}` : ''}</option>)}
                     </select>
                   )}
                 </td>
-                <td style={{ padding: 12, textAlign: 'right' }}>
+                <td className="p-3 text-right">
                   {r.status === 'linked' ? (
-                    <button disabled={busy === r.id} onClick={() => act(r.id, 'unlink', undefined, 'ยกเลิกการจับคู่แล้ว')} style={{ ...btn('ghost'), height: 34 }}>ยกเลิกจับคู่</button>
+                    <button disabled={busy === r.id} onClick={() => act(r.id, 'unlink', undefined, 'ยกเลิกการจับคู่แล้ว')} className={`${btn('ghost')} h-[34px] px-4 text-[13px]`}>ยกเลิกจับคู่</button>
                   ) : r.status !== 'rejected' && (
-                    <div style={{ display: 'inline-flex', gap: 6 }}>
-                      <button disabled={busy === r.id} onClick={() => act(r.id, 'send-flex', undefined, 'ส่งการ์ดยืนยันตัวตนแล้ว')} style={{ ...btn('ghost'), height: 34 }}>ส่งยืนยันตัวตน</button>
-                      <button disabled={busy === r.id || !pick[r.id]} onClick={() => act(r.id, 'link', { userId: pick[r.id] }, 'จับคู่พนักงานเรียบร้อย')} style={{ ...btn('primary'), height: 34, opacity: pick[r.id] ? 1 : 0.5 }}>จับคู่</button>
-                      <button disabled={busy === r.id} onClick={() => act(r.id, 'reject', undefined, 'ปฏิเสธแล้ว')} title="ปฏิเสธ" style={{ ...btn('danger'), height: 34, padding: '0 12px' }}>✕</button>
+                    <div className="inline-flex gap-1.5">
+                      <button disabled={busy === r.id} onClick={() => act(r.id, 'send-flex', undefined, 'ส่งการ์ดยืนยันตัวตนแล้ว')} className={`${btn('ghost')} h-[34px] px-4 text-[13px]`}>ส่งยืนยันตัวตน</button>
+                      <button disabled={busy === r.id || !pick[r.id]} onClick={() => act(r.id, 'link', { userId: pick[r.id] }, 'จับคู่พนักงานเรียบร้อย')} className={`${btn('primary')} h-[34px] px-4 text-[13px]`} style={{ opacity: pick[r.id] ? 1 : 0.5 }}>จับคู่</button>
+                      <button disabled={busy === r.id} onClick={() => act(r.id, 'reject', undefined, 'ปฏิเสธแล้ว')} title="ปฏิเสธ" className={`${btn('danger')} h-[34px] px-3 text-[13px]`}>✕</button>
                     </div>
                   )}
                 </td>
               </tr>
             ))}
-            {visible.length === 0 && <tr><td colSpan={4} style={{ padding: 28, textAlign: 'center', color: 'var(--ink-3)' }}>ไม่มีพนักงานที่รอจับคู่</td></tr>}
+            {visible.length === 0 && <tr><td colSpan={4} className="p-7 text-center text-ink-3">ไม่มีพนักงานที่รอจับคู่</td></tr>}
           </tbody>
         </table>
       </div>
@@ -756,20 +756,20 @@ function OfficeEditor({ initial, onClose, onSaved }: { initial: Office | null; o
     } finally { setBusy(false); }
   }
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 560, maxWidth: '94vw', maxHeight: '92vh', overflowY: 'auto', padding: 22 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>{initial ? 'แก้ไขสถานที่ปฏิบัติงาน' : 'เพิ่มสถานที่ปฏิบัติงาน'}</div>
-        <div ref={boxRef} style={{ height: 280, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', marginBottom: 14, background: '#e9edf0' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-          <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>ชื่อสถานที่ *</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น สาขาลาดพร้าว, ไซต์ก่อสร้าง A" style={field} /></div>
-          <div><label style={lbl}>ละติจูด</label><input value={f.lat} onChange={(e) => setF({ ...f, lat: Number(e.target.value) })} type="number" step="any" style={field} /></div>
-          <div><label style={lbl}>ลองจิจูด</label><input value={f.lng} onChange={(e) => setF({ ...f, lng: Number(e.target.value) })} type="number" step="any" style={field} /></div>
-          <div><label style={lbl}>รัศมี (เมตร)</label><input value={f.radiusM} onChange={(e) => setF({ ...f, radiusM: Number(e.target.value) })} type="number" min={10} style={field} /></div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}><button onClick={useMyLocation} style={{ ...btn('ghost'), height: 44, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg> ตำแหน่งปัจจุบัน</button></div>
+    <div onClick={onClose} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-[60]">
+      <div onClick={(e) => e.stopPropagation()} className={`${card} w-[560px] max-w-[94vw] max-h-[92vh] overflow-y-auto p-[22px]`}>
+        <div className="text-base font-bold mb-[14px]">{initial ? 'แก้ไขสถานที่ปฏิบัติงาน' : 'เพิ่มสถานที่ปฏิบัติงาน'}</div>
+        <div ref={boxRef} className="h-[280px] rounded-[14px] overflow-hidden border border-line mb-[14px] bg-[#e9edf0]" />
+        <div className="grid grid-cols-2 gap-3 mb-[14px]">
+          <div className="col-[1/-1]"><label className={lbl}>ชื่อสถานที่ *</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น สาขาลาดพร้าว, ไซต์ก่อสร้าง A" className={field} /></div>
+          <div><label className={lbl}>ละติจูด</label><input value={f.lat} onChange={(e) => setF({ ...f, lat: Number(e.target.value) })} type="number" step="any" className={field} /></div>
+          <div><label className={lbl}>ลองจิจูด</label><input value={f.lng} onChange={(e) => setF({ ...f, lng: Number(e.target.value) })} type="number" step="any" className={field} /></div>
+          <div><label className={lbl}>รัศมี (เมตร)</label><input value={f.radiusM} onChange={(e) => setF({ ...f, radiusM: Number(e.target.value) })} type="number" min={10} className={field} /></div>
+          <div className="flex items-end"><button onClick={useMyLocation} className={`${btn('ghost')} h-11 w-full inline-flex items-center justify-center gap-2 px-4 text-[13px]`}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg> ตำแหน่งปัจจุบัน</button></div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={save} disabled={busy || !f.name.trim()} style={{ ...btn('primary'), flex: 1, height: 46 }}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
-          <button onClick={onClose} style={{ ...btn('ghost'), height: 46, padding: '0 20px' }}>ยกเลิก</button>
+        <div className="flex gap-2.5">
+          <button onClick={save} disabled={busy || !f.name.trim()} className={`${btn('primary')} flex-1 h-[46px] px-4 text-[13px]`}>{busy ? 'กำลังบันทึก…' : 'บันทึก'}</button>
+          <button onClick={onClose} className={`${btn('ghost')} h-[46px] px-[20px] text-[13px]`}>ยกเลิก</button>
         </div>
       </div>
     </div>
@@ -797,48 +797,48 @@ function OfficeView() {
   }
   const hasDefault = offices.some((o) => o.isDefault);
   return (
-    <div style={{ maxWidth: 820 }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 10 }}>
-        <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>เพิ่มได้หลายสถานที่ (สำนักงาน/สาขา/ไซต์งาน) · กด <b>"ตั้งเริ่มต้น"</b> เพื่อเลือกสถานที่ค่าเริ่มต้น (พนักงานใหม่จะได้อันนี้อัตโนมัติ) · กำหนดรายคนได้ที่หน้า "พนักงาน"</div>
-        <button onClick={() => setEdit({ office: null })} style={{ ...btn('primary'), height: 42 }}>+ เพิ่มสถานที่</button>
+    <div className="max-w-[820px]">
+      <div className="flex items-center mb-3 gap-2.5">
+        <div className="flex-1 text-[13px] text-ink-2 leading-[1.6]">เพิ่มได้หลายสถานที่ (สำนักงาน/สาขา/ไซต์งาน) · กด <b>"ตั้งเริ่มต้น"</b> เพื่อเลือกสถานที่ค่าเริ่มต้น (พนักงานใหม่จะได้อันนี้อัตโนมัติ) · กำหนดรายคนได้ที่หน้า "พนักงาน"</div>
+        <button onClick={() => setEdit({ office: null })} className={`${btn('primary')} h-[42px] px-4 text-[13px]`}>+ เพิ่มสถานที่</button>
       </div>
       {hasDefault && (
-        <div style={{ marginBottom: 16 }}><button onClick={assignDefaultToAll} style={{ ...btn('ghost'), height: 38, fontSize: 13 }}>กำหนดพนักงานที่ยังไม่มีสถานที่ → ใช้ค่าเริ่มต้น</button></div>
+        <div className="mb-4"><button onClick={assignDefaultToAll} className={`${btn('ghost')} h-[38px] px-4 text-[13px]`}>กำหนดพนักงานที่ยังไม่มีสถานที่ → ใช้ค่าเริ่มต้น</button></div>
       )}
-      {msg && <div style={{ ...card, padding: '12px 16px', marginBottom: 16, color: 'var(--brand-700)', fontWeight: 600, fontSize: 13, background: 'var(--brand-tint)', border: '1px solid #C9F0DA' }}>{msg}</div>}
-      <div style={{ ...card, padding: '8px 20px 12px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ textAlign: 'left', color: 'var(--ink-3)', fontSize: 12 }}><th style={{ padding: 10 }}>สถานที่</th><th style={{ padding: 10 }}>พิกัด</th><th style={{ padding: 10 }}>รัศมี</th><th style={{ padding: 10, textAlign: 'right' }}></th></tr></thead>
+      {msg && <div className="bg-brand-tint rounded-2xl border border-[#C9F0DA] px-4 py-3 mb-4 text-brand-700 font-semibold text-[13px]">{msg}</div>}
+      <div className={`${card} px-5 pt-2 pb-3`}>
+        <table className="w-full border-collapse">
+          <thead><tr className="text-left text-ink-3 text-xs"><th className="p-2.5">สถานที่</th><th className="p-2.5">พิกัด</th><th className="p-2.5">รัศมี</th><th className="p-2.5 text-right"></th></tr></thead>
           <tbody>
             {offices.map((o) => (
-              <tr key={o.id} style={{ borderTop: '1px solid var(--line)' }}>
-                <td style={{ padding: 12, fontSize: 14, fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{o.name}{o.isDefault && <Badge text="ค่าเริ่มต้น" c="var(--brand-700)" bg="var(--brand-tint)" />}</div>
+              <tr key={o.id} className="border-t border-line">
+                <td className="p-3 text-sm font-semibold">
+                  <div className="flex items-center gap-2">{o.name}{o.isDefault && <Badge text="ค่าเริ่มต้น" c="var(--brand-700)" bg="var(--brand-tint)" />}</div>
                 </td>
-                <td style={{ padding: 12, fontSize: 12, color: 'var(--ink-3)' }}>{Number(o.lat).toFixed(5)}, {Number(o.lng).toFixed(5)}</td>
-                <td style={{ padding: 12, fontSize: 13 }}>{o.radiusM} ม.</td>
-                <td style={{ padding: 12, textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: 6 }}>
-                    {!o.isDefault && <button onClick={() => setDefault(o)} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>ตั้งเริ่มต้น</button>}
-                    <button onClick={() => setEdit({ office: o })} style={{ ...btn('ghost'), height: 32, padding: '0 12px', fontSize: 12 }}>แก้ไข</button>
-                    <button onClick={() => setDel(o)} style={{ ...btn('danger'), height: 32, padding: '0 12px', fontSize: 12 }}>ลบ</button>
+                <td className="p-3 text-xs text-ink-3">{Number(o.lat).toFixed(5)}, {Number(o.lng).toFixed(5)}</td>
+                <td className="p-3 text-[13px]">{o.radiusM} ม.</td>
+                <td className="p-3 text-right">
+                  <div className="inline-flex gap-1.5">
+                    {!o.isDefault && <button onClick={() => setDefault(o)} className={`${btn('ghost')} h-8 px-3 text-xs`}>ตั้งเริ่มต้น</button>}
+                    <button onClick={() => setEdit({ office: o })} className={`${btn('ghost')} h-8 px-3 text-xs`}>แก้ไข</button>
+                    <button onClick={() => setDel(o)} className={`${btn('danger')} h-8 px-3 text-xs`}>ลบ</button>
                   </div>
                 </td>
               </tr>
             ))}
-            {offices.length === 0 && <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--ink-3)' }}>ยังไม่มีสถานที่ปฏิบัติงาน</td></tr>}
+            {offices.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-ink-3">ยังไม่มีสถานที่ปฏิบัติงาน</td></tr>}
           </tbody>
         </table>
       </div>
       {edit && <OfficeEditor initial={edit.office} onClose={() => setEdit(null)} onSaved={(m) => { flash(m); load(); }} />}
       {del && (
-        <div onClick={() => setDel(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,32,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: 380, padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--danger)', marginBottom: 10 }}>ลบสถานที่</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 18, lineHeight: 1.6 }}>ลบ "{del.name}"? พนักงานที่ผูกกับสถานที่นี้จะกลับเป็น "เช็คอินได้ทุกที่"</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => remove(del)} style={{ ...btn('danger'), flex: 1, height: 44, background: 'var(--danger)', color: '#fff', border: 'none' }}>ลบ</button>
-              <button onClick={() => setDel(null)} style={{ ...btn('ghost'), height: 44 }}>ยกเลิก</button>
+        <div onClick={() => setDel(null)} className="fixed inset-0 bg-[rgba(15,23,32,0.45)] flex items-center justify-center z-[70]">
+          <div onClick={(e) => e.stopPropagation()} className={`${card} w-[380px] p-6`}>
+            <div className="text-base font-bold text-danger mb-2.5">ลบสถานที่</div>
+            <div className="text-[13px] text-ink-2 mb-[18px] leading-[1.6]">ลบ "{del.name}"? พนักงานที่ผูกกับสถานที่นี้จะกลับเป็น "เช็คอินได้ทุกที่"</div>
+            <div className="flex gap-2.5">
+              <button onClick={() => remove(del)} className="rounded-[10px] font-semibold cursor-pointer bg-danger text-white flex-1 h-11 px-4 text-[13px]">ลบ</button>
+              <button onClick={() => setDel(null)} className={`${btn('ghost')} h-11 px-4 text-[13px]`}>ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -865,38 +865,39 @@ export function HrPage() {
   const [view, setView] = useState<string>('dashboard');
   const [showProfile, setShowProfile] = useState(false);
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <aside style={{ width: 244, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--line)', padding: '22px 14px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 8px 22px' }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="flex h-screen overflow-hidden">
+      <aside className="w-[244px] shrink-0 bg-surface border-r border-line px-[14px] py-[22px] flex flex-col">
+        <div className="flex items-center gap-[11px] px-2 pb-[22px]">
+          <div className="w-[38px] h-[38px] rounded-[11px] bg-brand flex items-center justify-center">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
           </div>
-          <div><div style={{ fontSize: 15, fontWeight: 700 }}>TimeLine</div><div style={{ fontSize: 11, color: 'var(--brand-700)', fontWeight: 600 }}>HR Console</div></div>
+          <div><div className="text-[15px] font-bold">TimeLine</div><div className="text-[11px] text-brand-700 font-semibold">HR Console</div></div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="flex flex-col gap-0.5">
           {NAV.map((n) => (
             <button key={n.key} onClick={() => setView(n.key)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 'none', background: view === n.key ? 'var(--brand-tint)' : 'transparent', color: view === n.key ? 'var(--brand-700)' : 'var(--ink-2)', fontWeight: 600, fontSize: 14, padding: '11px 14px', borderRadius: 11, cursor: 'pointer', textAlign: 'left' }}>
+              className="flex items-center gap-2.5 w-full font-semibold text-sm py-[11px] px-[14px] rounded-[11px] cursor-pointer text-left"
+              style={{ background: view === n.key ? 'var(--brand-tint)' : 'transparent', color: view === n.key ? 'var(--brand-700)' : 'var(--ink-2)' }}>
               {n.label}
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 8px', borderTop: '1px solid var(--line)' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--brand-tint)', color: 'var(--brand-700)', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{me?.name?.[0] ?? 'H'}</div>
-          <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{me?.name ?? 'HR'}</div><div style={{ fontSize: 11, color: 'var(--ink-3)' }}>org admin</div></div>
-          <button onClick={() => setShowProfile(true)} title="โปรไฟล์ของฉัน" style={{ border: '1px solid var(--line)', background: '#fff', color: 'var(--ink-3)', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}>
+        <div className="mt-auto flex items-center gap-2.5 px-2 py-3 border-t border-line">
+          <div className="w-[34px] h-[34px] rounded-[10px] bg-brand-tint text-brand-700 text-[13px] font-bold flex items-center justify-center">{me?.name?.[0] ?? 'H'}</div>
+          <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold">{me?.name ?? 'HR'}</div><div className="text-[11px] text-ink-3">org admin</div></div>
+          <button onClick={() => setShowProfile(true)} title="โปรไฟล์ของฉัน" className="border border-line bg-white text-ink-3 rounded-lg p-1.5 cursor-pointer flex">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg>
           </button>
-          <button onClick={logout} title="ออกจากระบบ" style={{ border: '1px solid var(--line)', background: '#fff', color: 'var(--ink-3)', borderRadius: 8, padding: 6, cursor: 'pointer', display: 'flex' }}>
+          <button onClick={logout} title="ออกจากระบบ" className="border border-line bg-white text-ink-3 rounded-lg p-1.5 cursor-pointer flex">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></svg>
           </button>
         </div>
       </aside>
       {showProfile && <MyProfile onClose={() => setShowProfile(false)} />}
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ height: 72, flexShrink: 0, background: 'var(--surface)', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', padding: '0 28px', fontSize: 18, fontWeight: 700 }}>{TITLES[view]}</div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="h-[72px] shrink-0 bg-surface border-b border-line flex items-center px-7 text-[18px] font-bold">{TITLES[view]}</div>
+        <div className="flex-1 overflow-y-auto py-6 px-7">
           {view === 'dashboard' && <DashboardView />}
           {view === 'staff' && <StaffView />}
           {view === 'onboarding' && <OnboardingView />}
