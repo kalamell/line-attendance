@@ -207,9 +207,10 @@ export class PayrollService {
   /** Mark a payslip sent and push an encrypted-PDF notice via the tenant's LINE OA. */
   async sendSlip(tenantId: string, id: string) {
     const [slip] = await db
-      .select({ id: payslips.id, gross: payslips.gross, net: payslips.net, lineUserId: users.lineUserId })
+      .select({ id: payslips.id, gross: payslips.gross, net: payslips.net, period: payrollRuns.period, lineUserId: users.lineUserId })
       .from(payslips)
       .innerJoin(users, eq(users.id, payslips.userId))
+      .innerJoin(payrollRuns, eq(payrollRuns.id, payslips.runId))
       .where(and(eq(payslips.tenantId, tenantId), eq(payslips.id, id)))
       .limit(1);
     if (!slip) throw new NotFoundException('ไม่พบสลิป');
@@ -217,17 +218,19 @@ export class PayrollService {
 
     // LINE push can't attach a generated file, so notify with a Flex button that opens
     // the LIFF payslip page where the employee unlocks with their PIN and downloads the PDF.
+    // Amounts are intentionally NOT shown: the push banner can pop up in front of others,
+    // so we only announce that the slip is ready and let them open it behind their PIN.
     if (slip.lineUserId) {
       const ch = await this.line.getChannel(tenantId);
       const uri = ch?.liffId ? `https://liff.line.me/${ch.liffId}?tab=payslip` : 'https://hr.poszee.com/liff/?tab=payslip';
       await this.line.push(tenantId, slip.lineUserId, [{
-        type: 'flex', altText: 'สลิปเงินเดือนของคุณพร้อมแล้ว',
+        type: 'flex', altText: `สลิปเงินเดือนประจำงวด ${slip.period} ออกแล้ว`,
         contents: {
           type: 'bubble',
           body: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
             { type: 'text', text: 'สลิปเงินเดือน', weight: 'bold', size: 'lg', color: '#06C755' },
-            { type: 'text', text: `เงินได้สุทธิ ฿${slip.net}`, size: 'md', margin: 'sm' },
-            { type: 'text', text: 'เปิดด้วยรหัส PIN ส่วนตัวของคุณ แล้วดาวน์โหลด PDF', size: 'xs', color: '#888888', wrap: true, margin: 'sm' },
+            { type: 'text', text: `ประจำงวด ${slip.period} ออกแล้ว`, size: 'md', margin: 'sm' },
+            { type: 'text', text: 'กดเปิดแล้วปลดล็อกด้วยรหัส PIN ส่วนตัวเพื่อดูยอดและดาวน์โหลด PDF', size: 'xs', color: '#888888', wrap: true, margin: 'sm' },
           ] },
           footer: { type: 'box', layout: 'vertical', contents: [
             { type: 'button', style: 'primary', color: '#06C755', action: { type: 'uri', label: 'เปิดสลิป', uri } },
